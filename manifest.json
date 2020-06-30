@@ -7,7 +7,10 @@
     "scripts": ["src/background/background.js"],
     "persistent": false
   },
-  "options_page": "src/options/options.html",
+  "options_ui": {
+    "page": "src/options/options.html",
+    "open_in_tab": true
+  },
   "browser_action": {
     "default_popup": "src/popup/popup.html",
     "default_icon": {

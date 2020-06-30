@@ -35,7 +35,7 @@ function drawPriceTable() {
         removeButton.innerHTML = 'Remove';
         removeButton.onclick = () => {
           delete pricePerByte[cid];
-          chrome.storage.sync.set({ pricePerByte });
+          chrome.storage.local.set({ pricePerByte });
           drawPriceTable();
         };
 
@@ -55,13 +55,13 @@ cidPriceForm.onsubmit = event => {
   event.preventDefault();
 
   pricePerByte[cidInput.value] = parseFloat(priceInput.value);
-  chrome.storage.sync.set({ pricePerByte });
+  chrome.storage.local.set({ pricePerByte });
   drawPriceTable();
 
   return false;
 };
 
-chrome.storage.sync.get(['pricePerByte'], result => {
+chrome.storage.local.get(['pricePerByte'], result => {
   pricePerByte = result.pricePerByte;
   priceInput.value = pricePerByte['*'].toFixed(10);
   drawPriceTable();
