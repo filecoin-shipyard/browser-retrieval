@@ -4,9 +4,41 @@
     <title>Filecoin Retriever Options</title>
   </head>
   <body>
-    <label for="defaultPrice">Default price per byte</label>
-    <input id="defaultPriceInput" name="defaultPrice" type="number" min="0" step="any" />
-    <button id="saveButton">Save</button>
+    <form id="cidPriceForm">
+      <table>
+        <tbody>
+          <tr>
+            <td>CID</td>
+            <td>
+              <input id="cidInput" type="text" value="*" />
+            </td>
+          </tr>
+          <tr>
+            <td>Price per byte</td>
+            <td>
+              <input id="priceInput" type="number" min="0" step="any" />
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>
+              <button type="submit">Save</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </form>
+    <table>
+      <thead>
+        <tr>
+          <th>CID</th>
+          <th>Price per byte</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="priceTableBody"></tbody>
+    </table>
   </body>
+  <script src="../shared/formatPrice.js"></script>
   <script src="options.js"></script>
 </html>
