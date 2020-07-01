@@ -1,6 +1,7 @@
 import React from 'react';
-import Options from 'src/components/Options';
 import useOptions from 'src/hooks/useOptions';
+import Options from './Options';
+import './App.css';
 
 function App() {
   const [options] = useOptions();
@@ -9,7 +10,11 @@ function App() {
     return null;
   }
 
-  return <Options />;
+  return (
+    <div className="App bg-gray-200 text-xs">
+      <Options />
+    </div>
+  );
 }
 
 export default App;

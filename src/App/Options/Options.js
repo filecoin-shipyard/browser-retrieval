@@ -5,9 +5,9 @@ import PriceTable from './PriceTable';
 
 function Options() {
   return (
-    <div>
-      <PortForm />
-      <PriceForm />
+    <div className="p-4">
+      <PortForm className="mb-4" />
+      <PriceForm className="mb-4" />
       <PriceTable />
     </div>
   );

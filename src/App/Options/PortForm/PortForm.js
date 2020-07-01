@@ -1,8 +1,12 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import useOptions from 'src/hooks/useOptions';
+import Card from 'src/components/Card';
+import Form from 'src/components/Form';
+import InputField from 'src/components/InputField';
+import Button from 'src/components/Button';
 
-function PortForm() {
+function PortForm(props) {
   const { handleSubmit, register, errors } = useForm();
   const [options, setOptions] = useOptions();
 
@@ -11,19 +15,21 @@ function PortForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <label>
-        Port
-        <input
+    <Card {...props}>
+      <Form onSubmit={handleSubmit(onSubmit)}>
+        <InputField
           ref={register({ required: 'Required' })}
+          label="Port"
           name="port"
+          errors={errors}
           type="number"
           defaultValue={options.port}
         />
-        {errors.port && errors.port.message}
-      </label>
-      <input type="submit" value="Save" />
-    </form>
+        <Button className="self-end" type="submit">
+          Save
+        </Button>
+      </Form>
+    </Card>
   );
 }
 

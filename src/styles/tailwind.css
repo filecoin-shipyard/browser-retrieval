@@ -1,0 +1,13 @@
+@import 'tailwindcss/base';
+
+@import 'tailwindcss/components';
+
+@import 'tailwindcss/utilities';
+
+.max-w-1 {
+  max-width: 1px;
+}
+
+.w-1p {
+  width: 1%;
+}
