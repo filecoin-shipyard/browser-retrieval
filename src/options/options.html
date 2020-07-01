@@ -5,19 +5,28 @@
     <title>Filecoin Retriever Options</title>
   </head>
   <body>
+    <form id="portForm">
+      <label for="port">Port</label>
+      <input id="portInput" name="port" type="number" />
+      <button type="submit">Save</button>
+    </form>
     <form id="cidPriceForm">
       <table>
         <tbody>
           <tr>
-            <td>CID</td>
             <td>
-              <input id="cidInput" type="text" value="*" />
+              <label for="cid">CID</label>
+            </td>
+            <td>
+              <input id="cidInput" name="cid" type="text" value="*" />
             </td>
           </tr>
           <tr>
-            <td>Price per byte</td>
             <td>
-              <input id="priceInput" type="number" min="0" step="any" />
+              <label for="price">Price per byte</label>
+            </td>
+            <td>
+              <input id="priceInput" name="price" type="number" min="0" step="any" />
             </td>
           </tr>
           <tr>

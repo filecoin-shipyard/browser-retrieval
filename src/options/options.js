@@ -1,7 +1,18 @@
+const portForm = document.getElementById('portForm');
+const portInput = document.getElementById('portInput');
+const cidPriceForm = document.getElementById('cidPriceForm');
 const cidInput = document.getElementById('cidInput');
 const priceInput = document.getElementById('priceInput');
-const cidPriceForm = document.getElementById('cidPriceForm');
 const priceTableBody = document.getElementById('priceTableBody');
+
+portForm.onsubmit = event => {
+  event.preventDefault();
+
+  const port = parseInt(portInput.value, 10);
+  chrome.storage.local.set({ port });
+
+  return false;
+};
 
 let pricePerByte = {};
 
@@ -61,7 +72,9 @@ cidPriceForm.onsubmit = event => {
   return false;
 };
 
-chrome.storage.local.get(['pricePerByte'], result => {
+chrome.storage.local.get(['port', 'pricePerByte'], result => {
+  portInput.value = result.port;
+
   pricePerByte = result.pricePerByte;
   priceInput.value = pricePerByte['*'].toFixed(10);
   drawPriceTable();
