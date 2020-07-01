@@ -1,4 +1,5 @@
 import formatPrice from '../shared/formatPrice.js';
+import Options from '../shared/Options.js';
 
 const portForm = document.getElementById('portForm');
 const portInput = document.getElementById('portInput');
@@ -11,7 +12,7 @@ portForm.onsubmit = event => {
   event.preventDefault();
 
   const port = parseInt(portInput.value, 10);
-  chrome.storage.local.set({ port });
+  Options.set({ port });
 
   return false;
 };
@@ -48,7 +49,7 @@ function drawPriceTable() {
         removeButton.innerHTML = 'Remove';
         removeButton.onclick = () => {
           delete pricePerByte[cid];
-          chrome.storage.local.set({ pricePerByte });
+          Options.set({ pricePerByte });
           drawPriceTable();
         };
 
@@ -68,13 +69,13 @@ cidPriceForm.onsubmit = event => {
   event.preventDefault();
 
   pricePerByte[cidInput.value] = parseFloat(priceInput.value);
-  chrome.storage.local.set({ pricePerByte });
+  Options.set({ pricePerByte });
   drawPriceTable();
 
   return false;
 };
 
-chrome.storage.local.get(['port', 'pricePerByte'], result => {
+Options.get(result => {
   portInput.value = result.port;
 
   pricePerByte = result.pricePerByte;
