@@ -1,0 +1,16 @@
+{
+  "name": "Filecoin Retrieval",
+  "version": "0.0.1",
+  "description": "A p2p network of Filecoin content retrievers",
+  "permissions": ["storage"],
+  "browser_action": {
+    "default_popup": "index.html"
+  },
+  "icons": {
+    "16": "images/icon-16x16.png",
+    "32": "images/icon-32x32.png",
+    "48": "images/icon-48x48.png",
+    "128": "images/icon-128x128.png"
+  },
+  "manifest_version": 2
+}
