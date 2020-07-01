@@ -4,8 +4,7 @@
   "description": "A p2p network of Filecoin content retrievers",
   "permissions": ["storage"],
   "background": {
-    "scripts": ["src/background/background.js"],
-    "persistent": false
+    "page": "src/background/background.html"
   },
   "options_ui": {
     "page": "src/options/options.html",

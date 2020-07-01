@@ -1,3 +1,5 @@
+import formatPrice from '../shared/formatPrice.js';
+
 const portForm = document.getElementById('portForm');
 const portInput = document.getElementById('portInput');
 const cidPriceForm = document.getElementById('cidPriceForm');
