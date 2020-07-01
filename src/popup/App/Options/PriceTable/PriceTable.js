@@ -1,10 +1,13 @@
 import React from 'react';
-import useOptions from 'src/hooks/useOptions';
-import formatPrice from 'src/utils/formatPrice';
-import Card from 'src/components/Card';
-import TableRow from 'src/components/TableRow';
-import TableCell from 'src/components/TableCell';
-import TrashButton from 'src/components/TrashButton';
+import useOptions from 'src/popup/hooks/useOptions';
+import Card from 'src/popup/components/Card';
+import TableRow from 'src/popup/components/TableRow';
+import TableCell from 'src/popup/components/TableCell';
+import TrashButton from 'src/popup/components/TrashButton';
+
+function formatPrice(price) {
+  return price.toLocaleString(navigator.language, { maximumFractionDigits: 10 });
+}
 
 function PriceTable(props) {
   const [options, setOptions] = useOptions();

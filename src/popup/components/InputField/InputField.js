@@ -1,8 +1,8 @@
 import React from 'react';
 import classNames from 'classnames';
-import Label from 'src/components/Label';
-import Input from 'src/components/Input';
-import Error from 'src/components/Error';
+import Label from 'src/popup/components/Label';
+import Input from 'src/popup/components/Input';
+import Error from 'src/popup/components/Error';
 
 function InputField({ className, label, name, errors, ...rest }, ref) {
   return (

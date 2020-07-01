@@ -11,14 +11,18 @@
     "react-scripts": "3.4.1"
   },
   "devDependencies": {
+    "@babel/cli": "^7.10.4",
     "autoprefixer": "^9.8.4",
     "postcss-cli": "^7.1.1",
-    "tailwindcss": "^1.4.6"
+    "tailwindcss": "^1.4.6",
+    "webpack-cli": "^3.3.12"
   },
   "scripts": {
-    "build:css": "NODE_ENV=production postcss src/styles/tailwind.css -o src/styles/tailwind.generated.css",
-    "build:js": "INLINE_RUNTIME_CHUNK=false react-scripts build",
-    "build": "yarn build:css && yarn build:js"
+    "build:popup:css": "NODE_ENV=production postcss src/popup/styles/tailwind.css -o src/popup/styles/tailwind.generated.css",
+    "build:popup:js": "INLINE_RUNTIME_CHUNK=false react-scripts build",
+    "build:popup": "yarn build:popup:css && yarn build:popup:js",
+    "build:background": "webpack",
+    "build": "yarn build:popup && yarn build:background"
   },
   "eslintConfig": {
     "extends": "react-app"

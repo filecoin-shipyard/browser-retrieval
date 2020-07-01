@@ -3,6 +3,10 @@
   "version": "0.0.1",
   "description": "A p2p network of Filecoin content retrievers",
   "permissions": ["storage"],
+  "background": {
+    "page": "background.html",
+    "persistent": false
+  },
   "browser_action": {
     "default_popup": "index.html"
   },

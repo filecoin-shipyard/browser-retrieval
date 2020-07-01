@@ -1,10 +1,10 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import useOptions from 'src/hooks/useOptions';
-import Card from 'src/components/Card';
-import Form from 'src/components/Form';
-import InputField from 'src/components/InputField';
-import Button from 'src/components/Button';
+import useOptions from 'src/popup/hooks/useOptions';
+import Card from 'src/popup/components/Card';
+import Form from 'src/popup/components/Form';
+import InputField from 'src/popup/components/InputField';
+import Button from 'src/popup/components/Button';
 
 function PriceForm(props) {
   const { handleSubmit, register, errors } = useForm();

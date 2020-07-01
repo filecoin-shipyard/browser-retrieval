@@ -1,6 +1,6 @@
 import React from 'react';
-import useOptions from 'src/hooks/useOptions';
-import Tabs from 'src/components/Tabs';
+import useOptions from 'src/popup/hooks/useOptions';
+import Tabs from 'src/popup/components/Tabs';
 import Options from './Options';
 import './App.css';
 
