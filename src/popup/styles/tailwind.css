@@ -4,6 +4,10 @@
 
 @import 'tailwindcss/utilities';
 
+body {
+  width: 780px;
+}
+
 .max-w-1 {
   max-width: 1px;
 }

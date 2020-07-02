@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import classNames from 'classnames';
 
-function Tabs({ tabs, ...rest }) {
+function Tabs({ tabs }) {
   const [currentTab, setCurrentTab] = useState(tabs[0]);
   const Component = currentTab.component;
 
   return (
-    <div {...rest}>
+    <div className="flex flex-col w-full h-full bg-gray-200 text-xs overflow-hidden">
       <ul className="flex border-b border-gray-400 bg-white text-sm font-bold">
         <li className="flex-grow self-center px-4 text-blue-500">Filecoin Retrieval</li>
         {tabs.map(tab => {
@@ -27,7 +27,7 @@ function Tabs({ tabs, ...rest }) {
           );
         })}
       </ul>
-      <Component />
+      <Component className="flex-grow" />
     </div>
   );
 }

@@ -5,17 +5,17 @@ import Label from 'src/popup/components/Label';
 import Pre from 'src/popup/components/Pre';
 import usePort from 'src/popup/hooks/usePort';
 import channels from 'src/shared/channels';
-import './PeersState.css';
+import './Logs.css';
 
-function PeersState({ className, ...rest }) {
-  const peersState = usePort(channels.peers);
+function Logs({ className, ...rest }) {
+  const logs = usePort(channels.logs);
 
   return (
     <Card className={classNames(className, 'p-4')} {...rest}>
-      <Label className="mb-2">Peers connected:</Label>
-      <Pre className="PeersState--pre">{peersState}</Pre>
+      <Label className="mb-2">Logs:</Label>
+      <Pre className="Logs--pre">{logs}</Pre>
     </Card>
   );
 }
 
-export default PeersState;
+export default Logs;

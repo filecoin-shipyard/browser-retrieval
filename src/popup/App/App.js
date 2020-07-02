@@ -1,7 +1,6 @@
 import React from 'react';
 import useOptions from 'src/popup/hooks/useOptions';
 import Tabs from 'src/popup/components/Tabs';
-import './App.css';
 import Options from './Options';
 import Home from './Home';
 
@@ -23,11 +22,7 @@ function App() {
     return null;
   }
 
-  return (
-    <div className="App bg-gray-200 text-xs">
-      <Tabs tabs={tabs} />
-    </div>
-  );
+  return <Tabs tabs={tabs} />;
 }
 
 export default App;

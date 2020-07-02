@@ -7,7 +7,7 @@ import Error from 'src/popup/components/Error';
 function InputField({ className, label, name, errors, ...rest }, ref) {
   return (
     <div className={classNames(className, 'flex flex-col')}>
-      <Label className="mb-2 text-center" for={name}>
+      <Label className="mb-2" for={name}>
         {label}
       </Label>
       <Input ref={ref} name={name} {...rest} />

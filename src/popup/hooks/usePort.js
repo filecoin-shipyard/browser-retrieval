@@ -6,9 +6,12 @@ function usePort(channel) {
   const [state, setState] = useState();
 
   useEffect(() => {
-    chrome.runtime
-      .connect({ name: channel })
-      .onMessage.addListener(({ [channel]: message }) => setState(message));
+    const port = chrome.runtime.connect({ name: channel });
+    port.onMessage.addListener(setState);
+
+    return () => {
+      port.disconnect();
+    };
   }, [channel]);
 
   return state;

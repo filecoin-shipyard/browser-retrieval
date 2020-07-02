@@ -1,12 +1,17 @@
 import React from 'react';
+import classNames from 'classnames';
 import ListeningState from './ListeningState';
-import PeersState from './PeersState';
+import Peers from './Peers';
+import QueryForm from './QueryForm';
+import Logs from './Logs';
 
-function Home() {
+function Home({ className, ...rest }) {
   return (
-    <div className="p-4">
+    <div className={classNames(className, 'p-4')} {...rest}>
       <ListeningState className="mb-4" />
-      <PeersState />
+      <Peers className="mb-4" />
+      <QueryForm className="mb-4" />
+      <Logs />
     </div>
   );
 }

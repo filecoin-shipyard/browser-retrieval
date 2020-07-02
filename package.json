@@ -13,6 +13,7 @@
   "devDependencies": {
     "@babel/cli": "^7.10.4",
     "autoprefixer": "^9.8.4",
+    "it-pipe": "^1.1.0",
     "libp2p": "^0.28.3",
     "libp2p-gossipsub": "^0.4.5",
     "libp2p-mplex": "^0.9.5",
