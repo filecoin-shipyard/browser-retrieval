@@ -6,6 +6,8 @@ import Mplex from 'libp2p-mplex';
 import { NOISE } from 'libp2p-noise';
 import Secio from 'libp2p-secio';
 import Gossipsub from 'libp2p-gossipsub';
+import channels from 'src/shared/channels';
+import ports from './ports';
 // import multiaddr from 'multiaddr';
 // import pipe from 'it-pipe'
 // import { Math, clearInterval } from 'ipfs-utils/src/globalthis'
@@ -63,14 +65,10 @@ async function run(options) {
   // // Start listening
   // //
 
+  ports.postMessage(channels.listening, 'Not listening');
   await libp2p.start();
-  console.log('Listening on:');
-  var selfNodeMultiAddrStrs = [];
-  libp2p.multiaddrs.forEach(ma => {
-    var multiAddrStr = ma.toString() + '/p2p/' + peerId.toB58String();
-    selfNodeMultiAddrStrs.push(multiAddrStr);
-    console.log(multiAddrStr);
-  });
+  const multiaddrStrs = libp2p.multiaddrs.map(ma => ma.toString() + '/p2p/' + peerId.toB58String());
+  ports.postMessage(channels.listening, multiaddrStrs.join('\n'));
 
   // //
   // // Dial another peer if a multiaddr was specified
@@ -110,7 +108,7 @@ async function run(options) {
   //         console.log(chalk.redBright('gossip> ') + 'I have localCid[cid]=' + localCid['cidStr']);
   //         // publish an 'available' message
   //         var otherFields = new Object();
-  //         otherFields['multiAddrs'] = selfNodeMultiAddrStrs;
+  //         otherFields['multiAddrs'] = multiaddrStrs;
   //         otherFields['pricePerByte'] = localCid['pricePerByte'];
   //         // TODO
   //         // otherFields['Size']

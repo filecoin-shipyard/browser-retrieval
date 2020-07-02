@@ -6,8 +6,10 @@ import PriceTable from './PriceTable';
 function Options() {
   return (
     <div className="p-4">
-      <RendezvousForm className="mb-4" />
-      <PriceForm className="mb-4" />
+      <div className="flex mb-4">
+        <RendezvousForm className="flex-grow mr-4" />
+        <PriceForm className="flex-grow" />
+      </div>
       <PriceTable />
     </div>
   );

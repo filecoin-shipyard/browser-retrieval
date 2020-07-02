@@ -1,13 +1,14 @@
 import React from 'react';
 import useOptions from 'src/popup/hooks/useOptions';
 import Tabs from 'src/popup/components/Tabs';
-import Options from './Options';
 import './App.css';
+import Options from './Options';
+import Home from './Home';
 
 const tabs = [
   {
     label: 'Home',
-    component: 'div',
+    component: Home,
   },
   {
     label: 'Options',

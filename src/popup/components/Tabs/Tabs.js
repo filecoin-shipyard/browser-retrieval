@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import classNames from 'classnames';
 
-function Tabs({ className, tabs, ...rest }) {
+function Tabs({ tabs, ...rest }) {
   const [currentTab, setCurrentTab] = useState(tabs[0]);
   const Component = currentTab.component;
 
   return (
-    <div className={classNames(className)} {...rest}>
+    <div {...rest}>
       <ul className="flex border-b border-gray-400 bg-white text-sm font-bold">
         <li className="flex-grow self-center px-4 text-blue-500">Filecoin Retrieval</li>
         {tabs.map(tab => {

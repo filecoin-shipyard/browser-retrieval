@@ -44,7 +44,9 @@ function PriceTable(props) {
             })
             .map(([cid, price]) => (
               <TableRow>
-                <TableCell large>{cid}</TableCell>
+                <TableCell className="font-mono" large>
+                  {cid}
+                </TableCell>
                 <TableCell number>{formatPrice(price)}</TableCell>
                 <TableCell buttons>
                   {cid !== '*' && <TrashButton onClick={() => removePrice(cid)} />}
