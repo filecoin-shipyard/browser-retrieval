@@ -1,7 +1,8 @@
 /* global chrome */
 
 const defaultValues = {
-  port: 1234,
+  rendezvousIp: '127.0.0.1',
+  rendezvousPort: '9090',
   pricePerByte: { '*': 0.0000000001 },
 };
 

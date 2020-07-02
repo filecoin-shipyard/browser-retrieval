@@ -6,17 +6,12 @@ import Form from 'src/popup/components/Form';
 import InputField from 'src/popup/components/InputField';
 import Button from 'src/popup/components/Button';
 
-function PriceForm(props) {
+function RendezvousForm(props) {
   const { handleSubmit, register, errors } = useForm();
   const [options, setOptions] = useOptions();
 
-  function onSubmit({ cid, price }) {
-    setOptions({
-      pricePerByte: {
-        ...options.pricePerByte,
-        [cid]: parseFloat(price),
-      },
-    });
+  function onSubmit(data, ...args) {
+    setOptions(data);
   }
 
   return (
@@ -26,29 +21,26 @@ function PriceForm(props) {
           <InputField
             ref={register({ required: 'Required' })}
             className="flex-1 mr-4"
-            label="CID"
-            name="cid"
+            label="Rendezvous IP"
+            name="rendezvousIp"
             errors={errors}
-            defaultValue="*"
+            defaultValue={options.rendezvousIp}
           />
           <InputField
             ref={register({ required: 'Required' })}
             className="flex-1"
-            label="Price/byte"
-            name="price"
+            label="Rendezvous port"
+            name="rendezvousPort"
             errors={errors}
-            type="number"
-            min="0"
-            step="any"
-            defaultValue={options.pricePerByte['*'].toFixed(10)}
+            defaultValue={options.rendezvousPort}
           />
         </div>
         <Button className="self-end" type="submit">
-          Set
+          Save
         </Button>
       </Form>
     </Card>
   );
 }
 
-export default PriceForm;
+export default RendezvousForm;

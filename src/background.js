@@ -1,3 +1,4 @@
 import getOptions from './shared/getOptions.js';
+import run from './background/run.js';
 
-getOptions().then(console.warn);
+getOptions().then(run);

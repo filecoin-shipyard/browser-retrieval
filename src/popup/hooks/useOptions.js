@@ -7,7 +7,6 @@ const OptionsContext = React.createContext();
 
 export function OptionsProvider(props) {
   const [options, setOptions] = useState();
-  console.log(options);
 
   useEffect(() => {
     getOptions().then(setOptions);
@@ -15,7 +14,7 @@ export function OptionsProvider(props) {
 
   function set(data) {
     chrome.storage.local.set(data);
-    setOptions(data);
+    setOptions({ ...options, ...data });
   }
 
   return <OptionsContext.Provider value={[options, set]} {...props} />;
