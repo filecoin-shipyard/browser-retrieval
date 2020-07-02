@@ -9,14 +9,20 @@ const ports = {
       const channel = port.name;
 
       if (!portsByChannel[channel]) {
-        portsByChannel[channel] = [];
+        portsByChannel[channel] = new Set();
       }
 
-      portsByChannel[channel].push(port);
+      portsByChannel[channel].add(port);
 
       if (lastMessages[channel]) {
         port.postMessage(lastMessages);
       }
+    });
+
+    chrome.runtime.onConnect.addListener(port => {
+      const channel = port.name;
+
+      portsByChannel[channel].delete(port);
     });
   },
 

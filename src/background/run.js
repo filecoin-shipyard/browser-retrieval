@@ -31,17 +31,18 @@ async function run(options) {
     },
   });
 
-  // //
-  // // Updated by connect/disconnect notifiers
-  // //
-  // var connectedPeers = new Set();
-  // hookPeerConnectDisconnectEvents(connectedPeers);
-
   //
   // Log a message when we receive a connection
   //
+  const peerIds = new Set();
+  postPeers(peerIds);
   libp2p.connectionManager.on('peer:connect', connection => {
-    console.log('Now connected to peer:', connection.remotePeer.toB58String());
+    peerIds.add(connection.remotePeer.toB58String());
+    postPeers(peerIds);
+  });
+  libp2p.connectionManager.on('peer:disconnect', connection => {
+    peerIds.delete(connection.remotePeer.toB58String());
+    postPeers(peerIds);
   });
 
   // //
@@ -61,14 +62,14 @@ async function run(options) {
   //   }
   // }
   // libp2p.handle(strProtocolName, filRetrieveProtocolHandler);
-  // //
-  // // Start listening
-  // //
 
-  ports.postMessage(channels.listening, 'Not listening');
+  //
+  // Start listening
+  //
+  postListeningState();
   await libp2p.start();
   const multiaddrStrs = libp2p.multiaddrs.map(ma => ma.toString() + '/p2p/' + peerId.toB58String());
-  ports.postMessage(channels.listening, multiaddrStrs.join('\n'));
+  postListeningState(multiaddrStrs);
 
   // //
   // // Dial another peer if a multiaddr was specified
@@ -217,47 +218,17 @@ async function run(options) {
   //     libp2p.pubsub.publish(strTopic, jsonCidRequest);
   //   }, 1000);
   // }
-  // // Hook connect and disconnect events from connection manager
-  // // to keep track of connected peers (just for debug output)
-  // function hookPeerConnectDisconnectEvents(connectedPeers) {
-  //   libp2p.connectionManager.on('peer:connect', connection => {
-  //     var remotePeerBase85Id = connection.remotePeer.toB58String();
-  //     if (!connectedPeers.has(remotePeerBase85Id)) {
-  //       connectedPeers.add(remotePeerBase85Id);
-  //       console.log(
-  //         chalk.green(
-  //           'Howdy! ' + '|' + ` ${remotePeerBase85Id} | ` + ` ${connectedPeers.size} connected`,
-  //         ),
-  //       );
-  //       listPeers('^^^^');
-  //     }
-  //   });
-  //   libp2p.connectionManager.on('peer:disconnect', connection => {
-  //     var remotePeerBase85Id = connection.remotePeer.toB58String();
-  //     if (connectedPeers.delete(remotePeerBase85Id)) {
-  //       console.log(
-  //         chalk.blueBright(
-  //           'Byebye!' + ` | ${remotePeerBase85Id}` + ' | ' + `${connectedPeers.size} connected`,
-  //         ),
-  //       );
-  //       listPeers('^^^^');
-  //     }
-  //   });
-  // }
-  // function listPeers(strLabel) {
-  //   const peersInPeerStore = libp2p.peerStore.peers.size;
-  //   console.log('[' + strLabel + '] Peers in Peerstore:  ' + peersInPeerStore.toString());
-  //   libp2p.peerStore.peers.forEach(peer => {
-  //     console.log('[' + strLabel + '] Peerbook:            ' + peer.id.toB58String());
-  //     if (libp2p.peerStore.protoBook.data.size != 0) {
-  //       libp2p.peerStore.protoBook.data.forEach(peerSet => {
-  //         peerSet.forEach(p => {
-  //           console.log('[' + strLabel + '] ' + p);
-  //         });
-  //       });
-  //     }
-  //   });
-  // }
+}
+
+function postPeers(peerIds) {
+  ports.postMessage(
+    channels.peers,
+    peerIds.length ? peerIds.join('\n') : 'Not connected to any peer',
+  );
+}
+
+function postListeningState(multiaddrStrs) {
+  ports.postMessage(channels.listening, multiaddrStrs ? multiaddrStrs.join('\n') : 'Not listening');
 }
 
 export default run;
