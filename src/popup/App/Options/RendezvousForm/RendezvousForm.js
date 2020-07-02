@@ -10,7 +10,7 @@ function RendezvousForm(props) {
   const { handleSubmit, register, errors } = useForm();
   const [options, setOptions] = useOptions();
 
-  function onSubmit(data, ...args) {
+  function onSubmit(data) {
     setOptions(data);
   }
 

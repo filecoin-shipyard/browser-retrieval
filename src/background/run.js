@@ -15,6 +15,8 @@ import ports from './ports';
 
 async function run(options) {
   const { rendezvousIp, rendezvousPort } = options;
+  const rendezvousProtocol = /^\d+\.\d+\.\d+\.\d+$/.test(rendezvousIp) ? 'ip4' : 'dns';
+  const rendezvousWsProtocol = `${rendezvousPort}` === '443' ? 'wss' : 'ws';
 
   const peerId = await PeerId.create();
 
@@ -27,7 +29,9 @@ async function run(options) {
       pubsub: Gossipsub,
     },
     addresses: {
-      listen: [`/ip4/${rendezvousIp}/tcp/${rendezvousPort}/ws/p2p-webrtc-star`],
+      listen: [
+        `/${rendezvousProtocol}/${rendezvousIp}/tcp/${rendezvousPort}/${rendezvousWsProtocol}/p2p-webrtc-star`,
+      ],
     },
   });
 

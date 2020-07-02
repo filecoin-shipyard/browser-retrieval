@@ -12,14 +12,6 @@ yarn
 yarn build
 ```
 
-## Start the rendezvous server
-
-Only needed once per network.
-
-```
-yarn bootstrap
-```
-
 ## Add it to your browser:
 
 - Chrome

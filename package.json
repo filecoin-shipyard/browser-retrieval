@@ -31,8 +31,7 @@
     "build:popup:js": "INLINE_RUNTIME_CHUNK=false react-scripts build",
     "build:popup": "yarn build:popup:css && yarn build:popup:js",
     "build:background": "webpack",
-    "build": "yarn build:popup && yarn build:background",
-    "bootstrap": "star-signal"
+    "build": "yarn build:popup && yarn build:background"
   },
   "eslintConfig": {
     "extends": "react-app"

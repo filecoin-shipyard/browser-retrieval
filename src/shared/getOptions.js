@@ -1,8 +1,8 @@
 /* global chrome */
 
 const defaultValues = {
-  rendezvousIp: '127.0.0.1',
-  rendezvousPort: '9090',
+  rendezvousIp: 'jsrc-bootstrap.goelzer.io',
+  rendezvousPort: '443',
   pricePerByte: { '*': 0.0000000001 },
 };
 
