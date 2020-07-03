@@ -3,6 +3,8 @@ import useOptions from 'src/popup/hooks/useOptions';
 import Tabs from 'src/popup/components/Tabs';
 import Options from './Options';
 import Home from './Home';
+import ConnectionIndicator from './ConnectionIndicator';
+import PeersIndicator from './PeersIndicator';
 
 const tabs = [
   {
@@ -22,7 +24,15 @@ function App() {
     return null;
   }
 
-  return <Tabs tabs={tabs} />;
+  return (
+    <Tabs tabs={tabs}>
+      <li className="flex-grow px-4 text-blue-500">Filecoin Retrieval</li>
+      <li className="flex mr-8">
+        <ConnectionIndicator />
+        <PeersIndicator />
+      </li>
+    </Tabs>
+  );
 }
 
 export default App;

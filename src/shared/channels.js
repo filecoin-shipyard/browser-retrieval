@@ -1,5 +1,5 @@
 const channels = {
-  listening: 'listening',
+  multiaddrs: 'multiaddrs',
   peers: 'peers',
   logs: 'logs',
 };

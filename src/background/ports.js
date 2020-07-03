@@ -37,15 +37,12 @@ const ports = {
     }
   },
 
-  postListeningState(multiaddrs) {
-    ports.postMessage(channels.listening, multiaddrs.join('\n'));
+  postMultiaddrs(multiaddrs) {
+    ports.postMessage(channels.multiaddrs, multiaddrs.join('\n'));
   },
 
   postPeers(connectedPeers) {
-    ports.postMessage(
-      channels.peers,
-      connectedPeers.size ? Array.from(connectedPeers).join('\n') : 'Not connected to any peer',
-    );
+    ports.postMessage(channels.peers, Array.from(connectedPeers).join('\n'));
   },
 
   postLog(message) {

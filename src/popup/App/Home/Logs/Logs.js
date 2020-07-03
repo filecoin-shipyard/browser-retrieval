@@ -13,7 +13,7 @@ function Logs({ className, ...rest }) {
   return (
     <Card className={classNames(className, 'p-4')} {...rest}>
       <Label className="mb-2">Logs:</Label>
-      <Pre className="Logs--pre">{logs}</Pre>
+      <Pre className="Logs--pre">{logs || ' '}</Pre>
     </Card>
   );
 }

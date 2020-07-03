@@ -64,7 +64,8 @@ class Peer {
       ma => ma.toString() + '/p2p/' + this.peerId.toB58String(),
     );
     this.libp2p.pubsub.subscribe(topics.filecoinRetrieval, this.handleFilecoinRetrievalTopic);
-    ports.postListeningState(this.multiaddrs);
+    ports.postMultiaddrs(this.multiaddrs);
+    ports.postPeers(this.connectedPeers);
   }
 
   handlePeerConnect = connection => {
