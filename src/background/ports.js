@@ -38,7 +38,7 @@ const ports = {
   },
 
   postListeningState(multiaddrs) {
-    ports.postMessage(channels.listening, multiaddrs ? multiaddrs.join('\n') : 'Not listening');
+    ports.postMessage(channels.listening, multiaddrs.join('\n'));
   },
 
   postPeers(connectedPeers) {

@@ -6,13 +6,13 @@ import Card from 'src/popup/components/Card';
 import Form from 'src/popup/components/Form';
 import InputField from 'src/popup/components/InputField';
 import Button from 'src/popup/components/Button';
-import filecoinRetrieval from 'src/shared/filecoinRetrieval';
+import messageTypes from 'src/shared/messageTypes';
 
 function QueryForm(props) {
   const { handleSubmit, register, errors } = useForm();
 
   function onSubmit({ cid }) {
-    chrome.runtime.sendMessage({ messageType: filecoinRetrieval.messageType.query, cid });
+    chrome.runtime.sendMessage({ messageType: messageTypes.query, cid });
   }
 
   return (
