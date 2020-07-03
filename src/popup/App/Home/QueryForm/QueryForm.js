@@ -4,8 +4,10 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import Card from 'src/popup/components/Card';
 import Form from 'src/popup/components/Form';
-import InputField from 'src/popup/components/InputField';
+import Label from 'src/popup/components/Label';
+import Input from 'src/popup/components/Input';
 import Button from 'src/popup/components/Button';
+import Error from 'src/popup/components/Error';
 import messageTypes from 'src/shared/messageTypes';
 
 function QueryForm(props) {
@@ -18,16 +20,14 @@ function QueryForm(props) {
   return (
     <Card {...props}>
       <Form onSubmit={handleSubmit(onSubmit)}>
-        <div className="flex items-end">
-          <InputField
-            ref={register({ required: 'Required' })}
-            className="flex-1 mr-4"
-            label="Query CID:"
-            name="cid"
-            errors={errors}
-          />
+        <Label className="mb-2" for="cid">
+          Query CID:
+        </Label>
+        <div className="flex">
+          <Input ref={register({ required: 'Required' })} name="cid" className="flex-1 mr-4" />
           <Button type="submit">Query</Button>
         </div>
+        <Error className="mt-1" error={errors.cid} />
       </Form>
     </Card>
   );
