@@ -153,6 +153,8 @@ class Peer {
   }
 
   stop() {
+    ports.postMultiaddrs();
+    ports.postPeers();
     return this.libp2p.stop();
   }
 }

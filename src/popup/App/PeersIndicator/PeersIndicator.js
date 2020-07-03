@@ -7,10 +7,6 @@ import Badge from 'src/popup/components/Badge';
 function PeersIndicator({ className, ...rest }) {
   const peersState = usePort(channels.peers);
 
-  if (peersState === undefined) {
-    return null;
-  }
-
   return (
     <div
       className={classNames(className, 'relative mx-2')}

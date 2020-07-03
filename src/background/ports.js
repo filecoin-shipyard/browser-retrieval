@@ -38,11 +38,11 @@ const ports = {
   },
 
   postMultiaddrs(multiaddrs) {
-    ports.postMessage(channels.multiaddrs, multiaddrs.join('\n'));
+    ports.postMessage(channels.multiaddrs, multiaddrs && multiaddrs.join('\n'));
   },
 
   postPeers(connectedPeers) {
-    ports.postMessage(channels.peers, Array.from(connectedPeers).join('\n'));
+    ports.postMessage(channels.peers, connectedPeers && Array.from(connectedPeers).join('\n'));
   },
 
   postLog(message) {
