@@ -1,5 +1,4 @@
 const messageType = {
-  rendezvousChanged: 'rendezvousChanged',
   query: 'RetrievalQuery',
   queryResponse: 'RetrievalQueryResponse',
   // TODO

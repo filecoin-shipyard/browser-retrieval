@@ -1,5 +1,3 @@
-/* global chrome */
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import useOptions from 'src/popup/hooks/useOptions';
@@ -7,7 +5,6 @@ import Card from 'src/popup/components/Card';
 import Form from 'src/popup/components/Form';
 import InputField from 'src/popup/components/InputField';
 import Button from 'src/popup/components/Button';
-import messageTypes from 'src/shared/messageTypes';
 
 function RendezvousForm(props) {
   const { handleSubmit, register, errors } = useForm();
@@ -15,7 +12,6 @@ function RendezvousForm(props) {
 
   function onSubmit(data) {
     setOptions(data);
-    chrome.runtime.sendMessage({ messageType: messageTypes.rendezvousChanged });
   }
 
   return (

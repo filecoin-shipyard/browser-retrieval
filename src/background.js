@@ -9,20 +9,17 @@ ports.startListening();
 
 let peer;
 
-chrome.runtime.onMessage.addListener(async ({ messageType, cid }) => {
-  switch (messageType) {
-    case messageTypes.rendezvousChanged:
-      ports.postLog('INFO: restarting');
-      await peer.stop();
-      await createAndStartPeer();
-      break;
+chrome.runtime.onMessage.addListener(({ messageType, cid }) => {
+  if (messageType === messageTypes.query) {
+    peer.query(cid);
+  }
+});
 
-    case messageTypes.query:
-      peer.query(cid);
-      break;
-
-    default:
-      break;
+chrome.storage.onChanged.addListener(async changes => {
+  if (changes['rendezvousIp'] || changes['rendezvousPort']) {
+    ports.postLog('INFO: restarting');
+    await peer.stop();
+    await createAndStartPeer();
   }
 });
 
