@@ -13,6 +13,8 @@ let peer;
 chrome.runtime.onMessage.addListener(({ messageType, cid }) => {
   if (messageType === messageTypes.query) {
     peer.query(cid);
+  } else if (messageType === messageTypes.clearLogs) {
+    ports.clearLogs();
   }
 });
 

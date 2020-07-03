@@ -1,4 +1,5 @@
 const messageType = {
+  clearLogs: 'ClearLogs',
   query: 'RetrievalQuery',
   queryResponse: 'RetrievalQueryResponse',
   // TODO

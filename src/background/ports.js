@@ -49,6 +49,11 @@ const ports = {
     logs.push(message);
     ports.postMessage(channels.logs, logs.join('\n'));
   },
+
+  clearLogs() {
+    logs.splice(0, logs.length);
+    ports.postMessage(channels.logs, '');
+  },
 };
 
 export default ports;
