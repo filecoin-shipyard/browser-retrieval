@@ -1,45 +1,33 @@
-/* global chrome */
-
 import React, { useCallback, useState } from 'react';
 import classNames from 'classnames';
 import { useDropzone } from 'react-dropzone';
-import CID from 'cids';
-import multihash from 'multihashing-async';
-import useOptions from 'src/popup/hooks/useOptions';
+import setData from 'src/shared/setData';
 
 function Upload({ className, ...rest }) {
   const [{ readingCount, error }, setState] = useState({});
-  const [{ knownCids }] = useOptions();
   const isReading = Boolean(readingCount);
 
-  const onDrop = useCallback(
-    files => {
-      setState({ readingCount: files.length });
+  const onDrop = useCallback(files => {
+    setState({ readingCount: files.length });
 
-      files.forEach(file => {
-        const reader = new FileReader();
+    files.forEach(file => {
+      const reader = new FileReader();
 
-        reader.onerror = () => {
-          setState(previousState => ({
-            readingCount: previousState.readingCount - 1,
-            error: reader.error,
-          }));
-        };
+      reader.onerror = () => {
+        setState(previousState => ({
+          readingCount: previousState.readingCount - 1,
+          error: reader.error,
+        }));
+      };
 
-        reader.onload = async () => {
-          const buffer = multihash.Buffer.from(reader.result);
-          const hash = await multihash(buffer, 'sha2-256');
-          const cid = new CID(1, 'multiaddr', hash).toString();
-          chrome.storage.local.set({ [cid]: reader.result, knownCids: [...knownCids, cid] }, () => {
-            setState(previousState => ({ readingCount: previousState.readingCount - 1 }));
-          });
-        };
+      reader.onload = async () => {
+        await setData(reader.result);
+        setState(previousState => ({ readingCount: previousState.readingCount - 1 }));
+      };
 
-        reader.readAsBinaryString(file);
-      });
-    },
-    [knownCids],
-  );
+      reader.readAsBinaryString(file);
+    });
+  }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 

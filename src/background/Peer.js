@@ -6,23 +6,19 @@ import Mplex from 'libp2p-mplex';
 import { NOISE } from 'libp2p-noise';
 import Secio from 'libp2p-secio';
 import Gossipsub from 'libp2p-gossipsub';
+import pipe from 'it-pipe';
 import protocols from 'src/shared/protocols';
 import topics from 'src/shared/topics';
 import messageTypes from 'src/shared/messageTypes';
+import getOptions from 'src/shared/getOptions';
+import getData from 'src/shared/getData';
+import setData from 'src/shared/setData';
 import ports from './ports';
-import pipe from 'it-pipe';
-
-const fakeKnownCids = [
-  'bafkki48dk2001mcdqblhp6k6k3lhk0s00saa6d3jk2lkvipqf9dd00dlck',
-  'bafkreidj7dy2i5tnckivxbrdp6ija2m6lwcc6ivuttuxexezkfwgyorx7e',
-];
-
-const fakeData =
-  '...fake data......fake data......fake data......fake data......fake data......fake data......fake data...';
 
 class Peer {
-  constructor(options) {
-    this.options = options;
+  constructor({ rendezvousIp, rendezvousPort }) {
+    this.rendezvousIp = rendezvousIp;
+    this.rendezvousPort = rendezvousPort;
     this.connectedPeers = new Set();
     this.queriedCids = new Set();
   }
@@ -33,9 +29,8 @@ class Peer {
   }
 
   async initialize() {
-    const { rendezvousIp, rendezvousPort } = this.options;
-    const rendezvousProtocol = /^\d+\.\d+\.\d+\.\d+$/.test(rendezvousIp) ? 'ip4' : 'dns';
-    const rendezvousWsProtocol = `${rendezvousPort}` === '443' ? 'wss' : 'ws';
+    const rendezvousProtocol = /^\d+\.\d+\.\d+\.\d+$/.test(this.rendezvousIp) ? 'ip4' : 'dns';
+    const rendezvousWsProtocol = `${this.rendezvousPort}` === '443' ? 'wss' : 'ws';
 
     this.peerId = await PeerId.create();
 
@@ -49,7 +44,7 @@ class Peer {
       },
       addresses: {
         listen: [
-          `/${rendezvousProtocol}/${rendezvousIp}/tcp/${rendezvousPort}/${rendezvousWsProtocol}/p2p-webrtc-star`,
+          `/${rendezvousProtocol}/${this.rendezvousIp}/tcp/${this.rendezvousPort}/${rendezvousWsProtocol}/p2p-webrtc-star`,
         ],
       },
     });
@@ -83,11 +78,11 @@ class Peer {
     try {
       await pipe(stream, async function (source) {
         for await (const message of source) {
-          ports.postLog(`INFO: received: ${String(message)}`);
+          const cid = String(message);
+          ports.postLog(`INFO: sending ${cid}`);
+          await pipe([getData(cid)], stream.sink);
         }
       });
-
-      await pipe([fakeData], stream.sink);
     } catch (error) {
       ports.postLog(`ERROR: ${error.message}`);
     }
@@ -101,7 +96,7 @@ class Peer {
 
       switch (messageObject.messageType) {
         case messageTypes.query:
-          this.handleQuery(messageObject);
+          await this.handleQuery(messageObject);
           break;
 
         case messageTypes.queryResponse:
@@ -116,9 +111,11 @@ class Peer {
     }
   };
 
-  handleQuery({ cid }) {
-    if (fakeKnownCids.includes(cid)) {
-      ports.postLog(`INFO: someone queried a cid I have: ${cid}`);
+  async handleQuery({ cid }) {
+    const { knownCids } = await getOptions();
+
+    if (knownCids.includes(cid)) {
+      ports.postLog(`INFO: someone queried for ${cid} and I have`);
       this.publish({
         messageType: messageTypes.queryResponse,
         cid,
@@ -130,21 +127,16 @@ class Peer {
 
   async handleQueryResponse({ cid, multiaddrs: [multiaddr] }) {
     if (this.queriedCids.has(cid)) {
-      // TODO: only because all peers have the same cids
-      if (multiaddr === this.multiaddrs[0]) {
-        return;
-      }
-
       this.queriedCids.delete(cid);
-      ports.postLog(`INFO: someone has the cid I asked for: ${multiaddr}`);
+      ports.postLog(`INFO: ${multiaddr} has it`);
       const { stream } = await this.libp2p.dialProtocol(multiaddr, protocols.filecoinRetrieval);
-      ports.postLog(`INFO: dialed with protocol ${protocols.filecoinRetrieval}`);
 
-      // TODO:  implement custom protocol per https://docs.google.com/document/d/1ye0C7_kdnDCfcV8KsQCRafCDvrjRkiilqW9NlXF3M7Q/edit#
-
-      pipe(['payment voucher 1... payment voucher 2...'], stream, async function (source) {
+      // TODO: implement custom protocol per https://docs.google.com/document/d/1ye0C7_kdnDCfcV8KsQCRafCDvrjRkiilqW9NlXF3M7Q/edit#
+      // TODO: setup some kind of requestId to prevent sending the cid again (user could ask for a cid different from initial query)
+      pipe([cid], stream, async function (source) {
         for await (const data of source) {
-          ports.postLog(`INFO: received: ${data.toString()}`);
+          await setData(String(data));
+          ports.postLog(`INFO: received ${cid}`);
         }
       });
     }
@@ -156,7 +148,7 @@ class Peer {
 
   query(cid) {
     this.queriedCids.add(cid);
-    ports.postLog(`INFO: querying: ${cid}`);
+    ports.postLog(`INFO: querying for ${cid}`);
     this.publish({ messageType: messageTypes.query, cid });
   }
 

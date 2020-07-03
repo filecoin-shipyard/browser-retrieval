@@ -1,18 +1,10 @@
 /* global chrome */
 
-import { optionsKeys } from './getOptions';
-
 function onOptionsChanged(callback) {
-  function handleChanges(changes) {
-    if (optionsKeys.some(key => changes[key])) {
-      callback(changes);
-    }
-  }
-
-  chrome.storage.onChanged.addListener(handleChanges);
+  chrome.storage.onChanged.addListener(callback);
 
   return () => {
-    chrome.storage.onChanged.removeListener(handleChanges);
+    chrome.storage.onChanged.removeListener(callback);
   };
 }
 
