@@ -1,6 +1,6 @@
 /* global chrome */
 
-import React, { useContext, useState, useEffect, useCallback } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import getOptions from 'src/shared/getOptions';
 import onOptionsChanged from 'src/shared/onOptionsChanged';
 
@@ -9,18 +9,13 @@ const OptionsContext = React.createContext();
 export function OptionsProvider(props) {
   const [options, setOptions] = useState();
 
-  const handleOptionsChange = useCallback(
-    changes => {
-      console.log('options changed');
-      setOptions({ ...options, changes });
-    },
-    [options],
-  );
-
   useEffect(() => {
     getOptions().then(setOptions);
-    return onOptionsChanged(handleOptionsChange);
-  }, [handleOptionsChange]);
+  }, []);
+
+  useEffect(() => {
+    return onOptionsChanged(() => getOptions().then(setOptions));
+  }, [options]);
 
   function set(data) {
     chrome.storage.local.set(data);
