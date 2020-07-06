@@ -115,7 +115,7 @@ class Peer {
     const { knownCids } = await getOptions();
 
     if (knownCids.includes(cid)) {
-      ports.postLog(`INFO: someone queried for ${cid} and I have`);
+      ports.postLog(`INFO: someone queried for a CID I have: ${cid}`);
       this.publish({
         messageType: messageTypes.queryResponse,
         cid,
@@ -128,7 +128,7 @@ class Peer {
   async handleQueryResponse({ cid, multiaddrs: [multiaddr] }) {
     if (this.queriedCids.has(cid)) {
       this.queriedCids.delete(cid);
-      ports.postLog(`INFO: ${multiaddr} has it`);
+      ports.postLog(`INFO: this peer has the CID I asked for: ${multiaddr}`);
       const { stream } = await this.libp2p.dialProtocol(multiaddr, protocols.filecoinRetrieval);
 
       // TODO: implement custom protocol per https://docs.google.com/document/d/1ye0C7_kdnDCfcV8KsQCRafCDvrjRkiilqW9NlXF3M7Q/edit#
