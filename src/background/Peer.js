@@ -13,6 +13,7 @@ import messageTypes from 'src/shared/messageTypes';
 import getOptions from 'src/shared/getOptions';
 import getData from 'src/shared/getData';
 import setData from 'src/shared/setData';
+import formatPrice from 'src/shared/formatPrice';
 import ports from './ports';
 
 class Peer {
@@ -112,7 +113,7 @@ class Peer {
   };
 
   async handleQuery({ cid }) {
-    const { knownCids } = await getOptions();
+    const { knownCids, pricePerByte } = await getOptions();
 
     if (knownCids.includes(cid)) {
       ports.postLog(`INFO: someone queried for a CID I have: ${cid}`);
@@ -120,15 +121,17 @@ class Peer {
         messageType: messageTypes.queryResponse,
         cid,
         multiaddrs: this.multiaddrs,
-        // TODO: pricePerByte, size, total, paymentInterval, miner, minerPeerId
+        pricePerByte: pricePerByte[cid] || pricePerByte['*'],
+        // TODO: size, total, paymentInterval, miner, minerPeerId
       });
     }
   }
 
-  async handleQueryResponse({ cid, multiaddrs: [multiaddr] }) {
+  async handleQueryResponse({ cid, pricePerByte, multiaddrs: [multiaddr] }) {
     if (this.queriedCids.has(cid)) {
       this.queriedCids.delete(cid);
       ports.postLog(`INFO: this peer has the CID I asked for: ${multiaddr}`);
+      ports.postLog(`INFO: the price per bytes is: ${formatPrice(pricePerByte)}`);
       const { stream } = await this.libp2p.dialProtocol(multiaddr, protocols.filecoinRetrieval);
 
       // TODO: implement custom protocol per https://docs.google.com/document/d/1ye0C7_kdnDCfcV8KsQCRafCDvrjRkiilqW9NlXF3M7Q/edit#

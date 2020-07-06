@@ -4,10 +4,7 @@ import Card from 'src/popup/components/Card';
 import TableRow from 'src/popup/components/TableRow';
 import TableCell from 'src/popup/components/TableCell';
 import IconButton from 'src/popup/components/IconButton';
-
-function formatPrice(price) {
-  return price.toLocaleString(navigator.language, { maximumFractionDigits: 10 });
-}
+import formatPrice from 'src/shared/formatPrice';
 
 function PriceTable(props) {
   const [options, setOptions] = useOptions();
