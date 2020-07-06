@@ -12,8 +12,8 @@ function PriceForm(props) {
 
   function onSubmit({ cid, price }) {
     setOptions({
-      pricePerByte: {
-        ...options.pricePerByte,
+      pricesPerByte: {
+        ...options.pricesPerByte,
         [cid]: parseFloat(price),
       },
     });
@@ -40,7 +40,7 @@ function PriceForm(props) {
             type="number"
             min="0"
             step="any"
-            defaultValue={options.pricePerByte['*'].toFixed(10)}
+            defaultValue={options.pricesPerByte['*'].toFixed(10)}
           />
         </div>
         <Button className="self-end" type="submit">

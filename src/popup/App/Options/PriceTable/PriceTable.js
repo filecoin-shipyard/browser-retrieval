@@ -10,8 +10,8 @@ function PriceTable(props) {
   const [options, setOptions] = useOptions();
 
   function removePrice(cid) {
-    const { [cid]: price, ...pricePerByte } = options.pricePerByte;
-    setOptions({ pricePerByte });
+    const { [cid]: price, ...pricesPerByte } = options.pricesPerByte;
+    setOptions({ pricesPerByte });
   }
 
   return (
@@ -27,7 +27,7 @@ function PriceTable(props) {
           </TableRow>
         </thead>
         <tbody>
-          {Object.entries(options.pricePerByte)
+          {Object.entries(options.pricesPerByte)
             .sort(([a], [b]) => {
               if (a === '*') {
                 return -1;

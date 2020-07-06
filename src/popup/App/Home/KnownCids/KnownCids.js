@@ -1,4 +1,5 @@
 import React from 'react';
+import prettyBytes from 'pretty-bytes';
 import useOptions from 'src/popup/hooks/useOptions';
 import Card from 'src/popup/components/Card';
 import TableRow from 'src/popup/components/TableRow';
@@ -10,8 +11,9 @@ import removeData from 'src/shared/removeData';
 
 function KnownCids(props) {
   const [{ knownCids }] = useOptions();
+  const knownCidsIds = Object.keys(knownCids);
 
-  if (!knownCids.length) {
+  if (!knownCidsIds.length) {
     return null;
   }
 
@@ -33,11 +35,10 @@ function KnownCids(props) {
       <Label className="p-4">Known CIDs:</Label>
       <table>
         <tbody>
-          {knownCids.sort().map(cid => (
+          {knownCidsIds.sort().map(cid => (
             <TableRow key={cid}>
-              <TableCell className="font-mono" large>
-                {cid}
-              </TableCell>
+              <TableCell className="font-mono">{cid}</TableCell>
+              <TableCell number>{prettyBytes(knownCids[cid].size)}</TableCell>
               <TableCell buttons>
                 <div className="flex">
                   <IconButton className="mr-4" icon="download" onClick={() => downloadCid(cid)} />

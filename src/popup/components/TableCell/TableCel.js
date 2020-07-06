@@ -1,7 +1,7 @@
 import React from 'react';
 import classNames from 'classnames';
 
-function TableCell({ className, head, large, number, buttons, ...rest }) {
+function TableCell({ className, head, number, buttons, ...rest }) {
   const Component = head ? 'th' : 'td';
 
   return (
@@ -10,7 +10,6 @@ function TableCell({ className, head, large, number, buttons, ...rest }) {
         className,
         'px-3 first:pl-6 last:pr-6',
         head && 'font-normal text-darkgray uppercase',
-        large && 'truncate w-full max-w-1',
         number ? 'text-right' : 'text-left',
         buttons ? 'w-1p' : 'py-2',
       )}

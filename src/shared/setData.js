@@ -7,11 +7,18 @@ import getOptions from './getOptions';
 async function setData(data) {
   const content = data.split(',')[1];
   const buffer = multihash.Buffer.from(content, 'base64');
-  const hash = await multihash(buffer, 'sha2-256');
+  const [hash, { knownCids }] = await Promise.all([multihash(buffer, 'sha2-256'), getOptions()]);
   const cid = new CID(1, 'multiaddr', hash).toString();
-  const { knownCids } = await getOptions();
-  const newKnownCids = knownCids.includes(cid) ? knownCids : [...knownCids, cid];
-  chrome.storage.local.set({ [cid]: data, knownCids: newKnownCids });
+
+  chrome.storage.local.set({
+    [cid]: data,
+    knownCids: {
+      ...knownCids,
+      [cid]: {
+        size: content.length,
+      },
+    },
+  });
 }
 
 export default setData;

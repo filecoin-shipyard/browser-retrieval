@@ -113,25 +113,34 @@ class Peer {
   };
 
   async handleQuery({ cid }) {
-    const { knownCids, pricePerByte } = await getOptions();
+    const { knownCids, pricesPerByte } = await getOptions();
+    const cidInfo = knownCids[cid];
 
-    if (knownCids.includes(cid)) {
+    if (cidInfo) {
       ports.postLog(`INFO: someone queried for a CID I have: ${cid}`);
+      const pricePerByte = pricesPerByte[cid] || pricesPerByte['*'];
+
       this.publish({
         messageType: messageTypes.queryResponse,
         cid,
         multiaddrs: this.multiaddrs,
-        pricePerByte: pricePerByte[cid] || pricePerByte['*'],
-        // TODO: size, total, paymentInterval, miner, minerPeerId
+        size: cidInfo.size,
+        pricePerByte,
+        total: cidInfo.size * pricePerByte,
+        // TODO: paymentInterval, miner, minerPeerId
       });
     }
   }
 
-  async handleQueryResponse({ cid, pricePerByte, multiaddrs: [multiaddr] }) {
+  async handleQueryResponse({ cid, multiaddrs: [multiaddr], size, pricePerByte, total }) {
     if (this.queriedCids.has(cid)) {
       this.queriedCids.delete(cid);
       ports.postLog(`INFO: this peer has the CID I asked for: ${multiaddr}`);
-      ports.postLog(`INFO: the price per bytes is: ${formatPrice(pricePerByte)}`);
+      ports.postLog(
+        `INFO: size: ${size}, price per byte: ${formatPrice(pricePerByte)}, total: ${formatPrice(
+          total,
+        )}`,
+      );
       const { stream } = await this.libp2p.dialProtocol(multiaddr, protocols.filecoinRetrieval);
 
       // TODO: implement custom protocol per https://docs.google.com/document/d/1ye0C7_kdnDCfcV8KsQCRafCDvrjRkiilqW9NlXF3M7Q/edit#
