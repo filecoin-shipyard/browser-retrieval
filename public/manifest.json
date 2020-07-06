@@ -5,7 +5,7 @@
   "permissions": ["storage"],
   "background": {
     "page": "background.html",
-    "persistent": false
+    "persistent": true
   },
   "browser_action": {
     "default_popup": "index.html"
