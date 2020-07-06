@@ -17,12 +17,10 @@ function KnownCids(props) {
 
   async function downloadCid(cid) {
     const data = await getData(cid);
-    const blob = new Blob([data], { type: 'octet/stream' });
-    const url = URL.createObjectURL(blob);
 
     const anchor = document.createElement('a');
     anchor.style = 'display: none';
-    anchor.href = url;
+    anchor.href = data;
     anchor.download = cid;
 
     document.body.appendChild(anchor);

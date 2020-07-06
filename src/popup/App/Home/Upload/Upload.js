@@ -25,7 +25,7 @@ function Upload({ className, ...rest }) {
         setState(previousState => ({ readingCount: previousState.readingCount - 1 }));
       };
 
-      reader.readAsBinaryString(file);
+      reader.readAsDataURL(file);
     });
   }, []);
 

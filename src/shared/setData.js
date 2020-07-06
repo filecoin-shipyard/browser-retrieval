@@ -5,7 +5,8 @@ import multihash from 'multihashing-async';
 import getOptions from './getOptions';
 
 async function setData(data) {
-  const buffer = multihash.Buffer.from(data);
+  const content = data.split(',')[1];
+  const buffer = multihash.Buffer.from(content, 'base64');
   const hash = await multihash(buffer, 'sha2-256');
   const cid = new CID(1, 'multiaddr', hash).toString();
   const { knownCids } = await getOptions();
