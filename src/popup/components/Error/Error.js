@@ -7,7 +7,7 @@ function Error({ className, error, ...rest }) {
   }
 
   return (
-    <div className={classNames(className, 'text-red-500 text-xs italic')} {...rest}>
+    <div className={classNames(className, 'text-red text-xs italic')} {...rest}>
       {error.message}
     </div>
   );

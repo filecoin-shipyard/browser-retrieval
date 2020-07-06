@@ -6,7 +6,7 @@ function Button({ className, ...rest }) {
     <button
       className={classNames(
         className,
-        'bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded',
+        'h-10 rounded bg-brand px-6 text-white font-bold hover:bg-darkbrand transition-all duration-200',
       )}
       type="button"
       {...rest}

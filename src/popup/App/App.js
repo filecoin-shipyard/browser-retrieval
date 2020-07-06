@@ -25,8 +25,8 @@ function App() {
   }
 
   return (
-    <Tabs tabs={tabs}>
-      <li className="flex-grow px-4 text-blue-500">Filecoin Retrieval</li>
+    <Tabs className="text-xs text-black" tabs={tabs}>
+      <li className="flex-1 px-4">Filecoin Retrieval</li>
       <li className="flex mr-8">
         <ConnectionIndicator />
         <PeersIndicator />

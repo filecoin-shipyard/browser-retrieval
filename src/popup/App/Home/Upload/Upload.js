@@ -33,14 +33,14 @@ function Upload({ className, ...rest }) {
 
   function getClassNames() {
     if (isDragActive) {
-      return 'border-blue-700 bg-blue-100 text-blue-700';
+      return 'border-brand text-brand';
     }
 
     if (isReading || !error) {
-      return 'border-gray-500 bg-gray-100 text-gray-500 hover:border-blue-700 hover:bg-blue-100 hover:text-blue-700 cursor-pointer';
+      return 'border-darkgray text-darkgray hover:border-brand hover:text-brand cursor-pointer';
     }
 
-    return 'border-red-700 bg-red-100 text-red-700';
+    return 'border-red text-red';
   }
 
   function renderText() {
@@ -59,7 +59,7 @@ function Upload({ className, ...rest }) {
     <div
       className={classNames(
         className,
-        'flex items-center justify-center h-20 border-dashed border-2 rounded font-bold focus:outline-none',
+        'flex items-center justify-center h-20 border-dashed border-2 rounded font-bold focus:outline-none transition-all duration-200',
         getClassNames(),
       )}
       {...getRootProps()}

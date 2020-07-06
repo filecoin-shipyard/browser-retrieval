@@ -26,8 +26,8 @@ function IconButton({ className, icon, danger, ...rest }) {
     <div
       className={classNames(
         className,
-        'fill-current cursor-pointer',
-        danger ? 'text-red-500' : 'text-blue-500',
+        'fill-current cursor-pointer transition-all duration-200',
+        danger ? 'text-red hover:text-darkred' : 'text-brand hover:text-darkbrand',
       )}
       {...rest}
     >

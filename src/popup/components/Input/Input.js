@@ -7,7 +7,7 @@ function Input({ className, ...rest }, ref) {
       ref={ref}
       className={classNames(
         className,
-        'appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline',
+        'appearance-none border border-border rounded w-full h-10 px-3 text-black leading-tight shadow focus:outline-none focus:border-brand focus:border-2 transition-all duration-200',
       )}
       {...rest}
     />

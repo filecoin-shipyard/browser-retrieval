@@ -9,7 +9,7 @@ function TableCell({ className, head, large, number, buttons, ...rest }) {
       className={classNames(
         className,
         'px-3 first:pl-6 last:pr-6',
-        head && 'font-normal text-gray-500 uppercase',
+        head && 'font-normal text-darkgray uppercase',
         large && 'truncate w-full max-w-1',
         number ? 'text-right' : 'text-left',
         buttons ? 'w-1p' : 'py-2',
