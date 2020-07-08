@@ -38,7 +38,7 @@ const ports = {
   },
 
   postMultiaddrs(multiaddrs) {
-    ports.postMessage(channels.multiaddrs, multiaddrs && multiaddrs.join('\n'));
+    ports.postMessage(channels.multiaddrs, multiaddrs);
   },
 
   postPins(pins) {
@@ -46,7 +46,7 @@ const ports = {
   },
 
   postPeers(connectedPeers) {
-    ports.postMessage(channels.peers, connectedPeers && connectedPeers.join('\n'));
+    ports.postMessage(channels.peers, connectedPeers);
   },
 
   postProgress(progress) {
@@ -55,12 +55,12 @@ const ports = {
 
   postLog(message) {
     logs.push(message);
-    ports.postMessage(channels.logs, logs.join('\n'));
+    ports.postMessage(channels.logs, logs);
   },
 
   clearLogs() {
     logs.splice(0, logs.length);
-    ports.postMessage(channels.logs, '');
+    ports.postMessage(channels.logs, logs);
   },
 };
 

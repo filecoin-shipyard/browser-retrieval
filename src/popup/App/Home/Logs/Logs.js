@@ -24,7 +24,7 @@ function Logs({ className, ...rest }) {
         <Label className="flex-1 mb-2">Logs:</Label>
         <IconButton icon="trash" onClick={sendClearLogsMessage} />
       </div>
-      <Pre className="Logs--pre">{logs || ' '}</Pre>
+      <Pre className="Logs--pre">{logs ? logs.join('\n') : ' '}</Pre>
     </Card>
   );
 }

@@ -9,7 +9,11 @@ function ConnectionIndicator({ className, ...rest }) {
   return (
     <div
       className={classNames(className, 'mx-2')}
-      title={multiaddrs ? `Listening on:\n${multiaddrs}` : 'Trying to connect to rendezvous server'}
+      title={
+        multiaddrs
+          ? `Listening on:\n${multiaddrs.join('\n')}`
+          : 'Trying to connect to rendezvous server'
+      }
     >
       <svg
         className="fill-current"
