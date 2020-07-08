@@ -41,8 +41,16 @@ const ports = {
     ports.postMessage(channels.multiaddrs, multiaddrs && multiaddrs.join('\n'));
   },
 
+  postPins(pins) {
+    ports.postMessage(channels.pins, pins);
+  },
+
   postPeers(connectedPeers) {
-    ports.postMessage(channels.peers, connectedPeers && Array.from(connectedPeers).join('\n'));
+    ports.postMessage(channels.peers, connectedPeers && connectedPeers.join('\n'));
+  },
+
+  postProgress(progress) {
+    ports.postMessage(channels.progress, progress);
   },
 
   postLog(message) {

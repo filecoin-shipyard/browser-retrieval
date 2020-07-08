@@ -1,4 +1,7 @@
-const messageType = {
+const messageTypes = {
+  uploadFiles: 'UploadFiles',
+  downloadFile: 'DownloadFile',
+  deleteFile: 'DeleteFile',
   clearLogs: 'ClearLogs',
   query: 'RetrievalQuery',
   queryResponse: 'RetrievalQueryResponse',
@@ -7,4 +10,4 @@ const messageType = {
   // dealResponse: 'RetrievalDealResponse',
 };
 
-export default messageType;
+export default messageTypes;

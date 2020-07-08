@@ -10,11 +10,30 @@ ports.startListening();
 
 let peer;
 
-chrome.runtime.onMessage.addListener(({ messageType, cid }) => {
-  if (messageType === messageTypes.query) {
-    peer.query(cid);
-  } else if (messageType === messageTypes.clearLogs) {
-    ports.clearLogs();
+chrome.runtime.onMessage.addListener(({ messageType, cid }, sender, sendResponse) => {
+  switch (messageType) {
+    case messageTypes.uploadFiles:
+      peer.uploadFiles(window.filesToUpload);
+      break;
+
+    case messageTypes.downloadFile:
+      peer.downloadFile(cid);
+      break;
+
+    case messageTypes.deleteFile:
+      peer.deleteFile(cid);
+      break;
+
+    case messageTypes.query:
+      peer.query(cid);
+      break;
+
+    case messageTypes.clearLogs:
+      ports.clearLogs();
+      break;
+
+    default:
+      break;
   }
 });
 
@@ -22,14 +41,16 @@ onOptionsChanged(async changes => {
   if (changes['rendezvousIp'] || changes['rendezvousPort']) {
     ports.postLog('INFO: restarting');
     await peer.stop();
-    await createAndStartPeer();
+    await startPeer();
   }
 });
 
-async function createAndStartPeer() {
+async function startPeer() {
   const options = await getOptions();
-  peer = new Peer(options);
-  peer.start();
+  peer = await Peer.create(options);
 }
 
-createAndStartPeer().catch(error => ports.postLog(error.message));
+startPeer().catch(error => {
+  console.error(error);
+  ports.postLog(`ERROR: ${error.message}`);
+});

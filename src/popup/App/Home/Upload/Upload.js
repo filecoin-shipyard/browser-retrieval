@@ -1,72 +1,42 @@
-import React, { useCallback, useState } from 'react';
+/* global chrome */
+
+import React, { useCallback } from 'react';
 import classNames from 'classnames';
 import { useDropzone } from 'react-dropzone';
-import setData from 'src/shared/setData';
+import usePort from 'src/popup/hooks/usePort';
+import messageTypes from 'src/shared/messageTypes';
+import channels from 'src/shared/channels';
 
 function Upload({ className, ...rest }) {
-  const [{ readingCount, error }, setState] = useState({});
-  const isReading = Boolean(readingCount);
-
+  const progress = usePort(channels.progress) || 0;
   const onDrop = useCallback(files => {
-    setState({ readingCount: files.length });
+    // workaround because files are not JSON-ifiable
+    const backgroundWindow = chrome.extension.getBackgroundPage();
+    backgroundWindow.filesToUpload = files;
 
-    files.forEach(file => {
-      const reader = new FileReader();
-
-      reader.onerror = () => {
-        setState(previousState => ({
-          readingCount: previousState.readingCount - 1,
-          error: reader.error,
-        }));
-      };
-
-      reader.onload = async () => {
-        await setData(reader.result);
-        setState(previousState => ({ readingCount: previousState.readingCount - 1 }));
-      };
-
-      reader.readAsDataURL(file);
-    });
+    chrome.runtime.sendMessage({ messageType: messageTypes.uploadFiles });
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
-
-  function getClassNames() {
-    if (isDragActive) {
-      return 'border-brand text-brand';
-    }
-
-    if (isReading || !error) {
-      return 'border-darkgray text-darkgray hover:border-brand hover:text-brand cursor-pointer';
-    }
-
-    return 'border-red text-red';
-  }
-
-  function renderText() {
-    if (isReading) {
-      return 'Reading file...';
-    }
-
-    if (error) {
-      return error.message;
-    }
-
-    return 'Drop files or click here';
-  }
 
   return (
     <div
       className={classNames(
         className,
-        'flex items-center justify-center h-20 border-dashed border-2 rounded font-bold focus:outline-none transition-all duration-200',
-        getClassNames(),
+        'relative flex items-center justify-center h-20 border-dashed border-2 rounded font-bold focus:outline-none transition-all duration-200 overflow-hidden',
+        isDragActive
+          ? 'border-brand text-brand'
+          : 'border-darkgray text-darkgray hover:border-brand hover:text-brand cursor-pointer',
       )}
       {...getRootProps()}
       {...rest}
     >
+      <div
+        className="absolute inset-0 bg-gray"
+        style={{ transform: `translateX(${(progress - 1) * 100}%)` }}
+      />
       <input {...getInputProps()} />
-      {renderText()}
+      <span className="relative">Drop files or click here</span>
     </div>
   );
 }

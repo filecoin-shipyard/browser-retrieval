@@ -2,7 +2,7 @@
   "name": "Filecoin Retrieval",
   "version": "0.0.1",
   "description": "A p2p network of Filecoin content retrievers",
-  "permissions": ["storage"],
+  "permissions": ["storage", "downloads"],
   "background": {
     "page": "background.html",
     "persistent": true
