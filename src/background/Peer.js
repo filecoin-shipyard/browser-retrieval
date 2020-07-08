@@ -26,7 +26,8 @@ class Peer {
     const rendezvousAddress = `/${rendezvousProtocol}/${rendezvousIp}/tcp/${rendezvousPort}/${rendezvousWsProtocol}/p2p-webrtc-star`;
 
     this.ipfs = await IPFS.create({
-      repo: 'ipfs-filecoinretrieval',
+      // add random part to workaround this issue: https://github.com/ipfs/js-ipfs/issues/3157
+      repo: 'ipfs-filecoinretrieval-' + Math.random(),
       config: {
         Addresses: {
           Swarm: [rendezvousAddress],
