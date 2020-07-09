@@ -47,7 +47,7 @@ class Peer {
   async getInfo() {
     const info = await this.ipfs.id();
     this.id = info.id.toString();
-    this.multiaddrs = info.addresses;
+    this.multiaddrs = info.addresses.map(address => address.toString());
   }
 
   async subscribe() {
