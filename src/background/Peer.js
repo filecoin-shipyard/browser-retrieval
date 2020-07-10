@@ -39,8 +39,8 @@ class Peer {
 
     await this.getInfo();
     await this.subscribe();
-    await this.postMultiaddrs();
-    await this.postPins();
+    this.postMultiaddrs();
+    this.postPins();
     this.postPeersInterval = setInterval(this.postPeers, 3000);
   }
 
@@ -194,22 +194,12 @@ class Peer {
     }
   }
 
-  async postMultiaddrs() {
-    try {
-      ports.postMultiaddrs(this.multiaddrs);
-    } catch (error) {
-      console.error(error);
-      ports.postLog(`ERROR: post info failed: ${error.message}`);
-    }
+  postMultiaddrs() {
+    ports.postMultiaddrs(this.multiaddrs);
   }
 
-  async postPins() {
-    try {
-      ports.postPins(Array.from(this.pins));
-    } catch (error) {
-      console.error(error);
-      ports.postLog(`ERROR: post pins failed: ${error.message}`);
-    }
+  postPins() {
+    ports.postPins(Array.from(this.pins));
   }
 
   postPeers = async () => {

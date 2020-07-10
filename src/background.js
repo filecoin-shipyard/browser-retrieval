@@ -40,17 +40,26 @@ chrome.runtime.onMessage.addListener(({ messageType, cid }, sender, sendResponse
 onOptionsChanged(async changes => {
   if (changes['rendezvousIp'] || changes['rendezvousPort']) {
     ports.postLog('INFO: restarting');
-    await peer.stop();
+
+    if (peer) {
+      try {
+        await peer.stop();
+      } catch (error) {
+        ports.postLog(`ERROR: stop peer failed: ${error.message}`);
+      }
+    }
+
     await startPeer();
   }
 });
 
 async function startPeer() {
-  const options = await getOptions();
-  peer = await Peer.create(options);
+  try {
+    const options = await getOptions();
+    peer = await Peer.create(options);
+  } catch (error) {
+    ports.postLog(`ERROR: start peer failed: ${error.message}`);
+  }
 }
 
-startPeer().catch(error => {
-  console.error(error);
-  ports.postLog(`ERROR: ${error.message}`);
-});
+startPeer();
