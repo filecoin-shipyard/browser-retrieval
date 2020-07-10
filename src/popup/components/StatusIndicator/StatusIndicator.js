@@ -15,7 +15,7 @@ function StatusIndicator({ className, icon, badge, label, description, ...rest }
     <div className={classNames(className, 'relative mx-2')} {...rest}>
       <button type="button" className="focus:outline-none" onClick={toggleIsOpen}>
         {icon}
-        {badge && <Badge>{badge}</Badge>}
+        {badge !== undefined && <Badge>{badge}</Badge>}
       </button>
       {isOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-10" onClick={toggleIsOpen}>
