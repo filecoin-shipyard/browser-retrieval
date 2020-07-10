@@ -5,6 +5,8 @@
   "private": true,
   "dependencies": {
     "@babel/cli": "^7.10.4",
+    "@babel/plugin-transform-runtime": "^7.10.4",
+    "@babel/runtime": "^7.10.4",
     "autoprefixer": "^9.8.4",
     "classnames": "^2.2.6",
     "ipfs": "^0.47.0",
