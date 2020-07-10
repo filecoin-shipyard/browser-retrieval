@@ -4,28 +4,28 @@ import getOptions from './shared/getOptions.js';
 import onOptionsChanged from './shared/onOptionsChanged.js';
 import messageTypes from './shared/messageTypes.js';
 import ports from './background/ports.js';
-import Peer from './background/Peer.js';
+import Node from './background/Node.js';
 
 ports.startListening();
 
-let peer;
+let node;
 
 chrome.runtime.onMessage.addListener(({ messageType, cid }, sender, sendResponse) => {
   switch (messageType) {
     case messageTypes.uploadFiles:
-      peer.uploadFiles(window.filesToUpload);
+      node.uploadFiles(window.filesToUpload);
       break;
 
     case messageTypes.downloadFile:
-      peer.downloadFile(cid);
+      node.downloadFile(cid);
       break;
 
     case messageTypes.deleteFile:
-      peer.deleteFile(cid);
+      node.deleteFile(cid);
       break;
 
     case messageTypes.query:
-      peer.query(cid);
+      node.query(cid);
       break;
 
     case messageTypes.clearLogs:
@@ -41,25 +41,25 @@ onOptionsChanged(async changes => {
   if (changes['rendezvousIp'] || changes['rendezvousPort']) {
     ports.postLog('INFO: restarting');
 
-    if (peer) {
+    if (node) {
       try {
-        await peer.stop();
+        await node.stop();
       } catch (error) {
-        ports.postLog(`ERROR: stop peer failed: ${error.message}`);
+        ports.postLog(`ERROR: stop node failed: ${error.message}`);
       }
     }
 
-    await startPeer();
+    await startNode();
   }
 });
 
-async function startPeer() {
+async function startNode() {
   try {
     const options = await getOptions();
-    peer = await Peer.create(options);
+    node = await Node.create(options);
   } catch (error) {
-    ports.postLog(`ERROR: start peer failed: ${error.message}`);
+    ports.postLog(`ERROR: start node failed: ${error.message}`);
   }
 }
 
-startPeer();
+startNode();

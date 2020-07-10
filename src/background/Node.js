@@ -10,11 +10,11 @@ import formatPrice from 'src/shared/formatPrice';
 import ports from './ports';
 import streamFromFile from './streamFromFile';
 
-class Peer {
+class Node {
   static async create(options) {
-    const peer = new Peer();
-    await peer.initialize(options);
-    return peer;
+    const node = new Node();
+    await node.initialize(options);
+    return node;
   }
 
   pins = new Set();
@@ -242,4 +242,4 @@ class Peer {
   }
 }
 
-export default Peer;
+export default Node;
