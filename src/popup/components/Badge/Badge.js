@@ -7,7 +7,7 @@ function Badge({ className, ...rest }) {
     <div
       className={classNames(
         className,
-        'Badge absolute flex items-center justify-center px-1 h-3 rounded bg-brand text-white',
+        'Badge absolute flex items-center justify-center px-1 h-3 leading-3 rounded bg-brand text-white',
       )}
       {...rest}
     />
