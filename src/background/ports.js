@@ -2,6 +2,7 @@
 
 import channels from 'src/shared/channels';
 
+const debug = process.env.DEBUG === 'true';
 const portsByChannel = {};
 const lastMessages = {};
 const logs = [];
@@ -54,8 +55,10 @@ const ports = {
   },
 
   postLog(message) {
-    logs.push(message);
-    ports.postMessage(channels.logs, logs);
+    if (!message.startsWith('DEBUG') || debug) {
+      logs.push(message);
+      ports.postMessage(channels.logs, logs);
+    }
   },
 
   clearLogs() {

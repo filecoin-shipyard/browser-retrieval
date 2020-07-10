@@ -25,6 +25,7 @@ class Peer {
     const rendezvousWsProtocol = `${rendezvousPort}` === '443' ? 'wss' : 'ws';
     const rendezvousAddress = `/${rendezvousProtocol}/${rendezvousIp}/tcp/${rendezvousPort}/${rendezvousWsProtocol}/p2p-webrtc-star`;
 
+    ports.postLog('DEBUG: creating ipfs node');
     this.ipfs = await IPFS.create({
       // add random part to workaround this issue: https://github.com/ipfs/js-ipfs/issues/3157
       repo: 'ipfs-filecoinretrieval-' + Math.random(),
@@ -37,11 +38,14 @@ class Peer {
       },
     });
 
+    ports.postLog('DEBUG: getting node info');
     await this.getInfo();
+    ports.postLog('DEBUG: subscribing to pubsub');
     await this.subscribe();
     this.postMultiaddrs();
     this.postPins();
     this.postPeersInterval = setInterval(this.postPeers, 3000);
+    ports.postLog('DEBUG: peer created');
   }
 
   async getInfo() {
@@ -56,6 +60,7 @@ class Peer {
 
   async publish(message) {
     const string = JSON.stringify(message);
+    ports.postLog(`DEBUG: publishing message ${string}`);
     const buffer = IPFS.Buffer.from(string);
     await this.ipfs.pubsub.publish(topics.filecoinRetrieval, buffer);
   }
@@ -65,7 +70,9 @@ class Peer {
       return;
     }
 
-    const message = JSON.parse(data.toString());
+    const string = data.toString();
+    ports.postLog(`DEBUG: received message ${string}`);
+    const message = JSON.parse(string);
 
     switch (message.messageType) {
       case messageTypes.query:
@@ -143,6 +150,8 @@ class Peer {
 
   async uploadFiles(files) {
     try {
+      ports.postLog(`DEBUG: uploading ${files.length} files`);
+
       for (const file of files) {
         const size = file.size;
 
@@ -160,10 +169,12 @@ class Peer {
           ),
         );
 
-        this.pins.add(fileAdded.cid.toString());
+        await this.pins.add(fileAdded.cid.toString());
         this.postPins();
         ports.postProgress(0);
       }
+
+      ports.postLog(`DEBUG: ${files.length} files uploaded`);
     } catch (error) {
       ports.postLog(`ERROR: upload failed: ${error.message}`);
     }
@@ -171,6 +182,8 @@ class Peer {
 
   async downloadFile(cid) {
     try {
+      ports.postLog(`DEBUG: downloading ${cid}`);
+
       for await (const file of this.ipfs.get(cid)) {
         if (file.content) {
           const data = IPFS.Buffer.concat(await all(file.content));
@@ -186,6 +199,7 @@ class Peer {
 
   async deleteFile(cid) {
     try {
+      ports.postLog(`DEBUG: unpinning ${cid}`);
       await this.ipfs.pin.rm(cid);
       this.pins.delete(cid);
       this.postPins();
@@ -220,11 +234,10 @@ class Peer {
   };
 
   async stop() {
+    ports.postLog('DEBUG: stopping ipfs node');
     clearInterval(this.postPeersInterval);
-
     ports.postMultiaddrs();
     ports.postPeers();
-
     await this.ipfs.stop();
   }
 }

@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 
 module.exports = {
   mode: 'none',
@@ -20,6 +21,7 @@ module.exports = {
       },
     ],
   },
+  plugins: [new webpack.EnvironmentPlugin(['DEBUG'])],
   output: {
     filename: 'background.js',
     path: path.resolve(__dirname, 'build'),
