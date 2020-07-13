@@ -26,7 +26,7 @@
     "build:popup:css": "NODE_ENV=production postcss src/popup/styles/tailwind.css -o src/popup/styles/tailwind.generated.css",
     "build:popup:js": "INLINE_RUNTIME_CHUNK=false react-scripts build",
     "build:popup": "yarn build:popup:css && yarn build:popup:js",
-    "build:background": "webpack",
+    "build:background": "NODE_ENV=development webpack",
     "build": "yarn build:popup && yarn build:background"
   },
   "eslintConfig": {

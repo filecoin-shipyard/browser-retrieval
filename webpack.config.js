@@ -21,7 +21,12 @@ module.exports = {
       },
     ],
   },
-  plugins: [new webpack.EnvironmentPlugin(['DEBUG'])],
+  plugins: [
+    new webpack.EnvironmentPlugin({
+      NODE_ENV: 'development',
+      DEBUG: false,
+    }),
+  ],
   output: {
     filename: 'background.js',
     path: path.resolve(__dirname, 'build'),
