@@ -1,14 +1,20 @@
 /* global chrome */
 
-import IPFS from 'ipfs';
-import all from 'it-all';
-import last from 'it-last';
+import PeerId from 'peer-id';
+import Libp2p from 'libp2p';
+import Websockets from 'libp2p-websockets';
+import WebrtcStar from 'libp2p-webrtc-star';
+import Mplex from 'libp2p-mplex';
+import { NOISE } from 'libp2p-noise';
+import Secio from 'libp2p-secio';
+import Gossipsub from 'libp2p-gossipsub';
 import topics from 'src/shared/topics';
 import messageTypes from 'src/shared/messageTypes';
 import getOptions from 'src/shared/getOptions';
 import formatPrice from 'src/shared/formatPrice';
 import ports from './ports';
-import streamFromFile from './streamFromFile';
+import Datastore from './Datastore';
+import setOptions from 'src/shared/setOptions';
 
 class Node {
   static async create(options) {
@@ -17,53 +23,67 @@ class Node {
     return node;
   }
 
-  pins = new Set();
+  connectedPeers = new Set();
   queriedCids = new Set();
 
-  async initialize({ rendezvousIp, rendezvousPort }) {
+  async initialize({ rendezvousIp, rendezvousPort, wallet }) {
+    // TODO: save wallet to options
     const rendezvousProtocol = /^\d+\.\d+\.\d+\.\d+$/.test(rendezvousIp) ? 'ip4' : 'dns4';
     const rendezvousWsProtocol = `${rendezvousPort}` === '443' ? 'wss' : 'ws';
     const rendezvousAddress = `/${rendezvousProtocol}/${rendezvousIp}/tcp/${rendezvousPort}/${rendezvousWsProtocol}/p2p-webrtc-star`;
 
-    ports.postLog('DEBUG: creating ipfs node');
-    this.ipfs = await IPFS.create({
-      // add random part to workaround this issue: https://github.com/ipfs/js-ipfs/issues/3157
-      repo: 'ipfs-filecoinretrieval-' + Math.random(),
-      config: {
-        Addresses: {
-          Swarm: [rendezvousAddress],
-        },
-        // If you want to connect to the public bootstrap nodes, remove the next line
-        Bootstrap: [],
+    ports.postLog('DEBUG: creating peer id');
+    this.peerId = await PeerId.create();
+    this.id = this.peerId.toB58String();
+
+    ports.postLog('DEBUG: creating libp2p node');
+    this.node = await Libp2p.create({
+      peerId: this.peerId,
+      modules: {
+        transport: [Websockets, WebrtcStar],
+        streamMuxer: [Mplex],
+        connEncryption: [NOISE, Secio],
+        pubsub: Gossipsub,
+      },
+      addresses: {
+        listen: [rendezvousAddress],
       },
     });
 
+    ports.postLog('DEBUG: creating datastore');
+    this.datastore = new Datastore('/blocks', { prefix: 'filecoin-retrieval', version: 1 });
+    await this.datastore.open();
+
+    ports.postLog('DEBUG: starting libp2p node');
+    await this.node.start();
+
+    ports.postLog('DEBUG: adding listeners to node');
+    this.node.connectionManager.on('peer:connect', this.handlePeerConnect);
+    this.node.connectionManager.on('peer:disconnect', this.handlePeerDisconnect);
+    this.node.pubsub.subscribe(topics.filecoinRetrieval, this.handleMessage);
+
     ports.postLog('DEBUG: getting node info');
-    await this.getInfo();
-    ports.postLog('DEBUG: subscribing to pubsub');
-    await this.subscribe();
-    this.postMultiaddrs();
-    this.postPins();
-    this.postPeersInterval = setInterval(this.postPeers, 3000);
-    ports.postLog('DEBUG: peer created');
+    this.getInfo();
+
+    ports.postLog('DEBUG: node created');
   }
 
   async getInfo() {
-    const info = await this.ipfs.id();
-    this.id = info.id.toString();
-    this.multiaddrs = info.addresses.map(address => address.toString());
+    this.multiaddrs = this.node.multiaddrs.map(
+      multiaddr => `${multiaddr.toString()}/p2p/${this.id}`,
+    );
+    this.postMultiaddrs();
   }
 
-  async subscribe() {
-    await this.ipfs.pubsub.subscribe(topics.filecoinRetrieval, this.handleMessage);
-  }
+  handlePeerConnect = connection => {
+    this.connectedPeers.add(connection.remotePeer.toB58String());
+    this.postPeers();
+  };
 
-  async publish(message) {
-    const string = JSON.stringify(message);
-    ports.postLog(`DEBUG: publishing message ${string}`);
-    const buffer = IPFS.Buffer.from(string);
-    await this.ipfs.pubsub.publish(topics.filecoinRetrieval, buffer);
-  }
+  handlePeerDisconnect = connection => {
+    this.connectedPeers.delete(connection.remotePeer.toB58String());
+    this.postPeers();
+  };
 
   handleMessage = ({ from, data }) => {
     if (from === this.id) {
@@ -89,47 +109,39 @@ class Node {
   };
 
   async handleQuery({ cid }) {
-    if (this.pins.has(cid)) {
-      try {
+    try {
+      const { pricesPerByte, knownCids } = await getOptions();
+      const cidInfo = knownCids[cid];
+
+      if (cidInfo) {
         ports.postLog(`INFO: someone queried for a CID I have: ${cid}`);
-        const [{ pricesPerByte }, { size }] = await Promise.all([
-          getOptions(),
-          last(this.ipfs.ls(cid)),
-        ]);
         const pricePerByte = pricesPerByte[cid] || pricesPerByte['*'];
 
         await this.publish({
           messageType: messageTypes.queryResponse,
           cid,
+          size: cidInfo.size,
           multiaddrs: this.multiaddrs,
-          size,
-          pricePerByte,
-          total: size * pricePerByte,
-          // TODO: paymentInterval, miner, minerPeerId
+          params: {
+            pricePerByte,
+            // TODO: paymentInterval, paymentIntervalIncrease
+          },
         });
-      } catch (error) {
-        console.error(error);
-        ports.postLog(`ERROR: handle query failed: ${error.message}`);
       }
+    } catch (error) {
+      console.error(error);
+      ports.postLog(`ERROR: handle query failed: ${error.message}`);
     }
   }
 
-  async handleQueryResponse({ cid, multiaddrs: [multiaddr], size, pricePerByte, total }) {
+  async handleQueryResponse({ cid, multiaddrs: [multiaddr], size, params }) {
     if (this.queriedCids.has(cid)) {
       try {
         this.queriedCids.delete(cid);
         ports.postLog(`INFO: this peer has the CID I asked for: ${multiaddr}`);
-        ports.postLog(
-          `INFO: size: ${size}, price per byte: ${formatPrice(pricePerByte)}, total: ${formatPrice(
-            total,
-          )}`,
-        );
+        ports.postLog(`INFO: size: ${size}, price per byte: ${formatPrice(params.pricePerByte)}`);
 
         // TODO: implement custom protocol per https://docs.google.com/document/d/1ye0C7_kdnDCfcV8KsQCRafCDvrjRkiilqW9NlXF3M7Q/edit#
-        await this.ipfs.pin.add(cid);
-        this.pins.add(cid);
-        this.postPins();
-        ports.postLog(`INFO: received ${cid}`);
       } catch (error) {
         console.error(error);
         ports.postLog(`ERROR: handle query response failed: ${error.message}`);
@@ -151,31 +163,20 @@ class Node {
   async uploadFiles(files) {
     try {
       ports.postLog(`DEBUG: uploading ${files.length} files`);
+      const { knownCids } = await getOptions();
 
-      for (const file of files) {
-        const size = file.size;
-
-        const fileAdded = await last(
-          this.ipfs.add(
-            {
-              path: file.name,
-              content: streamFromFile(file),
-            },
-            {
-              pin: true,
-              wrapWithDirectory: true,
-              progress: bytesLoaded => ports.postProgress(bytesLoaded / size),
-            },
-          ),
-        );
-
-        await this.pins.add(fileAdded.cid.toString());
-        this.postPins();
-        ports.postProgress(0);
-      }
+      await Promise.all(
+        files.map(async file => {
+          const size = file.size;
+          const cid = await this.datastore.put(file);
+          knownCids[cid] = { size };
+          setOptions({ knownCids });
+        }),
+      );
 
       ports.postLog(`DEBUG: ${files.length} files uploaded`);
     } catch (error) {
+      console.error(error);
       ports.postLog(`ERROR: upload failed: ${error.message}`);
     }
   }
@@ -183,61 +184,45 @@ class Node {
   async downloadFile(cid) {
     try {
       ports.postLog(`DEBUG: downloading ${cid}`);
-
-      for await (const file of this.ipfs.get(cid)) {
-        if (file.content) {
-          const data = IPFS.Buffer.concat(await all(file.content));
-          const blob = new Blob([data], { type: 'application/octet-binary' });
-          const url = URL.createObjectURL(blob);
-          chrome.downloads.download({ url, filename: cid, saveAs: true });
-        }
-      }
+      const url = await this.datastore.get(cid);
+      chrome.downloads.download({ url, filename: cid, saveAs: true });
     } catch (error) {
+      console.error(error);
       ports.postLog(`ERROR: download failed: ${error.message}`);
     }
   }
 
   async deleteFile(cid) {
     try {
-      ports.postLog(`DEBUG: unpinning ${cid}`);
-      await this.ipfs.pin.rm(cid);
-      this.pins.delete(cid);
-      this.postPins();
+      ports.postLog(`DEBUG: deleting ${cid}`);
+      const [{ knownCids }] = await Promise.all([getOptions(), this.datastore.delete(cid)]);
+      delete knownCids[cid];
+      setOptions({ knownCids });
     } catch (error) {
+      console.error(error);
       ports.postLog(`ERROR: delete failed: ${error.message}`);
     }
+  }
+
+  async publish(message) {
+    const string = JSON.stringify(message);
+    ports.postLog(`DEBUG: publishing message ${string}`);
+    await this.node.pubsub.publish(topics.filecoinRetrieval, string);
   }
 
   postMultiaddrs() {
     ports.postMultiaddrs(this.multiaddrs);
   }
 
-  postPins() {
-    ports.postPins(Array.from(this.pins));
+  postPeers() {
+    ports.postPeers(Array.from(this.connectedPeers));
   }
-
-  postPeers = async () => {
-    try {
-      const peers = await this.ipfs.swarm.peers();
-      const peersAddr = peers
-        .reverse()
-        .filter(({ addr }) => addr)
-        .map(peer => {
-          const addr = peer.addr.toString();
-          return addr.includes('/p2p/') ? addr : `${addr}${peer.peer}`;
-        });
-      ports.postPeers(peersAddr);
-    } catch (error) {
-      console.error(error);
-      ports.postLog(`ERROR: post peer list failed: ${error.message}`);
-    }
-  };
 
   async stop() {
     ports.postLog('DEBUG: stopping ipfs node');
-    clearInterval(this.postPeersInterval);
     ports.postMultiaddrs();
     ports.postPeers();
+    await this.datastore.close();
     await this.ipfs.stop();
   }
 }

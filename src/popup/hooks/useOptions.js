@@ -1,27 +1,22 @@
-/* global chrome */
-
 import React, { useContext, useState, useEffect } from 'react';
 import getOptions from 'src/shared/getOptions';
+import setOptions from 'src/shared/setOptions';
 import onOptionsChanged from 'src/shared/onOptionsChanged';
 
 const OptionsContext = React.createContext();
 
 export function OptionsProvider(props) {
-  const [options, setOptions] = useState();
+  const [optionsState, setOptionsState] = useState();
 
   useEffect(() => {
-    getOptions().then(setOptions);
+    getOptions().then(setOptionsState);
   }, []);
 
   useEffect(() => {
-    return onOptionsChanged(() => getOptions().then(setOptions));
-  }, [options]);
+    return onOptionsChanged(() => getOptions().then(setOptionsState));
+  }, [optionsState]);
 
-  function set(data) {
-    chrome.storage.local.set(data);
-  }
-
-  return <OptionsContext.Provider value={[options, set]} {...props} />;
+  return <OptionsContext.Provider value={[optionsState, setOptions]} {...props} />;
 }
 
 export const OptionsConsumer = OptionsContext.Consumer;

@@ -42,16 +42,8 @@ const ports = {
     ports.postMessage(channels.multiaddrs, multiaddrs);
   },
 
-  postPins(pins) {
-    ports.postMessage(channels.pins, pins);
-  },
-
   postPeers(connectedPeers) {
     ports.postMessage(channels.peers, connectedPeers);
-  },
-
-  postProgress(progress) {
-    ports.postMessage(channels.progress, progress);
   },
 
   postLog(message) {

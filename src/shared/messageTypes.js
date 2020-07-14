@@ -5,9 +5,8 @@ const messageTypes = {
   clearLogs: 'ClearLogs',
   query: 'RetrievalQuery',
   queryResponse: 'RetrievalQueryResponse',
-  // TODO
-  // dealProposal: 'RetrievalDealProposal',
-  // dealResponse: 'RetrievalDealResponse',
+  dealProposal: 'RetrievalDealProposal',
+  dealResponse: 'RetrievalDealResponse',
 };
 
 export default messageTypes;

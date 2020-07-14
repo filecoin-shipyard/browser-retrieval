@@ -4,6 +4,7 @@ const defaultValues = {
   rendezvousIp: 'jsrc-bootstrap.goelzer.io',
   rendezvousPort: '443',
   pricesPerByte: { '*': 0.0000000001 },
+  knownCids: {},
 };
 
 export const optionsKeys = Object.keys(defaultValues);

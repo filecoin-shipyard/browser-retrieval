@@ -1,5 +1,5 @@
 const protocols = {
-  filecoinRetrieval: '/fil-retrieval/0.1.0',
+  filecoinRetrieval: '/fil/retrieval/0.0.1',
 };
 
 export default protocols;

@@ -45,6 +45,7 @@ onOptionsChanged(async changes => {
       try {
         await node.stop();
       } catch (error) {
+        console.error(error);
         ports.postLog(`ERROR: stop node failed: ${error.message}`);
       }
     }
@@ -58,6 +59,7 @@ async function startNode() {
     const options = await getOptions();
     node = await Node.create(options);
   } catch (error) {
+    console.error(error);
     ports.postLog(`ERROR: start node failed: ${error.message}`);
   }
 }
