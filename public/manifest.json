@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "A p2p network of Filecoin content retrievers",
   "permissions": ["storage", "downloads"],
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
   "background": {
     "page": "background.html",
     "persistent": true

@@ -1,14 +1,4 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import App from 'src/popup/App';
-import { OptionsProvider } from 'src/popup/hooks/useOptions';
-import 'src/popup/styles/tailwind.generated.css';
-
-ReactDOM.render(
-  <React.StrictMode>
-    <OptionsProvider>
-      <App />
-    </OptionsProvider>
-  </React.StrictMode>,
-  document.getElementById('root'),
-);
+// A dependency graph that contains any wasm must all be imported
+// asynchronously. This `index.js` file does the single async import, so
+// that no one else needs to worry about it again.
+import('./popup.js').catch(e => console.error('Error importing `popup.js`:', e));

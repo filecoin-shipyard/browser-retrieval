@@ -2,6 +2,7 @@ import React from 'react';
 import classNames from 'classnames';
 import RendezvousForm from './RendezvousForm';
 import PriceForm from './PriceForm';
+import LotusForm from './LotusForm';
 import PriceTable from './PriceTable';
 
 function Options({ className, ...rest }) {
@@ -11,6 +12,7 @@ function Options({ className, ...rest }) {
         <RendezvousForm className="flex-1 mr-4" />
         <PriceForm className="flex-1" />
       </div>
+      <LotusForm className="mb-4" />
       <PriceTable />
     </div>
   );

@@ -21,7 +21,7 @@ function QueryForm(props) {
     <Card {...props}>
       <Form onSubmit={handleSubmit(onSubmit)}>
         <Label className="mb-2" for="cid">
-          Query CID:
+          Query CID
         </Label>
         <div className="flex">
           <Input ref={register({ required: 'Required' })} name="cid" className="flex-1 mr-4" />
