@@ -3,6 +3,8 @@ const dealStatuses = {
   awaitingAcceptance: 'DealStatusAwaitingAcceptance',
   accepted: 'DealStatusAccepted',
   paymentChannelReady: 'DealStatusPaymentChannelReady',
+  blocksComplete: 'DealStatusBlocksComplete',
+  finalizing: 'DealStatusFinalizing',
   // paymentChannelCreating: 'DealStatusPaymentChannelCreating',
   // paymentChannelAddingFunds: 'DealStatusPaymentChannelAddingFunds',
   // paymentChannelAllocatingLane: 'DealStatusPaymentChannelAllocatingLane',
@@ -15,8 +17,6 @@ const dealStatuses = {
   // dealNotFound: 'DealStatusDealNotFound',
   // verified: 'DealStatusVerified',
   // errored: 'DealStatusErrored',
-  // blocksComplete: 'DealStatusBlocksComplete',
-  // finalizing: 'DealStatusFinalizing',
 };
 
 export default dealStatuses;

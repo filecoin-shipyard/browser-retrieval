@@ -4,27 +4,31 @@ import CID from 'cids';
 import multihash from 'multihashing-async';
 
 class Datastore extends IdbStore {
-  async put(file) {
-    const url = await new Promise((resolve, reject) => {
+  async putFile(file) {
+    const data = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = reject;
       reader.onload = () => resolve(reader.result);
-      reader.readAsDataURL(file);
+      reader.readAsArrayBuffer(file);
     });
 
-    const content = url.split(',')[1];
-    const buffer = multihash.Buffer.from(content, 'base64');
+    return this.putData(data);
+  }
+
+  async putData(data) {
+    const buffer = multihash.Buffer.from(data);
     const hash = await multihash(buffer, 'sha2-256');
     const cid = new CID(1, 'multiaddr', hash).toString();
+    await this.put(cid, data);
+    return { cid, size: buffer.length };
+  }
 
-    await super.put(new Key(cid), url);
-
-    return cid;
+  async put(cid, data) {
+    return super.put(new Key(cid), data);
   }
 
   async get(cid) {
-    const buffer = await super.get(new Key(cid));
-    return buffer.toString();
+    return super.get(new Key(cid));
   }
 
   async delete(cid) {

@@ -11,10 +11,12 @@ import Gossipsub from 'libp2p-gossipsub';
 import topics from 'src/shared/topics';
 import messageTypes from 'src/shared/messageTypes';
 import getOptions from 'src/shared/getOptions';
+import setOptions from 'src/shared/setOptions';
 import formatPrice from 'src/shared/formatPrice';
 import ports from './ports';
+import Client from './Client';
+import Provider from './Provider';
 import Datastore from './Datastore';
-import setOptions from 'src/shared/setOptions';
 
 class Node {
   static async create(options) {
@@ -53,6 +55,12 @@ class Node {
     ports.postLog('DEBUG: creating datastore');
     this.datastore = new Datastore('/blocks', { prefix: 'filecoin-retrieval', version: 1 });
     await this.datastore.open();
+
+    ports.postLog('DEBUG: creating retrieval market client');
+    this.client = new Client(this.node, this.datastore, wallet, this.handleCidReceived);
+
+    ports.postLog('DEBUG: creating retrieval market provider');
+    this.provider = new Provider(this.node, this.datastore, wallet);
 
     ports.postLog('DEBUG: starting libp2p node');
     await this.node.start();
@@ -110,22 +118,15 @@ class Node {
 
   async handleQuery({ cid }) {
     try {
-      const { pricesPerByte, knownCids } = await getOptions();
-      const cidInfo = knownCids[cid];
+      const params = await this.provider.getDealParams(cid);
 
-      if (cidInfo) {
+      if (params) {
         ports.postLog(`INFO: someone queried for a CID I have: ${cid}`);
-        const pricePerByte = pricesPerByte[cid] || pricesPerByte['*'];
-
         await this.publish({
           messageType: messageTypes.queryResponse,
           cid,
-          size: cidInfo.size,
           multiaddrs: this.multiaddrs,
-          params: {
-            pricePerByte,
-            // TODO: paymentInterval, paymentIntervalIncrease
-          },
+          params,
         });
       }
     } catch (error) {
@@ -134,20 +135,34 @@ class Node {
     }
   }
 
-  async handleQueryResponse({ cid, multiaddrs: [multiaddr], size, params }) {
+  async handleQueryResponse({ cid, params, multiaddrs: [multiaddr], wallet }) {
     if (this.queriedCids.has(cid)) {
       try {
         this.queriedCids.delete(cid);
         ports.postLog(`INFO: this peer has the CID I asked for: ${multiaddr}`);
-        ports.postLog(`INFO: size: ${size}, price per byte: ${formatPrice(params.pricePerByte)}`);
+        ports.postLog(
+          `INFO: size: ${params.size}, price per byte: ${formatPrice(params.pricePerByte)}`,
+        );
 
-        // TODO: implement custom protocol per https://docs.google.com/document/d/1ye0C7_kdnDCfcV8KsQCRafCDvrjRkiilqW9NlXF3M7Q/edit#
+        await this.client.retrieve(cid, params, multiaddr, wallet);
       } catch (error) {
         console.error(error);
         ports.postLog(`ERROR: handle query response failed: ${error.message}`);
       }
     }
   }
+
+  handleCidReceived = async (cid, size) => {
+    try {
+      ports.postLog(`INFO: CID received: ${cid}`);
+      const { knownCids } = await getOptions();
+      knownCids[cid] = { size };
+      await setOptions({ knownCids });
+    } catch (error) {
+      console.error(error);
+      ports.postLog(`ERROR: save received cid failed: ${error.message}`);
+    }
+  };
 
   async query(cid) {
     try {
@@ -167,8 +182,7 @@ class Node {
 
       await Promise.all(
         files.map(async file => {
-          const size = file.size;
-          const cid = await this.datastore.put(file);
+          const { cid, size } = await this.datastore.putFile(file);
           knownCids[cid] = { size };
           setOptions({ knownCids });
         }),
@@ -184,8 +198,23 @@ class Node {
   async downloadFile(cid) {
     try {
       ports.postLog(`DEBUG: downloading ${cid}`);
-      const url = await this.datastore.get(cid);
-      chrome.downloads.download({ url, filename: cid, saveAs: true });
+      const data = await this.datastore.get(cid);
+      const response = await fetch(
+        `data:application/octet-stream;base64,${data.toString('base64')}`,
+      );
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const downloadId = await chrome.downloads.download({ url, filename: cid, saveAs: true });
+
+      function handleDownloadChanged(delta) {
+        if (delta.state && delta.state.current === 'complete' && delta.id === downloadId) {
+          ports.postLog(`DEBUG: download completed, revoking object url ${cid}`);
+          URL.revokeObjectURL(url);
+          chrome.downloads.onChanged.removeListener(handleDownloadChanged);
+        }
+      }
+
+      chrome.downloads.onChanged.addListener(handleDownloadChanged);
     } catch (error) {
       console.error(error);
       ports.postLog(`ERROR: download failed: ${error.message}`);
