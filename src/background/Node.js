@@ -12,11 +12,11 @@ import topics from 'src/shared/topics';
 import messageTypes from 'src/shared/messageTypes';
 import getOptions from 'src/shared/getOptions';
 import setOptions from 'src/shared/setOptions';
-import formatPrice from 'src/shared/formatPrice';
 import ports from './ports';
+import Datastore from './Datastore';
+import Lotus from './lotus-client/Lotus';
 import Client from './Client';
 import Provider from './Provider';
-import Datastore from './Datastore';
 
 class Node {
   static async create(options) {
@@ -56,11 +56,15 @@ class Node {
     this.datastore = new Datastore('/blocks', { prefix: 'filecoin-retrieval', version: 1 });
     await this.datastore.open();
 
+    ports.postLog('DEBUG: creating lotus client');
+    this.lotus = new Lotus();
+    await this.lotus.initialize();
+
     ports.postLog('DEBUG: creating retrieval market client');
-    this.client = new Client(this.node, this.datastore, wallet, this.handleCidReceived);
+    this.client = new Client(this.node, this.datastore, this.lotus, this.handleCidReceived);
 
     ports.postLog('DEBUG: creating retrieval market provider');
-    this.provider = new Provider(this.node, this.datastore, wallet);
+    this.provider = new Provider(this.node, this.datastore, this.lotus);
 
     ports.postLog('DEBUG: starting libp2p node');
     await this.node.start();
@@ -140,10 +144,7 @@ class Node {
       try {
         this.queriedCids.delete(cid);
         ports.postLog(`INFO: this peer has the CID I asked for: ${multiaddr}`);
-        ports.postLog(
-          `INFO: size: ${params.size}, price per byte: ${formatPrice(params.pricePerByte)}`,
-        );
-
+        ports.postLog(`INFO: size: ${params.size}, price per byte: ${params.pricePerByte}`);
         await this.client.retrieve(cid, params, multiaddr, wallet);
       } catch (error) {
         console.error(error);
@@ -252,7 +253,7 @@ class Node {
     ports.postMultiaddrs();
     ports.postPeers();
     await this.datastore.close();
-    await this.ipfs.stop();
+    await this.node.stop();
   }
 }
 

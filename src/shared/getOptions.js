@@ -3,11 +3,12 @@
 const defaultValues = {
   rendezvousIp: 'jsrc-bootstrap.goelzer.io',
   rendezvousPort: '443',
-  pricesPerByte: { '*': 0.0000000001 },
+  pricesPerByte: { '*': 1000 },
   knownCids: {},
   wallet: '',
   privateKey: '',
   lotusEndpoint: 'http://127.0.0.1:1234/rpc/v0',
+  lotusToken: '',
 };
 
 export const optionsKeys = Object.keys(defaultValues);

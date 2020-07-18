@@ -1,10 +1,10 @@
 /* global chrome */
 
-import getOptions from './shared/getOptions.js';
-import onOptionsChanged from './shared/onOptionsChanged.js';
-import messageTypes from './shared/messageTypes.js';
-import ports from './background/ports.js';
-import Node from './background/Node.js';
+import getOptions from '../shared/getOptions.js';
+import onOptionsChanged from '../shared/onOptionsChanged.js';
+import messageTypes from '../shared/messageTypes.js';
+import ports from './ports.js';
+import Node from './Node.js';
 
 ports.startListening();
 

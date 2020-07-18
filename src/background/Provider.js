@@ -9,10 +9,10 @@ import jsonStream from 'src/shared/jsonStream';
 class Provider {
   ongoingDeals = {};
 
-  constructor(node, datastore, wallet) {
+  constructor(node, datastore, lotus) {
     this.node = node;
     this.datastore = datastore;
-    this.wallet = wallet;
+    this.lotus = lotus;
     this.node.handle(protocols.filecoinRetrieval, this.handleProtocol);
   }
 
@@ -23,7 +23,12 @@ class Provider {
 
     if (cidInfo) {
       const pricePerByte = pricesPerByte[cid] || pricesPerByte['*'];
-      return { ...cidInfo, pricePerByte }; // TODO: paymentInterval, paymentIntervalIncrease
+      return {
+        wallet: this.lotus.wallet,
+        size: cidInfo.size,
+        pricePerByte,
+        // TODO: paymentInterval, paymentIntervalIncrease
+      };
     }
 
     return null;
@@ -40,6 +45,24 @@ class Provider {
           switch (message.status) {
             case dealStatuses.awaitingAcceptance: {
               await this.handleNewDeal(message, sink);
+              break;
+            }
+
+            case dealStatuses.paymentChannelReady: {
+              await this.sendBlocks(message);
+              break;
+            }
+
+            case dealStatuses.paymentSent: {
+              await this.checkPaymentVoucherValid(message);
+              await this.sendBlocks(message);
+              break;
+            }
+
+            case dealStatuses.lastPaymentSent: {
+              await this.submitPaymentVoucher(message);
+              await this.sendDealCompleted(message);
+              await this.closeDeal(message);
               break;
             }
 
@@ -65,6 +88,11 @@ class Provider {
     }
 
     const currentParams = await this.getDealParams(cid);
+
+    if (params.wallet !== currentParams.wallet) {
+      throw new Error('Not my wallet');
+    }
+
     if (params.pricePerByte < currentParams.pricePerByte) {
       throw new Error('Price per byte too low');
     }
@@ -79,11 +107,11 @@ class Provider {
 
     // TODO: decide on deal
 
-    await this.sendDealAccepted({ dealId });
-    await this.sendBlocks({ dealId });
+    await this.sendDealAccepted({ dealId, wallet: this.wallet });
   }
 
   sendDealAccepted({ dealId }) {
+    ports.postLog(`DEBUG: sending deal accepted ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
     deal.sink.push({
@@ -93,6 +121,7 @@ class Provider {
   }
 
   async sendBlocks({ dealId }) {
+    ports.postLog(`DEBUG: sending blocks ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
     const data = await this.datastore.get(deal.cid);
@@ -102,8 +131,30 @@ class Provider {
       status: dealStatuses.blocksComplete,
       blocks: [data],
     });
+  }
 
+  async checkPaymentVoucherValid({ dealId, paymentChannel, paymentVoucher }) {
+    ports.postLog(`DEBUG: checking voucher ${dealId}`);
+    await this.lotus.checkPaymentVoucherValid(paymentChannel, paymentVoucher);
+    // TODO: save voucher to submit later if deal fails
+  }
+
+  async submitPaymentVoucher({ dealId, paymentChannel, paymentVoucher }) {
+    ports.postLog(`DEBUG: submitting voucher ${dealId}`);
+    await this.lotus.submitPaymentVoucher(paymentChannel, paymentVoucher);
+  }
+
+  async sendDealCompleted({ dealId }) {
+    ports.postLog(`DEBUG: sending deal completed ${dealId}`);
+    const deal = this.ongoingDeals[dealId];
+    deal.sink.push({ dealId, status: dealStatuses.completed });
+  }
+
+  async closeDeal({ dealId }) {
+    ports.postLog(`DEBUG: closing deal ${dealId}`);
+    const deal = this.ongoingDeals[dealId];
     deal.sink.end();
+    delete this.ongoingDeals[dealId];
   }
 }
 

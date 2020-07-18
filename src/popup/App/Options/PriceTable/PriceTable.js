@@ -4,7 +4,6 @@ import Card from 'src/popup/components/Card';
 import TableRow from 'src/popup/components/TableRow';
 import TableCell from 'src/popup/components/TableCell';
 import IconButton from 'src/popup/components/IconButton';
-import formatPrice from 'src/shared/formatPrice';
 
 function PriceTable(props) {
   const [options, setOptions] = useOptions();
@@ -21,7 +20,7 @@ function PriceTable(props) {
           <TableRow head>
             <TableCell head>CID</TableCell>
             <TableCell number head>
-              Price/byte
+              Price/byte (AttoFIL)
             </TableCell>
             <TableCell buttons head></TableCell>
           </TableRow>
@@ -44,7 +43,7 @@ function PriceTable(props) {
                 <TableCell className="font-mono" large>
                   {cid}
                 </TableCell>
-                <TableCell number>{formatPrice(price)}</TableCell>
+                <TableCell number>{price}</TableCell>
                 <TableCell buttons>
                   {cid !== '*' && (
                     <IconButton icon="trash" onClick={() => removePrice(cid)} danger />

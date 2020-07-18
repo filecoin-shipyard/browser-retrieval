@@ -8,10 +8,10 @@ import ports from './ports';
 class Client {
   ongoingDeals = {};
 
-  constructor(node, datastore, wallet, cidReceivedCallback) {
+  constructor(node, datastore, lotus, cidReceivedCallback) {
     this.node = node;
     this.datastore = datastore;
-    this.wallet = wallet;
+    this.lotus = lotus;
     this.cidReceivedCallback = cidReceivedCallback;
   }
 
@@ -31,6 +31,8 @@ class Client {
       peerMultiaddr,
       peerWallet,
       sink,
+      sizeReceived: 0,
+      sizePaid: 0,
     };
 
     await this.sendDealProposal({ dealId });
@@ -53,9 +55,22 @@ class Client {
             break;
           }
 
-          case dealStatuses.blocksComplete: {
+          case dealStatuses.fundsNeeded: {
+            deal.status = dealStatuses.ongoing;
+            await this.receiveBlocks(message);
+            // TODO: check total vs received and send voucher
+            break;
+          }
+
+          case dealStatuses.fundsNeededLastPayment: {
             deal.status = dealStatuses.finalizing;
             await this.receiveBlocks(message);
+            await this.sendLastPayment(message);
+            break;
+          }
+
+          case dealStatuses.completed: {
+            await this.closeDeal(message);
             break;
           }
 
@@ -86,23 +101,59 @@ class Client {
     deal.status = dealStatuses.awaitingAcceptance;
   }
 
-  setupPaymentChannel({ dealId }) {
+  async setupPaymentChannel({ dealId }) {
     ports.postLog(`DEBUG: setting up payment channel ${dealId}`);
-    // TODO: getChainHead
-    // TODO: getOrCreatePaymentChannel
-    // TODO: allocateLane
+    const deal = this.ongoingDeals[dealId];
+    deal.paymentChannel = await this.lotus.getOrCreatePaymentChannel(
+      deal.params.wallet,
+      deal.params.size * deal.params.pricePerByte,
+    );
+    deal.lane = await this.lotus.allocateLane(deal.paymentChannel);
+
+    ports.postLog(`DEBUG: sending payment channel ready ${dealId}`);
+    deal.sink.push({
+      dealId,
+      status: dealStatuses.paymentChannelReady,
+    });
+
+    deal.status = dealStatuses.paymentChannelReady;
   }
 
   async receiveBlocks({ dealId, blocks }) {
     ports.postLog(`DEBUG: received ${blocks.length} blocks ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
-    if (deal.status === dealStatuses.finalizing) {
-      const { cid, size } = await this.datastore.putData(blocks[0]);
-      delete this.ongoingDeals[dealId];
-      await this.cidReceivedCallback(cid, size);
-      deal.sink.end();
+    for (const block of blocks) {
+      await this.datastore.putData(block);
+      deal.sizeReceived += block.length;
     }
+  }
+
+  async sendLastPayment({ dealId }) {
+    ports.postLog(`DEBUG: sending last payment ${dealId}`);
+    const deal = this.ongoingDeals[dealId];
+    const amount = (deal.params.size - deal.sizePaid) * deal.params.pricePerByte;
+    const paymentVoucher = await this.lotus.createPaymentVoucher(
+      deal.paymentChannel,
+      deal.lane,
+      amount,
+    );
+
+    deal.sink.push({
+      dealId,
+      status: dealStatuses.lastPaymentSent,
+      paymentChannel: deal.paymentChannel,
+      paymentVoucher,
+    });
+  }
+
+  async closeDeal({ dealId }) {
+    ports.postLog(`DEBUG: closing deal ${dealId}`);
+    const deal = this.ongoingDeals[dealId];
+    this.lotus.closePaymentChannel(deal.paymentChannel);
+    deal.sink.end();
+    delete this.ongoingDeals[dealId];
+    await this.cidReceivedCallback(deal.cid, deal.size);
   }
 }
 
