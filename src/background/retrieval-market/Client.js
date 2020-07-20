@@ -62,7 +62,7 @@ class Client {
           case dealStatuses.fundsNeeded: {
             deal.status = dealStatuses.ongoing;
             await this.receiveBlocks(message);
-            // TODO: check total vs received and send voucher
+            // TODO: size received vs deal params and send voucher
             break;
           }
 

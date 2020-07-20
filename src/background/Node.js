@@ -29,7 +29,6 @@ class Node {
   queriedCids = new Set();
 
   async initialize({ rendezvousIp, rendezvousPort, wallet }) {
-    // TODO: save wallet to options
     const rendezvousProtocol = /^\d+\.\d+\.\d+\.\d+$/.test(rendezvousIp) ? 'ip4' : 'dns4';
     const rendezvousWsProtocol = `${rendezvousPort}` === '443' ? 'wss' : 'ws';
     const rendezvousAddress = `/${rendezvousProtocol}/${rendezvousIp}/tcp/${rendezvousPort}/${rendezvousWsProtocol}/p2p-webrtc-star`;

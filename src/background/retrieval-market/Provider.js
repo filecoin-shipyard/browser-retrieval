@@ -56,7 +56,8 @@ class Provider {
         wallet: this.lotus.wallet,
         size: cidInfo.size,
         pricePerByte,
-        // TODO: paymentInterval, paymentIntervalIncrease
+        paymentInterval: this.paymentInterval,
+        paymentIntervalIncrease: this.paymentIntervalIncrease,
       };
     }
 
@@ -126,15 +127,24 @@ class Provider {
       throw new Error('Price per byte too low');
     }
 
+    if (params.paymentInterval > currentParams.paymentInterval) {
+      throw new Error('Payment interval too large');
+    }
+
+    if (params.paymentIntervalIncrease > currentParams.paymentIntervalIncrease) {
+      throw new Error('Payment interval increase too large');
+    }
+
     this.ongoingDeals[dealId] = {
       id: dealId,
       status: dealStatuses.awaitingAcceptance,
       cid,
       params,
       sink,
+      sizeSent: 0,
+      sizePaid: 0,
+      nextBlock: 0,
     };
-
-    // TODO: decide on deal
 
     await this.sendDealAccepted({ dealId, wallet: this.wallet });
   }
@@ -154,11 +164,27 @@ class Provider {
     const deal = this.ongoingDeals[dealId];
 
     const data = await this.datastore.get(deal.cid);
+
     // TODO: split data into blocks
+    const blocks = [data];
+
+    const blocksToSend = [];
+    let blocksToSendSize = 0;
+    while (blocksToSendSize < deal.params.paymentInterval && deal.nextBlock < blocks.length) {
+      const block = blocks[deal.nextBlock++];
+      blocksToSend.push(block);
+      blocksToSendSize += block.length;
+    }
+
+    deal.params.paymentInterval += deal.params.paymentIntervalIncrease;
+
     deal.sink.push({
       dealId,
-      status: dealStatuses.fundsNeededLastPayment,
-      blocks: [data],
+      status:
+        deal.nextBlock === blocks.length
+          ? dealStatuses.fundsNeededLastPayment
+          : dealStatuses.fundsNeeded,
+      blocks: blocksToSend,
     });
   }
 

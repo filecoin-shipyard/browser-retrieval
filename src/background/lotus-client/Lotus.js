@@ -134,7 +134,8 @@ class Lotus {
     const receipt = await this.waitForMessage(messageLink);
     console.log(receipt);
 
-    const paymentChannel = 'address'; // TODO: get address from receipt
+    // TODO: get address from receipt
+    const paymentChannel = 'address';
 
     this.paymentChannelsInfo[paymentChannel] = {
       nextLane: 0,

@@ -18,6 +18,7 @@ class Datastore extends IdbStore {
       reader.readAsArrayBuffer(file);
     });
 
+    // TODO: split data into blocks
     return this.putData(data);
   }
 
