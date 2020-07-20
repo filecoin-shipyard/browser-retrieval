@@ -7,6 +7,12 @@ import methods from './methods';
 import codes from './codes';
 
 class Lotus {
+  static async create() {
+    const lotus = new Lotus();
+    await lotus.initialize();
+    return lotus;
+  }
+
   id = 0;
 
   paymentChannelsInfo = {};
@@ -35,7 +41,7 @@ class Lotus {
         await this.updateOptions();
       } catch (error) {
         console.error(error);
-        ports.postLog(`ERROR: update wallet and private key failed: ${error.message}`);
+        ports.postLog(`ERROR: update lotus failed: ${error.message}`);
       }
     }
   };

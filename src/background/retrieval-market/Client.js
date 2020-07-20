@@ -6,6 +6,10 @@ import jsonStream from 'src/shared/jsonStream';
 import ports from 'src/background/ports';
 
 class Client {
+  static async create(...args) {
+    return new Client(...args);
+  }
+
   ongoingDeals = {};
 
   constructor(node, datastore, lotus, cidReceivedCallback) {

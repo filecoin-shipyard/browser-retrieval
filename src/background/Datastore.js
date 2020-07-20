@@ -4,6 +4,12 @@ import CID from 'cids';
 import multihash from 'multihashing-async';
 
 class Datastore extends IdbStore {
+  static async create(...args) {
+    const datastore = new Datastore(...args);
+    await datastore.open();
+    return datastore;
+  }
+
   async putFile(file) {
     const data = await new Promise((resolve, reject) => {
       const reader = new FileReader();

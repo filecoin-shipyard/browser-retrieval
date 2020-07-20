@@ -1,5 +1,6 @@
 import pipe from 'it-pipe';
 import pushable from 'it-pushable';
+import onOptionsChanged from 'src/shared/onOptionsChanged';
 import protocols from 'src/shared/protocols';
 import dealStatuses from 'src/shared/dealStatuses';
 import getOptions from 'src/shared/getOptions';
@@ -7,14 +8,42 @@ import jsonStream from 'src/shared/jsonStream';
 import ports from 'src/background/ports';
 
 class Provider {
+  static async create(...args) {
+    const provider = new Provider(...args);
+    await provider.initialize();
+    return provider;
+  }
+
   ongoingDeals = {};
 
   constructor(node, datastore, lotus) {
     this.node = node;
     this.datastore = datastore;
     this.lotus = lotus;
+  }
+
+  async initialize() {
+    await this.updateOptions();
+    onOptionsChanged(this.handleOptionsChange);
     this.node.handle(protocols.filecoinRetrieval, this.handleProtocol);
   }
+
+  async updateOptions() {
+    const { paymentInterval, paymentIntervalIncrease } = await getOptions();
+    this.paymentInterval = paymentInterval;
+    this.paymentIntervalIncrease = paymentIntervalIncrease;
+  }
+
+  handleOptionsChange = async changes => {
+    if (changes['paymentInterval'] || changes['paymentIntervalIncrease']) {
+      try {
+        await this.updateOptions();
+      } catch (error) {
+        console.error(error);
+        ports.postLog(`ERROR: update payment interval failed: ${error.message}`);
+      }
+    }
+  };
 
   async getDealParams(cid) {
     ports.postLog(`DEBUG: getting deal params for ${cid}`);

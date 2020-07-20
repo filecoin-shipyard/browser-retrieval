@@ -53,18 +53,24 @@ class Node {
     });
 
     ports.postLog('DEBUG: creating datastore');
-    this.datastore = new Datastore('/blocks', { prefix: 'filecoin-retrieval', version: 1 });
-    await this.datastore.open();
+    this.datastore = await Datastore.create('/blocks', {
+      prefix: 'filecoin-retrieval',
+      version: 1,
+    });
 
     ports.postLog('DEBUG: creating lotus client');
-    this.lotus = new Lotus();
-    await this.lotus.initialize();
+    this.lotus = await Lotus.create();
 
     ports.postLog('DEBUG: creating retrieval market client');
-    this.client = new Client(this.node, this.datastore, this.lotus, this.handleCidReceived);
+    this.client = await Client.create(
+      this.node,
+      this.datastore,
+      this.lotus,
+      this.handleCidReceived,
+    );
 
     ports.postLog('DEBUG: creating retrieval market provider');
-    this.provider = new Provider(this.node, this.datastore, this.lotus);
+    this.provider = await Provider.create(this.node, this.datastore, this.lotus);
 
     ports.postLog('DEBUG: starting libp2p node');
     await this.node.start();
