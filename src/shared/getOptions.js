@@ -9,6 +9,8 @@ const defaultValues = {
   privateKey: '',
   lotusEndpoint: 'http://127.0.0.1:1234/rpc/v0',
   lotusToken: '',
+  paymentInterval: 1024 * 1024,
+  paymentIntervalIncrease: 1024 * 1024,
 };
 
 export const optionsKeys = Object.keys(defaultValues);

@@ -5,16 +5,14 @@ import Card from 'src/popup/components/Card';
 import Form from 'src/popup/components/Form';
 import InputField from 'src/popup/components/InputField';
 
-function PriceForm(props) {
+function PaymentForm(props) {
   const { handleSubmit, register, errors } = useForm();
   const [options, setOptions] = useOptions();
 
-  function onSubmit({ cid, price }) {
+  function onSubmit({ paymentInterval, paymentIntervalIncrease }) {
     setOptions({
-      pricesPerByte: {
-        ...options.pricesPerByte,
-        [cid]: parseInt(price, 10),
-      },
+      paymentInterval: parseInt(paymentInterval, 10),
+      paymentIntervalIncrease: parseInt(paymentIntervalIncrease, 10),
     });
   }
 
@@ -24,21 +22,24 @@ function PriceForm(props) {
         <InputField
           ref={register({ required: 'Required' })}
           className="flex-1 mr-4"
-          label="CID"
-          name="cid"
-          errors={errors}
-          defaultValue="*"
-        />
-        <InputField
-          ref={register({ required: 'Required' })}
-          className="flex-1"
-          label="Price/byte"
-          name="price"
+          label="Payment interval (ms)"
+          name="paymentInterval"
           errors={errors}
           type="number"
           min="0"
           step="1"
-          defaultValue={options.pricesPerByte['*']}
+          defaultValue={options.paymentInterval}
+        />
+        <InputField
+          ref={register({ required: 'Required' })}
+          className="flex-1"
+          label="Interval increase (bytes)"
+          name="paymentIntervalIncrease"
+          errors={errors}
+          type="number"
+          min="0"
+          step="1"
+          defaultValue={options.paymentIntervalIncrease}
           submit
         />
       </Form>
@@ -46,4 +47,4 @@ function PriceForm(props) {
   );
 }
 
-export default PriceForm;
+export default PaymentForm;

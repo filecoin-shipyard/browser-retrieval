@@ -19,7 +19,7 @@ function QueryForm(props) {
 
   return (
     <Card {...props}>
-      <Form onSubmit={handleSubmit(onSubmit)}>
+      <Form className="flex-col" onSubmit={handleSubmit(onSubmit)}>
         <Label className="mb-2" for="cid">
           Query CID
         </Label>
