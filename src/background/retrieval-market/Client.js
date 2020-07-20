@@ -3,7 +3,7 @@ import pushable from 'it-pushable';
 import protocols from 'src/shared/protocols';
 import dealStatuses from 'src/shared/dealStatuses';
 import jsonStream from 'src/shared/jsonStream';
-import ports from './ports';
+import ports from 'src/background/ports';
 
 class Client {
   ongoingDeals = {};

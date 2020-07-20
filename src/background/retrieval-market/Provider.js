@@ -3,8 +3,8 @@ import pushable from 'it-pushable';
 import protocols from 'src/shared/protocols';
 import dealStatuses from 'src/shared/dealStatuses';
 import getOptions from 'src/shared/getOptions';
-import ports from './ports';
 import jsonStream from 'src/shared/jsonStream';
+import ports from 'src/background/ports';
 
 class Provider {
   ongoingDeals = {};

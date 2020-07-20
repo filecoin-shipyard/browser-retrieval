@@ -15,8 +15,8 @@ import setOptions from 'src/shared/setOptions';
 import ports from './ports';
 import Datastore from './Datastore';
 import Lotus from './lotus-client/Lotus';
-import Client from './Client';
-import Provider from './Provider';
+import Client from './retrieval-market/Client';
+import Provider from './retrieval-market/Provider';
 
 class Node {
   static async create(options) {
