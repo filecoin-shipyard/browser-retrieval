@@ -128,20 +128,22 @@ class Provider {
     // TODO: split data into blocks
     deal.sink.push({
       dealId,
-      status: dealStatuses.blocksComplete,
+      status: dealStatuses.fundsNeededLastPayment,
       blocks: [data],
     });
   }
 
   async checkPaymentVoucherValid({ dealId, paymentChannel, paymentVoucher }) {
     ports.postLog(`DEBUG: checking voucher ${dealId}`);
-    await this.lotus.checkPaymentVoucherValid(paymentChannel, paymentVoucher);
+    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
+    // await this.lotus.checkPaymentVoucherValid(paymentChannel, paymentVoucher);
     // TODO: save voucher to submit later if deal fails
   }
 
   async submitPaymentVoucher({ dealId, paymentChannel, paymentVoucher }) {
     ports.postLog(`DEBUG: submitting voucher ${dealId}`);
-    await this.lotus.submitPaymentVoucher(paymentChannel, paymentVoucher);
+    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
+    // await this.lotus.submitPaymentVoucher(paymentChannel, paymentVoucher);
   }
 
   async sendDealCompleted({ dealId }) {

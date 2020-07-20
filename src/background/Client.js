@@ -104,11 +104,13 @@ class Client {
   async setupPaymentChannel({ dealId }) {
     ports.postLog(`DEBUG: setting up payment channel ${dealId}`);
     const deal = this.ongoingDeals[dealId];
-    deal.paymentChannel = await this.lotus.getOrCreatePaymentChannel(
-      deal.params.wallet,
-      deal.params.size * deal.params.pricePerByte,
-    );
-    deal.lane = await this.lotus.allocateLane(deal.paymentChannel);
+
+    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
+    // deal.paymentChannel = await this.lotus.getOrCreatePaymentChannel(
+    //   deal.params.wallet,
+    //   deal.params.size * deal.params.pricePerByte,
+    // );
+    // deal.lane = await this.lotus.allocateLane(deal.paymentChannel);
 
     ports.postLog(`DEBUG: sending payment channel ready ${dealId}`);
     deal.sink.push({
@@ -132,28 +134,31 @@ class Client {
   async sendLastPayment({ dealId }) {
     ports.postLog(`DEBUG: sending last payment ${dealId}`);
     const deal = this.ongoingDeals[dealId];
-    const amount = (deal.params.size - deal.sizePaid) * deal.params.pricePerByte;
-    const paymentVoucher = await this.lotus.createPaymentVoucher(
-      deal.paymentChannel,
-      deal.lane,
-      amount,
-    );
+
+    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
+    // const amount = (deal.params.size - deal.sizePaid) * deal.params.pricePerByte;
+    // const paymentVoucher = await this.lotus.createPaymentVoucher(
+    //   deal.paymentChannel,
+    //   deal.lane,
+    //   amount,
+    // );
 
     deal.sink.push({
       dealId,
       status: dealStatuses.lastPaymentSent,
-      paymentChannel: deal.paymentChannel,
-      paymentVoucher,
+      // paymentChannel: deal.paymentChannel,
+      // paymentVoucher,
     });
   }
 
   async closeDeal({ dealId }) {
     ports.postLog(`DEBUG: closing deal ${dealId}`);
     const deal = this.ongoingDeals[dealId];
-    this.lotus.closePaymentChannel(deal.paymentChannel);
+    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
+    // this.lotus.closePaymentChannel(deal.paymentChannel);
     deal.sink.end();
     delete this.ongoingDeals[dealId];
-    await this.cidReceivedCallback(deal.cid, deal.size);
+    await this.cidReceivedCallback(deal.cid, deal.params.size);
   }
 }
 

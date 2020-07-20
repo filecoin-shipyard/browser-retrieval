@@ -34,7 +34,9 @@ function KnownCids(props) {
           {knownCidsIds.sort().map(cid => (
             <TableRow key={cid}>
               <TableCell className="font-mono">{cid}</TableCell>
-              <TableCell number>{prettyBytes(knownCids[cid].size)}</TableCell>
+              <TableCell number>
+                {Boolean(knownCids[cid].size) && prettyBytes(knownCids[cid].size)}
+              </TableCell>
               <TableCell buttons>
                 <div className="flex">
                   <IconButton className="mr-4" icon="download" onClick={() => downloadFile(cid)} />
