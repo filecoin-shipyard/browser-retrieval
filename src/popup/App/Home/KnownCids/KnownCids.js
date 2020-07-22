@@ -4,6 +4,7 @@ import React from 'react';
 import prettyBytes from 'pretty-bytes';
 import useOptions from 'src/popup/hooks/useOptions';
 import Card from 'src/popup/components/Card';
+import Table from 'src/popup/components/Table';
 import TableRow from 'src/popup/components/TableRow';
 import TableCell from 'src/popup/components/TableCell';
 import IconButton from 'src/popup/components/IconButton';
@@ -28,8 +29,8 @@ function KnownCids(props) {
 
   return (
     <Card {...props}>
-      <Label className="p-4">Known CIDs</Label>
-      <table>
+      <Label className="p-4 pb-2">Known CIDs</Label>
+      <Table>
         <tbody>
           {knownCidsIds.sort().map(cid => (
             <TableRow key={cid}>
@@ -46,7 +47,7 @@ function KnownCids(props) {
             </TableRow>
           ))}
         </tbody>
-      </table>
+      </Table>
     </Card>
   );
 }

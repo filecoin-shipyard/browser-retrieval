@@ -8,6 +8,10 @@ body {
   width: 780px;
 }
 
+svg {
+  fill: currentColor;
+}
+
 .max-w-1 {
   max-width: 1px;
 }

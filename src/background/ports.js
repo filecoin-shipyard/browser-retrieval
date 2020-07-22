@@ -5,6 +5,7 @@ import channels from 'src/shared/channels';
 const debug = process.env.DEBUG === 'true';
 const portsByChannel = {};
 const lastMessages = {};
+const deals = { inbound: [], outbound: [] };
 const logs = [];
 
 const ports = {
@@ -48,6 +49,26 @@ const ports = {
 
   postUploadProgress(progress) {
     ports.postMessage(channels.uploadProgress, progress);
+  },
+
+  postInboundDeals(inbound) {
+    deals.inbound = ports.mapDeals(inbound);
+    ports.postMessage(channels.deals, deals);
+  },
+
+  postOutboundDeals(outbound) {
+    deals.outbound = ports.mapDeals(outbound);
+    ports.postMessage(channels.deals, deals);
+  },
+
+  mapDeals(deals) {
+    return Object.values(deals).map(({ id, cid, params, sizeReceived, sizeSent }) => ({
+      id,
+      cid,
+      params,
+      sizeReceived,
+      sizeSent,
+    }));
   },
 
   postLog(message) {

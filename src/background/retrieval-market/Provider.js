@@ -145,6 +145,7 @@ class Provider {
     };
 
     await this.sendDealAccepted({ dealId, wallet: this.wallet });
+    ports.postOutboundDeals(this.ongoingDeals);
   }
 
   sendDealAccepted({ dealId }) {
@@ -185,6 +186,7 @@ class Provider {
     });
 
     deal.sizeSent += blocksSize;
+    ports.postOutboundDeals(this.ongoingDeals);
   }
 
   async checkPaymentVoucherValid({ dealId, paymentChannel, paymentVoucher }) {
@@ -211,6 +213,7 @@ class Provider {
     const deal = this.ongoingDeals[dealId];
     deal.sink.end();
     delete this.ongoingDeals[dealId];
+    ports.postOutboundDeals(this.ongoingDeals);
   }
 }
 

@@ -44,6 +44,7 @@ class Client {
     };
 
     await this.sendDealProposal({ dealId });
+    ports.postInboundDeals(this.ongoingDeals);
   }
 
   handleMessage = async source => {
@@ -138,6 +139,8 @@ class Client {
       deal.importerSink.push(block.data);
       deal.sizeReceived += block.data.length;
     }
+
+    ports.postInboundDeals(this.ongoingDeals);
   }
 
   async finishImport({ dealId, blocks }) {
@@ -195,6 +198,7 @@ class Client {
     deal.sink.end();
     delete this.ongoingDeals[dealId];
     await this.cidReceivedCallback(deal.cid, deal.params.size);
+    ports.postInboundDeals(this.ongoingDeals);
   }
 }
 

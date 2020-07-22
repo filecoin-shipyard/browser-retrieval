@@ -1,6 +1,7 @@
 import React from 'react';
 import useOptions from 'src/popup/hooks/useOptions';
 import Card from 'src/popup/components/Card';
+import Table from 'src/popup/components/Table';
 import TableRow from 'src/popup/components/TableRow';
 import TableCell from 'src/popup/components/TableCell';
 import IconButton from 'src/popup/components/IconButton';
@@ -15,7 +16,7 @@ function PriceTable(props) {
 
   return (
     <Card {...props}>
-      <table>
+      <Table>
         <thead>
           <TableRow head>
             <TableCell head>CID</TableCell>
@@ -52,7 +53,7 @@ function PriceTable(props) {
               </TableRow>
             ))}
         </tbody>
-      </table>
+      </Table>
     </Card>
   );
 }
