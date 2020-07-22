@@ -32,7 +32,7 @@ function PriceForm(props) {
         <InputField
           ref={register({ required: 'Required' })}
           className="flex-1"
-          label="Price/byte"
+          label="Price/byte (AttoFIL)"
           name="price"
           errors={errors}
           type="number"

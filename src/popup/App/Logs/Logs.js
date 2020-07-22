@@ -30,15 +30,17 @@ function Logs({ className, ...rest }) {
   }
 
   return (
-    <Card className={classNames(className, 'p-4')} {...rest}>
-      <div className="flex">
-        <Label className="flex-1 mb-2">Logs</Label>
-        <IconButton icon="trash" onClick={sendClearLogsMessage} />
-      </div>
-      <Pre ref={preRef} className="Logs--pre">
-        {logs ? logs.join('\n') : ' '}
-      </Pre>
-    </Card>
+    <div className={classNames(className, 'p-4')} {...rest}>
+      <Card className="p-4">
+        <div className="flex">
+          <Label className="flex-1 mb-2">Logs</Label>
+          <IconButton icon="trash" onClick={sendClearLogsMessage} />
+        </div>
+        <Pre ref={preRef} className="Logs--pre">
+          {logs ? logs.join('\n') : ' '}
+        </Pre>
+      </Card>
+    </div>
   );
 }
 
