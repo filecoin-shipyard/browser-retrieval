@@ -13,8 +13,8 @@ import messageTypes from 'src/shared/messageTypes';
 import getOptions from 'src/shared/getOptions';
 import setOptions from 'src/shared/setOptions';
 import ports from './ports';
-import Datastore from './Datastore';
 import Lotus from './lotus-client/Lotus';
+import Datastore from './Datastore';
 import Client from './retrieval-market/Client';
 import Provider from './retrieval-market/Provider';
 
@@ -51,14 +51,14 @@ class Node {
       },
     });
 
+    ports.postLog('DEBUG: creating lotus client');
+    this.lotus = await Lotus.create();
+
     ports.postLog('DEBUG: creating datastore');
     this.datastore = await Datastore.create('/blocks', {
       prefix: 'filecoin-retrieval',
       version: 1,
     });
-
-    ports.postLog('DEBUG: creating lotus client');
-    this.lotus = await Lotus.create();
 
     ports.postLog('DEBUG: creating retrieval market client');
     this.client = await Client.create(

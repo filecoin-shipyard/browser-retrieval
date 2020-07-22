@@ -18,7 +18,7 @@ class Datastore {
   }
 
   async initialize() {
-    this.repo = new Repo('ipfs-filecoinretrieval');
+    this.repo = new Repo('filecoinretrieval');
     await this.repo.init({});
     await this.repo.open();
     this.blockService = new BlockService(this.repo);
@@ -65,6 +65,10 @@ class Datastore {
     const { node } = await this.get(cid);
     const cids = [new CID(cid), ...node.Links.map(({ Hash }) => Hash)];
     await all(this.ipld.removeMany(cids));
+  }
+
+  async close() {
+    await this.repo.close();
   }
 }
 

@@ -38,7 +38,7 @@ chrome.runtime.onMessage.addListener(({ messageType, cid }, sender, sendResponse
 });
 
 onOptionsChanged(async changes => {
-  if (changes['rendezvousIp'] || changes['rendezvousPort']) {
+  if (!node || changes['rendezvousIp'] || changes['rendezvousPort']) {
     ports.postLog('INFO: restarting');
 
     if (node) {
@@ -59,8 +59,13 @@ async function startNode() {
     const options = await getOptions();
     node = await Node.create(options);
   } catch (error) {
-    console.error(error);
-    ports.postLog(`ERROR: start node failed: ${error.message}`);
+    if (error === 'Error: `Invalid Key Length`') {
+      ports.postLog(`ERROR: start node failed: ${error}`);
+      ports.postLog('INFO: fix your lotus config on the Options page');
+    } else {
+      console.error(error);
+      ports.postLog(`ERROR: start node failed: ${error.message}`);
+    }
   }
 }
 
