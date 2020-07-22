@@ -1,45 +1,70 @@
-import IdbStore from 'datastore-idb';
-import { Key } from 'interface-datastore';
 import CID from 'cids';
-import multihash from 'multihashing-async';
+import Ipld from 'ipld';
+import Block from 'ipld-block';
+import Repo from 'ipfs-repo';
+import BlockService from 'ipfs-block-service';
+import importer from 'ipfs-unixfs-importer';
+import exporter from 'ipfs-unixfs-exporter';
+import last from 'it-last';
+import all from 'it-all';
+import { Buffer } from 'buffer';
+import streamFromFile from '../shared/streamFromFile';
 
-class Datastore extends IdbStore {
+class Datastore {
   static async create(...args) {
     const datastore = new Datastore(...args);
-    await datastore.open();
+    await datastore.initialize();
     return datastore;
   }
 
-  async putFile(file) {
-    const data = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = reject;
-      reader.onload = () => resolve(reader.result);
-      reader.readAsArrayBuffer(file);
-    });
-
-    // TODO: split data into blocks
-    return this.putData(data);
+  async initialize() {
+    this.repo = new Repo('ipfs-filecoinretrieval');
+    await this.repo.init({});
+    await this.repo.open();
+    this.blockService = new BlockService(this.repo);
+    this.ipld = new Ipld({ blockService: this.blockService });
   }
 
-  async putData(data) {
-    const buffer = multihash.Buffer.from(data);
-    const hash = await multihash(buffer, 'sha2-256');
-    const cid = new CID(1, 'multiaddr', hash).toString();
-    await this.put(cid, data);
-    return { cid, size: buffer.length };
+  putFile(file, options) {
+    return this.putContent(streamFromFile(file), options);
   }
 
-  async put(cid, data) {
-    return super.put(new Key(cid), data);
+  async putContent(content, options) {
+    const entry = await last(
+      importer(
+        [{ content }],
+        {
+          put: async (data, { cid }) => {
+            const block = new Block(data, cid);
+            return this.blockService.put(block);
+          },
+        },
+        options,
+      ),
+    );
+
+    return { cid: entry.cid.toString(), size: entry.unixfs.fileSize() };
   }
 
   async get(cid) {
-    return super.get(new Key(cid));
+    return exporter(cid, this.ipld);
+  }
+
+  async cat(cid) {
+    const entry = await this.get(cid);
+    const bytes = [];
+
+    for await (const buffer of entry.content()) {
+      bytes.push(buffer);
+    }
+
+    return Buffer.concat(bytes);
   }
 
   async delete(cid) {
-    await super.delete(new Key(cid));
+    const { node } = await this.get(cid);
+    const cids = [new CID(cid), ...node.Links.map(({ Hash }) => Hash)];
+    await all(this.ipld.removeMany(cids));
   }
 }
 

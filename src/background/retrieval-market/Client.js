@@ -26,6 +26,8 @@ class Client {
     const sink = pushable();
     pipe(sink, jsonStream.stringify, stream, jsonStream.parse, this.handleMessage);
 
+    const importerSink = pushable();
+
     const dealId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
     this.ongoingDeals[dealId] = {
       id: dealId,
@@ -37,6 +39,8 @@ class Client {
       sink,
       sizeReceived: 0,
       sizePaid: 0,
+      importerSink,
+      importer: this.datastore.putContent(importerSink),
     };
 
     await this.sendDealProposal({ dealId });
@@ -45,11 +49,11 @@ class Client {
   handleMessage = async source => {
     for await (const message of source) {
       try {
-        ports.postLog(`DEBUG: handling protocol message ${JSON.stringify(message)}`);
+        ports.postLog(`DEBUG: handling protocol message with status: ${message.status}`);
         const deal = this.ongoingDeals[message.dealId];
 
         if (!deal) {
-          throw new Error(`Deal not found for message ${JSON.stringify(message)}`);
+          throw new Error(`Deal not found: ${message.dealId}`);
         }
 
         switch (message.status) {
@@ -62,13 +66,14 @@ class Client {
           case dealStatuses.fundsNeeded: {
             deal.status = dealStatuses.ongoing;
             await this.receiveBlocks(message);
-            // TODO: size received vs deal params and send voucher
+            await this.sendPayment(message);
             break;
           }
 
           case dealStatuses.fundsNeededLastPayment: {
             deal.status = dealStatuses.finalizing;
             await this.receiveBlocks(message);
+            await this.finishImport(message);
             await this.sendLastPayment(message);
             break;
           }
@@ -79,7 +84,7 @@ class Client {
           }
 
           default: {
-            ports.postLog(`ERROR: unknown deal message received: ${JSON.stringify(message)}`);
+            ports.postLog(`ERROR: unknown deal message status received: ${message.status}`);
             deal.sink.end();
             break;
           }
@@ -130,9 +135,36 @@ class Client {
     const deal = this.ongoingDeals[dealId];
 
     for (const block of blocks) {
-      await this.datastore.putData(block);
-      deal.sizeReceived += block.length;
+      deal.importerSink.push(block.data);
+      deal.sizeReceived += block.data.length;
     }
+  }
+
+  async finishImport({ dealId, blocks }) {
+    ports.postLog(`DEBUG: finishing import ${dealId}`);
+    const deal = this.ongoingDeals[dealId];
+    deal.importerSink.end();
+    await deal.importer;
+  }
+
+  async sendPayment({ dealId }) {
+    ports.postLog(`DEBUG: sending payment ${dealId}`);
+    const deal = this.ongoingDeals[dealId];
+
+    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
+    // const amount = (deal.sizeReceived - deal.sizePaid) * deal.params.pricePerByte;
+    // const paymentVoucher = await this.lotus.createPaymentVoucher(
+    //   deal.paymentChannel,
+    //   deal.lane,
+    //   amount,
+    // );
+
+    deal.sink.push({
+      dealId,
+      status: dealStatuses.paymentSent,
+      // paymentChannel: deal.paymentChannel,
+      // paymentVoucher,
+    });
   }
 
   async sendLastPayment({ dealId }) {

@@ -9,11 +9,20 @@ const jsonStream = {
 
   parse(source) {
     return (async function* () {
+      let bufferedData;
+
       for await (const data of source) {
+        if (bufferedData) {
+          bufferedData.append(data);
+        } else {
+          bufferedData = data;
+        }
+
         try {
-          yield JSON.parse(data.toString());
+          yield JSON.parse(bufferedData.toString());
+          bufferedData = undefined;
         } catch (error) {
-          yield data;
+          // wait for more data until we can parse the json
         }
       }
     })();

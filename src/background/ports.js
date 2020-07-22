@@ -46,6 +46,10 @@ const ports = {
     ports.postMessage(channels.peers, connectedPeers);
   },
 
+  postUploadProgress(progress) {
+    ports.postMessage(channels.uploadProgress, progress);
+  },
+
   postLog(message) {
     if (!message.startsWith('DEBUG') || debug) {
       logs.push(message);

@@ -149,7 +149,7 @@ class Node {
       try {
         this.queriedCids.delete(cid);
         ports.postLog(`INFO: this peer has the CID I asked for: ${multiaddr}`);
-        ports.postLog(`INFO: size: ${params.size}, price per byte: ${params.pricePerByte}`);
+        ports.postLog(`INFO: deal params: ${JSON.stringify(params)}`);
         await this.client.retrieve(cid, params, multiaddr, wallet);
       } catch (error) {
         console.error(error);
@@ -186,14 +186,23 @@ class Node {
       ports.postLog(`DEBUG: uploading ${files.length} files`);
       const { knownCids } = await getOptions();
 
+      const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+      let totalBytesLoaded = 0;
+
       await Promise.all(
         files.map(async file => {
-          const { cid, size } = await this.datastore.putFile(file);
+          const { cid, size } = await this.datastore.putFile(file, {
+            progress: bytesLoaded => {
+              totalBytesLoaded += bytesLoaded;
+              ports.postUploadProgress(totalBytesLoaded / totalBytes);
+            },
+          });
           knownCids[cid] = { size };
           setOptions({ knownCids });
         }),
       );
 
+      ports.postUploadProgress(0);
       ports.postLog(`DEBUG: ${files.length} files uploaded`);
     } catch (error) {
       console.error(error);
@@ -204,7 +213,7 @@ class Node {
   async downloadFile(cid) {
     try {
       ports.postLog(`DEBUG: downloading ${cid}`);
-      const data = await this.datastore.get(cid);
+      const data = await this.datastore.cat(cid);
       const response = await fetch(
         `data:application/octet-stream;base64,${data.toString('base64')}`,
       );

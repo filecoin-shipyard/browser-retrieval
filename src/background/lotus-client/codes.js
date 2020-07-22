@@ -1,9 +1,10 @@
+import { Buffer } from 'buffer';
 import multihash from 'multihashing-async';
 import CID from 'cids';
 import ports from '../ports';
 
 async function makeBuiltin(string) {
-  const buffer = multihash.Buffer.from(string);
+  const buffer = Buffer.from(string);
   const hash = await multihash(buffer, 'identity');
   const cid = new CID(1, 'raw', hash).toString();
   return cid;

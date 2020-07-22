@@ -142,8 +142,6 @@ class Provider {
       params,
       sink,
       sizeSent: 0,
-      sizePaid: 0,
-      nextBlock: 0,
     };
 
     await this.sendDealAccepted({ dealId, wallet: this.wallet });
@@ -162,18 +160,17 @@ class Provider {
   async sendBlocks({ dealId }) {
     ports.postLog(`DEBUG: sending blocks ${dealId}`);
     const deal = this.ongoingDeals[dealId];
+    const entry = await this.datastore.get(deal.cid);
 
-    const data = await this.datastore.get(deal.cid);
+    const blocks = [];
+    let blocksSize = 0;
+    for await (const block of entry.content({ offset: deal.sizeSent })) {
+      blocks.push(block);
+      blocksSize += block.length;
 
-    // TODO: split data into blocks
-    const blocks = [data];
-
-    const blocksToSend = [];
-    let blocksToSendSize = 0;
-    while (blocksToSendSize < deal.params.paymentInterval && deal.nextBlock < blocks.length) {
-      const block = blocks[deal.nextBlock++];
-      blocksToSend.push(block);
-      blocksToSendSize += block.length;
+      if (blocksSize >= deal.params.paymentInterval) {
+        break;
+      }
     }
 
     deal.params.paymentInterval += deal.params.paymentIntervalIncrease;
@@ -181,11 +178,13 @@ class Provider {
     deal.sink.push({
       dealId,
       status:
-        deal.nextBlock === blocks.length
+        deal.sizeSent + blocksSize >= deal.params.size
           ? dealStatuses.fundsNeededLastPayment
           : dealStatuses.fundsNeeded,
-      blocks: blocksToSend,
+      blocks,
     });
+
+    deal.sizeSent += blocksSize;
   }
 
   async checkPaymentVoucherValid({ dealId, paymentChannel, paymentVoucher }) {
