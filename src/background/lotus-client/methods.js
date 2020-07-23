@@ -6,6 +6,7 @@ const methods = {
   },
   paych: {
     updateChannelState: 2,
+    settle: 3,
   },
 };
 

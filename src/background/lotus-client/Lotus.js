@@ -172,8 +172,16 @@ class Lotus {
     });
   }
 
-  closePaymentChannel(paymentChannel) {
-    // TODO: actually close payment channel
+  async closePaymentChannel(paymentChannel) {
+    await this.signAndPostMessage({
+      to: paymentChannel,
+      from: this.wallet,
+      value: '0',
+      method: methods.paych.settle,
+      gaslimit: 10000,
+      gasprice: '0',
+      nonce: await this.getNextNonce(),
+    });
     delete this.paymentChannelsInfo[paymentChannel];
   }
 }
