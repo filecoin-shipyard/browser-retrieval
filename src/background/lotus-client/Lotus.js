@@ -45,8 +45,10 @@ class Lotus {
     }
   };
 
-  signMessage(message) {
-    return JSON.parse(signer.transactionSignLotus(message, this.privateKey));
+  async signAndPostMessage(message) {
+    return this.post('Filecoin.MpoolPush', [
+      JSON.parse(signer.transactionSignLotus(message, this.privateKey)),
+    ]);
   }
 
   async post(method, params = []) {
@@ -108,19 +110,18 @@ class Lotus {
   async getOrCreatePaymentChannel(to, value) {
     // TODO: recycle existing channel
 
-    const messageLink = await this.post('Filecoin.MpoolPush', [
-      this.signMessage({
-        to,
-        from: this.wallet,
-        value: value.toString(),
-        method: methods.init.exec,
-        params: encoder.encodePaymentChannelParams(this.wallet, to),
-        gaslimit: 1000000,
-        gasprice: '1000',
-        nonce: await this.getNextNonce(),
-      }),
-    ]);
-    // got this error if there was no previous message sent by this.wallet
+    const messageLink = await this.signAndPostMessage({
+      to,
+      from: this.wallet,
+      value: value.toString(),
+      method: methods.init.exec,
+      params: encoder.encodePaymentChannelParams(this.wallet, to),
+      gaslimit: 1000000,
+      gasprice: '1000',
+      nonce: await this.getNextNonce(),
+    });
+
+    // TODO: got this error if there was no previous message sent by this.wallet
     // failed to look up actor state nonce: resolution lookup failed (WALLET_ADDRESS): resolve address WALLET_ADDRESS: address not found: broadcasting message despite validation fail
 
     const receipt = await this.waitForMessage(messageLink);
@@ -159,7 +160,16 @@ class Lotus {
   }
 
   async submitPaymentVoucher(paymentChannel, paymentVoucher) {
-    await this.post('Filecoin.PaychVoucherSubmit', [paymentChannel, paymentVoucher]);
+    await this.signAndPostMessage({
+      to: paymentChannel,
+      from: this.wallet,
+      value: '0',
+      method: methods.paych.updateChannelState,
+      params: encoder.encodeVoucher(paymentVoucher),
+      gaslimit: 100000,
+      gasprice: '0',
+      nonce: await this.getNextNonce(),
+    });
   }
 
   closePaymentChannel(paymentChannel) {
