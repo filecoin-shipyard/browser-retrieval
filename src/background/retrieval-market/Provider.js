@@ -106,6 +106,7 @@ class Provider {
           sink.end();
           console.error(error);
           ports.postLog(`ERROR: handle deal message failed: ${error.message}`);
+          await this.closeDeal(message);
         }
       }
     });
@@ -191,15 +192,13 @@ class Provider {
 
   async checkPaymentVoucherValid({ dealId, paymentChannel, paymentVoucher }) {
     ports.postLog(`DEBUG: checking voucher ${dealId}`);
-    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
-    // await this.lotus.checkPaymentVoucherValid(paymentChannel, paymentVoucher);
+    await this.lotus.checkPaymentVoucherValid(paymentChannel, paymentVoucher);
     // TODO: save voucher to submit later if deal fails
   }
 
   async submitPaymentVoucher({ dealId, paymentChannel, paymentVoucher }) {
     ports.postLog(`DEBUG: submitting voucher ${dealId}`);
-    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
-    // await this.lotus.submitPaymentVoucher(paymentChannel, paymentVoucher);
+    await this.lotus.submitPaymentVoucher(paymentChannel, paymentVoucher);
   }
 
   async sendDealCompleted({ dealId }) {
@@ -211,8 +210,12 @@ class Provider {
   async closeDeal({ dealId }) {
     ports.postLog(`DEBUG: closing deal ${dealId}`);
     const deal = this.ongoingDeals[dealId];
-    deal.sink.end();
-    delete this.ongoingDeals[dealId];
+
+    if (deal) {
+      deal.sink.end();
+      delete this.ongoingDeals[dealId];
+    }
+
     ports.postOutboundDeals(this.ongoingDeals);
   }
 }

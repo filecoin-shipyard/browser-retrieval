@@ -1,10 +1,9 @@
-import dagCBOR from 'ipld-dag-cbor';
 import * as signer from '@zondax/filecoin-signing-tools';
 import onOptionsChanged from 'src/shared/onOptionsChanged';
 import getOptions from 'src/shared/getOptions';
 import ports from '../ports';
 import methods from './methods';
-import codes from './codes';
+import encoder from './encoder';
 
 class Lotus {
   static async create() {
@@ -46,22 +45,7 @@ class Lotus {
     }
   };
 
-  cbor(object) {
-    return dagCBOR.util.serialize(object).toString('hex');
-  }
-
-  serializeParams({ CodeCID, ConstructorParams }) {
-    return this.cbor({
-      CodeCID,
-      ConstructorParams: this.cbor(ConstructorParams),
-    });
-  }
-
   signMessage(message) {
-    if (message.params) {
-      message.params = this.serializeParams(message.params);
-    }
-
     return JSON.parse(signer.transactionSignLotus(message, this.privateKey));
   }
 
@@ -83,8 +67,20 @@ class Lotus {
   }
 
   async getNextNonce() {
-    const nonce = await this.post('Filecoin.MpoolGetNonce', [this.wallet]);
-    return nonce + 1;
+    try {
+      const nonce = await this.post('Filecoin.MpoolGetNonce', [this.wallet]);
+      return nonce + 1;
+    } catch (error) {
+      if (
+        error.message ===
+        `resolution lookup failed (${this.wallet}): resolve address ${this.wallet}: address not found`
+      ) {
+        // not sure this should still be happening: https://github.com/filecoin-project/lotus/issues/1907
+        return 0;
+      }
+
+      throw error;
+    }
   }
 
   async waitForMessage(messageLink) {
@@ -118,18 +114,14 @@ class Lotus {
         from: this.wallet,
         value: value.toString(),
         method: methods.init.exec,
-        params: {
-          CodeCID: codes.paymentChannel,
-          ConstructorParams: {
-            From: this.wallet,
-            To: to,
-          },
-        },
+        params: encoder.encodePaymentChannelParams(this.wallet, to),
         gaslimit: 1000000,
         gasprice: '1000',
         nonce: await this.getNextNonce(),
       }),
     ]);
+    // got this error if there was no previous message sent by this.wallet
+    // failed to look up actor state nonce: resolution lookup failed (WALLET_ADDRESS): resolve address WALLET_ADDRESS: address not found: broadcasting message despite validation fail
 
     const receipt = await this.waitForMessage(messageLink);
     console.log(receipt);
@@ -157,16 +149,17 @@ class Lotus {
       Nonce: this.paymentChannelsInfo[paymentChannel].lanesNextNonce[lane]++,
     };
 
-    // TODO: create voucher cbor as per https://github.com/filecoin-project/specs-actors/blob/master/actors/builtin/paych/cbor_gen.go#L552
-    const voucherCbor = this.cbor(voucher);
-
-    voucher.Signature = signer.transactionSignRaw(voucherCbor, this.privateKey);
+    voucher.Signature = signer.transactionSignRaw(encoder.encodeVoucher(voucher), this.privateKey);
 
     return voucher;
   }
 
   async checkPaymentVoucherValid(paymentChannel, paymentVoucher) {
     await this.post('Filecoin.PaychVoucherCheckValid', [paymentChannel, paymentVoucher]);
+  }
+
+  async submitPaymentVoucher(paymentChannel, paymentVoucher) {
+    await this.post('Filecoin.PaychVoucherSubmit', [paymentChannel, paymentVoucher]);
   }
 
   closePaymentChannel(paymentChannel) {
