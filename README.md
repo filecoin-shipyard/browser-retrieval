@@ -7,6 +7,7 @@ The tool is currently unfinished, but we hope to launch it in Q3 of 2020.  Get i
 - [Install](#install)
 - [Add it to your browser](#add-it-to-your-browser)
 - [Development status](#development-status)
+- [The Network](#the-network)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -56,6 +57,16 @@ yarn build
 | Data transfer (bitswap)                         | :white_check_mark: |
 | Can create payment channels + vouchers on chain | :x:                |
 | Retrieval from stoage miners                    | :x:                |
+
+## The Network
+
+This extension forms a [js-libp2p](https://github.com/libp2p/js-libp2p) peer-to-peer network of nodes who use gossipsub to announce content (CIDs) they are seeking, as well as responding to other other peer's requests with offers to provide that content.
+
+![Network diagram](/network-diagram.png)
+
+Since all stored data originates on Filecoin miners, a network component called the **Cloud Lotus** (yellow) provides an interface between the browser retrieval network (green) and the [Lotus](https://github.com/filecoin-project/lotus) storage miners (blue). Retrieval miners can choose to purchase content from storage miners for resale on the browser retrieval network. Retrieval miners compete with one another to make data available for purchase to end users of the retrieval network browser extension.
+
+The [cid_oracle](https://github.com/mgoelzer/cid_oracle) is a public server that provides mappings between Piece CIDs, Payload CIDs and miner addresses that are visible on chain.  This helps retrieval miners locate content to make available for purchase.
 
 ## Contributing
 
