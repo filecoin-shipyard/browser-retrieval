@@ -4,6 +4,7 @@ import getOptions from 'src/shared/getOptions';
 import ports from '../ports';
 import methods from './methods';
 import encoder from './encoder';
+import actors from './actors';
 
 class Lotus {
   static async create() {
@@ -73,10 +74,7 @@ class Lotus {
       const nonce = await this.post('Filecoin.MpoolGetNonce', [this.wallet]);
       return nonce + 1;
     } catch (error) {
-      if (
-        error.message ===
-        `resolution lookup failed (${this.wallet}): resolve address ${this.wallet}: address not found`
-      ) {
+      if (error.message.includes('resolution lookup failed')) {
         // not sure this should still be happening: https://github.com/filecoin-project/lotus/issues/1907
         return 0;
       }
@@ -111,13 +109,13 @@ class Lotus {
     // TODO: recycle existing channel
 
     const messageLink = await this.signAndPostMessage({
-      to,
+      to: actors.init.address,
       from: this.wallet,
       value: value.toString(),
       method: methods.init.exec,
       params: encoder.encodePaymentChannelParams(this.wallet, to),
-      gaslimit: 1000000,
-      gasprice: '1000',
+      gaslimit: 20000000,
+      gasprice: '1',
       nonce: await this.getNextNonce(),
     });
 
