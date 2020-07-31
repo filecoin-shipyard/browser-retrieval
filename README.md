@@ -48,14 +48,16 @@ yarn build
 
 ## Development Status
 
-| **Payment Channels (PCH)**                      |  API Demonstrated  |
+| **Payment Channels (PCH)**                      |  Status            |
 | ----------------------------------------------- | :----------------: |
-| Basic browser extension                         | :white_check_mark: |
+| Basic browser extension ([js-libp2p](https://github.com/libp2p/js-libp2p)) | :white_check_mark: |
 | Peer to peer networking                         | :white_check_mark: |
 | CID discovery by gossipsub (request+response)   | :white_check_mark: |
 | Local CID inventory, retrieval deal status      | :white_check_mark: |
-| Data transfer (bitswap)                         | :white_check_mark: |
-| Can create payment channels + vouchers on chain | :x:                |
+| Graphsync data transfer ([js-ipfs-unixfs](https://github.com/ipfs/js-ipfs-unixfs))        | :white_check_mark: |
+| Hooks for vouchers on each block                | :white_check_mark: |
+| Can create on chain payment channels + vouchers | :x:                |
+| Voucher handling logic                          | :x:                |
 | Retrieval from stoage miners                    | :x:                |
 
 ## The Network
