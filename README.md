@@ -54,7 +54,7 @@ yarn build
 | Peer to peer networking                         | :white_check_mark: |
 | CID discovery by gossipsub (request+response)   | :white_check_mark: |
 | Local CID inventory, retrieval deal status      | :white_check_mark: |
-| Graphsync data transfer ([js-ipfs-unixfs](https://github.com/ipfs/js-ipfs-unixfs))        | :white_check_mark: |
+| Data transfer with [js-ipfs-unixfs](https://github.com/ipfs/js-ipfs-unixfs) chunking       | :white_check_mark: |
 | Hooks for vouchers on each block                | :white_check_mark: |
 | Can create on chain payment channels + vouchers | :x:                |
 | Voucher handling logic                          | :x:                |
