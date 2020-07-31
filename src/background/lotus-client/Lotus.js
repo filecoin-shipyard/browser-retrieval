@@ -83,26 +83,9 @@ class Lotus {
     }
   }
 
-  async waitForMessage(messageLink) {
-    // FIXME: use websockets instead of pooling
-    let keepPooling = true;
-
-    setTimeout(() => {
-      keepPooling = false;
-    }, 10 * 1000);
-
-    while (keepPooling) {
-      try {
-        return await this.post('Filecoin.ChainGetParentReceipts', [messageLink]);
-      } catch (error) {
-        if (error.message === 'blockstore: block not found') {
-          // try again in a second
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        } else {
-          throw error;
-        }
-      }
-    }
+  // TODO: change default confidence to 5 after we make it work
+  async waitForMessage(messageLink, confidence = 1) {
+    return this.post('Filecoin.StateWaitMsg', [messageLink, confidence]);
   }
 
   async getOrCreatePaymentChannel(to, value) {
