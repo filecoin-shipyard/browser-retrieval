@@ -5,6 +5,7 @@ import ports from '../ports';
 import methods from './methods';
 import encoder from './encoder';
 import actors from './actors';
+import decoder from './decoder';
 
 class Lotus {
   static async create() {
@@ -102,14 +103,10 @@ class Lotus {
       nonce: await this.getNextNonce(),
     });
 
-    // TODO: got this error if there was no previous message sent by this.wallet
-    // failed to look up actor state nonce: resolution lookup failed (WALLET_ADDRESS): resolve address WALLET_ADDRESS: address not found: broadcasting message despite validation fail
-
-    const receipt = await this.waitForMessage(messageLink);
-    console.log(receipt);
+    const result = await this.waitForMessage(messageLink);
 
     // TODO: get address from receipt
-    const paymentChannel = 'address';
+    const paymentChannel = decoder.decodePaymentChannelAddressFromReceipt(result.Receipt);
 
     this.paymentChannelsInfo[paymentChannel] = {
       nextLane: 0,
