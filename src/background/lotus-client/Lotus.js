@@ -54,7 +54,6 @@ class Lotus {
   }
 
   async post(method, params = []) {
-    console.log(method, params);
     const response = await fetch(this.lotusEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.lotusToken}` },
