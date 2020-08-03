@@ -105,8 +105,10 @@ class Lotus {
 
     const result = await this.waitForMessage(messageLink);
 
-    // TODO: get address from receipt
-    const paymentChannel = decoder.decodePaymentChannelAddressFromReceipt(result.Receipt);
+    const paymentChannel = decoder.decodePaymentChannelAddressFromReceipt(
+      result.Receipt,
+      this.wallet[0] === 't',
+    );
 
     this.paymentChannelsInfo[paymentChannel] = {
       nextLane: 0,
