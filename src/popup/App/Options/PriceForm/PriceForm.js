@@ -13,7 +13,7 @@ function PriceForm(props) {
     setOptions({
       pricesPerByte: {
         ...options.pricesPerByte,
-        [cid]: parseInt(price, 10),
+        [cid]: price,
       },
     });
   }

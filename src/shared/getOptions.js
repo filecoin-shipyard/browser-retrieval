@@ -3,7 +3,7 @@
 const defaultValues = {
   rendezvousIp: 'jsrc-bootstrap.goelzer.io',
   rendezvousPort: '443',
-  pricesPerByte: { '*': 1000 },
+  pricesPerByte: { '*': '1000' },
   knownCids: {},
   wallet: '',
   privateKey: '',

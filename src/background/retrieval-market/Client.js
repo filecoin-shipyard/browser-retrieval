@@ -1,5 +1,6 @@
 import pipe from 'it-pipe';
 import pushable from 'it-pushable';
+import BigNumber from 'bignumber.js';
 import protocols from 'src/shared/protocols';
 import dealStatuses from 'src/shared/dealStatuses';
 import jsonStream from 'src/shared/jsonStream';
@@ -33,7 +34,10 @@ class Client {
       id: dealId,
       status: dealStatuses.new,
       cid,
-      params: dealParams,
+      params: {
+        ...dealParams,
+        pricePerByte: new BigNumber(dealParams.pricePerByte),
+      },
       peerMultiaddr,
       peerWallet,
       sink,
@@ -117,7 +121,7 @@ class Client {
 
     deal.paymentChannel = await this.lotus.getOrCreatePaymentChannel(
       deal.params.wallet,
-      deal.params.size * deal.params.pricePerByte,
+      deal.params.pricePerByte.multipliedBy(deal.params.size),
     );
     deal.lane = await this.lotus.allocateLane(deal.paymentChannel);
 
@@ -153,7 +157,7 @@ class Client {
     ports.postLog(`DEBUG: sending payment ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
-    const amount = (deal.sizeReceived - deal.sizePaid) * deal.params.pricePerByte;
+    const amount = deal.params.pricePerByte.multipliedBy(deal.sizeReceived - deal.sizePaid);
     const paymentVoucher = await this.lotus.createPaymentVoucher(
       deal.paymentChannel,
       deal.lane,
@@ -172,7 +176,7 @@ class Client {
     ports.postLog(`DEBUG: sending last payment ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
-    const amount = (deal.params.size - deal.sizePaid) * deal.params.pricePerByte;
+    const amount = deal.params.pricePerByte.multipliedBy(deal.params.size - deal.sizePaid);
     const paymentVoucher = await this.lotus.createPaymentVoucher(
       deal.paymentChannel,
       deal.lane,

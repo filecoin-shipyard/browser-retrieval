@@ -1,4 +1,5 @@
 import * as signer from '@zondax/filecoin-signing-tools';
+import BigNumber from 'bignumber.js';
 import onOptionsChanged from 'src/shared/onOptionsChanged';
 import getOptions from 'src/shared/getOptions';
 import ports from '../ports';
@@ -6,6 +7,9 @@ import methods from './methods';
 import encoder from './encoder';
 import actors from './actors';
 import decoder from './decoder';
+
+const gaslimit = 20000000;
+const gasprice = new BigNumber(1);
 
 class Lotus {
   static async create() {
@@ -94,11 +98,11 @@ class Lotus {
     const messageLink = await this.signAndPostMessage({
       to: actors.init.address,
       from: this.wallet,
-      value: value.toString(),
+      value,
       method: methods.init.exec,
       params: encoder.encodePaymentChannelParams(this.wallet, to),
-      gaslimit: 20000000,
-      gasprice: '1',
+      gaslimit,
+      gasprice,
       nonce: await this.getNextNonce(),
     });
 
@@ -127,6 +131,7 @@ class Lotus {
       Lane: lane,
       Amount: amount,
       Nonce: this.paymentChannelsInfo[paymentChannel].lanesNextNonce[lane]++,
+      ChannelAddr: paymentChannel,
     };
 
     voucher.Signature = signer.transactionSignRaw(encoder.encodeVoucher(voucher), this.privateKey);
@@ -142,11 +147,11 @@ class Lotus {
     await this.signAndPostMessage({
       to: paymentChannel,
       from: this.wallet,
-      value: '0',
+      value: new BigNumber(0),
       method: methods.paych.updateChannelState,
       params: encoder.encodeVoucher(paymentVoucher),
-      gaslimit: 100000,
-      gasprice: '0',
+      gaslimit,
+      gasprice,
       nonce: await this.getNextNonce(),
     });
   }
@@ -155,10 +160,10 @@ class Lotus {
     await this.signAndPostMessage({
       to: paymentChannel,
       from: this.wallet,
-      value: '0',
+      value: new BigNumber(0),
       method: methods.paych.settle,
-      gaslimit: 10000,
-      gasprice: '0',
+      gaslimit,
+      gasprice,
       nonce: await this.getNextNonce(),
     });
     delete this.paymentChannelsInfo[paymentChannel];

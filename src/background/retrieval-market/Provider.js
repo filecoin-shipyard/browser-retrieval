@@ -1,5 +1,6 @@
 import pipe from 'it-pipe';
 import pushable from 'it-pushable';
+import BigNumber from 'bignumber.js';
 import onOptionsChanged from 'src/shared/onOptionsChanged';
 import protocols from 'src/shared/protocols';
 import dealStatuses from 'src/shared/dealStatuses';
@@ -51,7 +52,7 @@ class Provider {
     const cidInfo = knownCids[cid];
 
     if (cidInfo) {
-      const pricePerByte = pricesPerByte[cid] || pricesPerByte['*'];
+      const pricePerByte = new BigNumber(pricesPerByte[cid] || pricesPerByte['*']);
       return {
         wallet: this.lotus.wallet,
         size: cidInfo.size,
