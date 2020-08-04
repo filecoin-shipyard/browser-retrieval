@@ -2,6 +2,7 @@ import React from 'react';
 import useOptions from 'src/popup/hooks/useOptions';
 import Tabs from 'src/popup/components/Tabs';
 import Home from './Home';
+import Hooks from './Hooks';
 import Options from './Options';
 import Logs from './Logs';
 import ConnectionIndicator from './ConnectionIndicator';
@@ -11,6 +12,10 @@ const tabs = [
   {
     label: 'Home',
     component: Home,
+  },
+  {
+    label: 'Hooks',
+    component: Hooks,
   },
   {
     label: 'Options',

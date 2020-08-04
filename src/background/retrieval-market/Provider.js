@@ -30,13 +30,13 @@ class Provider {
   }
 
   async updateOptions() {
-    const { paymentInterval, paymentIntervalIncrease } = await getOptions();
-    this.paymentInterval = paymentInterval;
-    this.paymentIntervalIncrease = paymentIntervalIncrease;
+    const { getDealParamsHook } = await getOptions();
+    // eslint-disable-next-line no-new-func
+    this.getDealParamsHook = new Function('cid', getDealParamsHook);
   }
 
   handleOptionsChange = async changes => {
-    if (changes['paymentInterval'] || changes['paymentIntervalIncrease']) {
+    if (changes['getDealParams']) {
       try {
         await this.updateOptions();
       } catch (error) {
@@ -48,18 +48,43 @@ class Provider {
 
   async getDealParams(cid) {
     ports.postLog(`DEBUG: getting deal params for ${cid}`);
-    const { pricesPerByte, knownCids } = await getOptions();
+    const { knownCids } = await getOptions();
     const cidInfo = knownCids[cid];
 
     if (cidInfo) {
-      const pricePerByte = new BigNumber(pricesPerByte[cid] || pricesPerByte['*']);
-      return {
-        wallet: this.lotus.wallet,
-        size: cidInfo.size,
-        pricePerByte,
-        paymentInterval: this.paymentInterval,
-        paymentIntervalIncrease: this.paymentIntervalIncrease,
-      };
+      try {
+        const { pricePerByte, paymentInterval, paymentIntervalIncrease } = this.getDealParamsHook(
+          cid,
+        );
+
+        if (
+          typeof pricePerByte !== 'number' ||
+          typeof paymentInterval !== 'number' ||
+          typeof paymentIntervalIncrease !== 'number' ||
+          pricePerByte <= 0 ||
+          paymentInterval <= 0 ||
+          paymentIntervalIncrease < 0
+        ) {
+          throw new Error(
+            `Invalid deal params returned from hook: ${JSON.stringify({
+              pricePerByte,
+              paymentInterval,
+              paymentIntervalIncrease,
+            })}`,
+          );
+        }
+
+        return {
+          wallet: this.lotus.wallet,
+          size: cidInfo.size,
+          pricePerByte: new BigNumber(pricePerByte),
+          paymentInterval,
+          paymentIntervalIncrease,
+        };
+      } catch (error) {
+        console.error(error);
+        ports.postLog(`ERROR: get deal params hook failed: ${error.message}`);
+      }
     }
 
     return null;
