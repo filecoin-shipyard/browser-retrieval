@@ -9,7 +9,7 @@ import actors from './actors';
 import decoder from './decoder';
 
 const gaslimit = 20000000;
-const gasprice = new BigNumber(1);
+const gasprice = new BigNumber(100);
 
 class Lotus {
   static async create() {
