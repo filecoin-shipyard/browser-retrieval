@@ -75,8 +75,7 @@ class Lotus {
 
   async getNextNonce() {
     try {
-      const nonce = await this.post('Filecoin.MpoolGetNonce', [this.wallet]);
-      return nonce + 1;
+      return await this.post('Filecoin.MpoolGetNonce', [this.wallet]);
     } catch (error) {
       if (error.message.includes('resolution lookup failed')) {
         // not sure this should still be happening: https://github.com/filecoin-project/lotus/issues/1907
