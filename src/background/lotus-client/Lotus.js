@@ -1,4 +1,5 @@
 import * as signer from '@zondax/filecoin-signing-tools';
+import * as signerJs from '@zondax/filecoin-signing-tools/js';
 import BigNumber from 'bignumber.js';
 import onOptionsChanged from 'src/shared/onOptionsChanged';
 import getOptions from 'src/shared/getOptions';
@@ -134,7 +135,10 @@ class Lotus {
       ChannelAddr: paymentChannel,
     };
 
-    voucher.Signature = signer.transactionSignRaw(encoder.encodeVoucher(voucher), this.privateKey);
+    voucher.Signature = signerJs.transactionSignRaw(
+      encoder.encodeVoucher(voucher),
+      this.privateKey,
+    );
 
     return voucher;
   }
@@ -162,6 +166,7 @@ class Lotus {
       from: this.wallet,
       value: new BigNumber(0),
       method: methods.paych.settle,
+      params: [],
       gaslimit,
       gasprice,
       nonce: await this.getNextNonce(),
