@@ -123,6 +123,7 @@ class Lotus {
   async allocateLane(paymentChannel) {
     const lane = this.paymentChannelsInfo[paymentChannel].nextLane++;
     this.paymentChannelsInfo[paymentChannel].lanesNextNonce[lane] = 0;
+    return lane;
   }
 
   async createPaymentVoucher(paymentChannel, lane, amount) {

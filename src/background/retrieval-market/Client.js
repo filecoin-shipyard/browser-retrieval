@@ -123,6 +123,7 @@ class Client {
       deal.params.wallet,
       deal.params.pricePerByte.multipliedBy(deal.params.size),
     );
+
     deal.lane = await this.lotus.allocateLane(deal.paymentChannel);
 
     ports.postLog(`DEBUG: sending payment channel ready ${dealId}`);
