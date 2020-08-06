@@ -19,9 +19,8 @@ const signer = {
   },
 
   async signMessage(message, privateKey) {
-    const encoded = encoder.encodeMessage(message);
-    const digest = signer.getDigest(encoded);
-    const signature = await this.signBytes(digest, privateKey);
+    const cid = signer.getCID(message);
+    const signature = await this.signBytes(cid, privateKey);
 
     return {
       Message: message,
@@ -33,21 +32,20 @@ const signer = {
   },
 
   async signBytes(bytes, privateKey) {
-    const { signature, recid } = secp256k1.ecdsaSign(bytes, privateKey);
+    const digest = signer.getDigest(bytes);
+    const { signature, recid } = secp256k1.ecdsaSign(digest, privateKey);
     return Buffer.concat([Buffer.from(signature), Buffer.from([recid])]).toString('base64');
   },
 
-  getDigest(message) {
+  getDigest(bytes) {
     const blakeContext = blake.blake2bInit(32);
-    blake.blake2bUpdate(blakeContext, CID_PREFIX);
-    blake.blake2bUpdate(blakeContext, signer.getCID(message));
+    blake.blake2bUpdate(blakeContext, bytes);
     return Buffer.from(blake.blake2bFinal(blakeContext));
   },
 
   getCID(message) {
-    const blakeContext = blake.blake2bInit(32);
-    blake.blake2bUpdate(blakeContext, message);
-    return Buffer.from(blake.blake2bFinal(blakeContext));
+    const encoded = encoder.encodeMessage(message);
+    return Buffer.concat([CID_PREFIX, signer.getDigest(encoded)]);
   },
 };
 
