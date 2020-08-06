@@ -1,13 +1,12 @@
-import * as signer from '@zondax/filecoin-signing-tools';
-import * as signerJs from '@zondax/filecoin-signing-tools/js';
 import BigNumber from 'bignumber.js';
 import onOptionsChanged from 'src/shared/onOptionsChanged';
 import getOptions from 'src/shared/getOptions';
 import ports from '../ports';
 import methods from './methods';
-import encoder from './encoder';
 import actors from './actors';
+import encoder from './encoder';
 import decoder from './decoder';
+import signer from './signer';
 
 const gaslimit = 20000000;
 const gasprice = new BigNumber(100);
@@ -33,7 +32,7 @@ class Lotus {
     this.lotusEndpoint = lotusEndpoint;
     this.lotusToken = lotusToken;
     this.wallet = wallet;
-    this.privateKey = signer.keyRecover(privateKey).private_hexstring;
+    this.privateKey = signer.getPrivateKey(privateKey);
   }
 
   handleOptionsChange = async changes => {
@@ -53,9 +52,8 @@ class Lotus {
   };
 
   async signAndPostMessage(message) {
-    return this.post('Filecoin.MpoolPush', [
-      JSON.parse(signer.transactionSignLotus(message, this.privateKey)),
-    ]);
+    const signedMessage = await signer.signMessage(message, this.privateKey);
+    return this.post('Filecoin.MpoolPush', [signedMessage]);
   }
 
   async post(method, params = []) {
@@ -94,23 +92,24 @@ class Lotus {
 
   async getOrCreatePaymentChannel(to, value) {
     // TODO: recycle existing channel
+    const isTestnet = this.wallet[0] === 't';
 
     const messageLink = await this.signAndPostMessage({
-      to: actors.init.address,
-      from: this.wallet,
-      value,
-      method: methods.init.exec,
-      params: encoder.encodePaymentChannelParams(this.wallet, to),
-      gaslimit,
-      gasprice,
-      nonce: await this.getNextNonce(),
+      To: actors.init.address(isTestnet),
+      From: this.wallet,
+      Value: value,
+      Method: methods.init.exec,
+      Params: encoder.encodePaymentChannelParams(this.wallet, to).toString('base64'),
+      GasLimit: gaslimit,
+      GasPrice: gasprice,
+      Nonce: await this.getNextNonce(),
     });
 
     const result = await this.waitForMessage(messageLink);
 
     const paymentChannel = decoder.decodePaymentChannelAddressFromReceipt(
       result.Receipt,
-      this.wallet[0] === 't',
+      isTestnet,
     );
 
     this.paymentChannelsInfo[paymentChannel] = {
@@ -135,10 +134,7 @@ class Lotus {
       ChannelAddr: paymentChannel,
     };
 
-    voucher.Signature = signerJs.transactionSignRaw(
-      encoder.encodeVoucher(voucher),
-      this.privateKey,
-    );
+    voucher.Signature = signer.signBytes(encoder.encodeVoucher(voucher), this.privateKey);
 
     return voucher;
   }
@@ -149,27 +145,26 @@ class Lotus {
 
   async submitPaymentVoucher(paymentChannel, paymentVoucher) {
     await this.signAndPostMessage({
-      to: paymentChannel,
-      from: this.wallet,
-      value: new BigNumber(0),
-      method: methods.paych.updateChannelState,
-      params: encoder.encodeVoucher(paymentVoucher),
-      gaslimit,
-      gasprice,
-      nonce: await this.getNextNonce(),
+      To: paymentChannel,
+      From: this.wallet,
+      Value: new BigNumber(0),
+      Method: methods.paych.updateChannelState,
+      Params: encoder.encodeVoucher(paymentVoucher).toString('base64'),
+      GasLimit: gaslimit,
+      GasPrice: gasprice,
+      Nonce: await this.getNextNonce(),
     });
   }
 
   async closePaymentChannel(paymentChannel) {
     await this.signAndPostMessage({
-      to: paymentChannel,
-      from: this.wallet,
-      value: new BigNumber(0),
-      method: methods.paych.settle,
-      params: [],
-      gaslimit,
-      gasprice,
-      nonce: await this.getNextNonce(),
+      To: paymentChannel,
+      From: this.wallet,
+      Value: new BigNumber(0),
+      Method: methods.paych.settle,
+      GasLimit: gaslimit,
+      GasPrice: gasprice,
+      Nonce: await this.getNextNonce(),
     });
     delete this.paymentChannelsInfo[paymentChannel];
   }

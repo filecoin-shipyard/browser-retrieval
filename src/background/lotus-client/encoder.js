@@ -1,25 +1,30 @@
-import { addressAsBytes } from '@zondax/filecoin-signing-tools/js/src/utils';
 import cbor from 'cbor';
 import base32Decode from 'base32-decode';
-import BigNumber from 'bignumber.js';
 import codes from './codes';
+import addressProtocols from './addressProtocols';
 
 const encoder = {
+  encodeMessage(message) {
+    return cbor.encode([
+      message.Version || 0,
+      encoder.addressAsBytes(message.To),
+      encoder.addressAsBytes(message.From),
+      message.Nonce,
+      encoder.bigNumberAsBytes(message.Value),
+      encoder.bigNumberAsBytes(message.GasPrice),
+      message.GasLimit,
+      message.Method,
+      Buffer.from(message.Params || '', 'base64'),
+    ]);
+  },
+
   encodePaymentChannelParams(from, to) {
-    const params = cbor.encode([addressAsBytes(from), addressAsBytes(to)]);
-    const enc = cbor.encode([codes.paymentChannel, params]);
-    return enc.toString('hex');
+    const params = cbor.encode([encoder.addressAsBytes(from), encoder.addressAsBytes(to)]);
+    return cbor.encode([codes.paymentChannel, params]);
   },
 
   encodeVoucher(voucher) {
-    const amountHex = new BigNumber(voucher.Amount).toString(16);
-    const amountHexFixed = amountHex.length % 2 ? `0${amountHex}` : amountHex;
-    const amountBytes = Buffer.concat([
-      Buffer.from('00', 'hex'),
-      Buffer.from(amountHexFixed, 'hex'),
-    ]);
-
-    const enc = cbor.encode([
+    return cbor.encode([
       encoder.addressAsBytes(voucher.ChannelAddr),
       0, // TimeLockMin
       0, // TimeLockMax
@@ -27,22 +32,33 @@ const encoder = {
       null, // Extra
       voucher.Lane,
       voucher.Nonce,
-      amountBytes,
+      encoder.bigNumberAsBytes(voucher.Amount),
       0, // MinSettleHeight
       [], // Merges
       null, // Signature
     ]);
-
-    return enc.toString('hex');
   },
 
-  // not using zondax's addressAsBytes because of https://github.com/Zondax/filecoin-signing-tools/issues/243
   addressAsBytes(address) {
     const protocolIndicator = address[1];
-    const address_decoded = base32Decode(address.slice(2).toUpperCase(), 'RFC4648');
-    const payload = address_decoded.slice(0, -4);
     const protocolIndicatorByte = `0${protocolIndicator}`;
+
+    if (parseInt(protocolIndicator, 10) === addressProtocols.id) {
+      return Buffer.concat([
+        Buffer.from(protocolIndicatorByte, 'hex'),
+        Buffer.from([parseInt(address.slice(2))]),
+      ]);
+    }
+
+    const addressDecoded = base32Decode(address.slice(2).toUpperCase(), 'RFC4648');
+    const payload = addressDecoded.slice(0, -4);
     return Buffer.concat([Buffer.from(protocolIndicatorByte, 'hex'), Buffer.from(payload)]);
+  },
+
+  bigNumberAsBytes(bigNumber) {
+    const hex = bigNumber.toString(16);
+    const hexFixed = hex.length % 2 ? `0${hex}` : hex;
+    return Buffer.concat([Buffer.from('00', 'hex'), Buffer.from(hexFixed, 'hex')]);
   },
 };
 

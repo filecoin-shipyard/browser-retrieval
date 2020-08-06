@@ -4,7 +4,7 @@ const webpack = require('webpack');
 module.exports = {
   mode: 'none',
   target: 'web',
-  entry: './src/background/index.js',
+  entry: './src/background/background.js',
   resolve: {
     alias: {
       src: path.resolve(__dirname, 'src'),

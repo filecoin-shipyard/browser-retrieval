@@ -1,23 +1,16 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import * as signer from '@zondax/filecoin-signing-tools';
 import useOptions from 'src/popup/hooks/useOptions';
 import Card from 'src/popup/components/Card';
 import Form from 'src/popup/components/Form';
 import InputField from 'src/popup/components/InputField';
 
 function LotusForm(props) {
-  const { handleSubmit, register, setError, errors } = useForm();
+  const { handleSubmit, register, errors } = useForm();
   const [options, setOptions] = useOptions();
 
   function onSubmit(data) {
-    const key = signer.keyRecover(data.privateKey);
-
-    if (key.address === data.wallet || key.address === data.wallet.replace(/^t/, 'f')) {
-      setOptions(data);
-    } else {
-      setError('privateKey', { type: 'manual', message: "Wallet and private key don't match" });
-    }
+    setOptions(data);
   }
 
   return (

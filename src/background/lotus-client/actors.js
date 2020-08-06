@@ -1,7 +1,9 @@
 const actors = {
   init: {
-    address: "t01"
-  }
-}
+    address(isTestnet) {
+      return `${isTestnet ? 't' : 'f'}01`;
+    },
+  },
+};
 
-export default actors
+export default actors;
