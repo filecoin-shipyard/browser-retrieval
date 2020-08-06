@@ -8,8 +8,8 @@ import encoder from './encoder';
 import decoder from './decoder';
 import signer from './signer';
 
-const gaslimit = 20000000;
-const gasprice = new BigNumber(100);
+const gasLimit = 20000000;
+const nblocksincl = 2;
 
 class Lotus {
   static async create() {
@@ -52,6 +52,12 @@ class Lotus {
   };
 
   async signAndPostMessage(message) {
+    const [gasPrice, nonce] = await Promise.all([this.getGasPrice(), this.getNextNonce()]);
+
+    message.GasLimit = gasLimit;
+    message.GasPrice = gasPrice;
+    message.Nonce = nonce;
+
     const signedMessage = await signer.signMessage(message, this.privateKey);
     return this.post('Filecoin.MpoolPush', [signedMessage]);
   }
@@ -70,6 +76,17 @@ class Lotus {
     }
 
     return result;
+  }
+
+  async getGasPrice() {
+    const gasPrice = await this.post('Filecoin.MpoolEstimateGasPrice', [
+      nblocksincl,
+      this.wallet,
+      gasLimit,
+      null,
+    ]);
+
+    return new BigNumber(gasPrice);
   }
 
   async getNextNonce() {
@@ -100,9 +117,6 @@ class Lotus {
       Value: value,
       Method: methods.init.exec,
       Params: encoder.encodePaymentChannelParams(this.wallet, to).toString('base64'),
-      GasLimit: gaslimit,
-      GasPrice: gasprice,
-      Nonce: await this.getNextNonce(),
     });
 
     const result = await this.waitForMessage(messageLink);
@@ -150,9 +164,6 @@ class Lotus {
       Value: new BigNumber(0),
       Method: methods.paych.updateChannelState,
       Params: encoder.encodeVoucher(paymentVoucher).toString('base64'),
-      GasLimit: gaslimit,
-      GasPrice: gasprice,
-      Nonce: await this.getNextNonce(),
     });
   }
 
@@ -162,9 +173,6 @@ class Lotus {
       From: this.wallet,
       Value: new BigNumber(0),
       Method: methods.paych.settle,
-      GasLimit: gaslimit,
-      GasPrice: gasprice,
-      Nonce: await this.getNextNonce(),
     });
     delete this.paymentChannelsInfo[paymentChannel];
   }
