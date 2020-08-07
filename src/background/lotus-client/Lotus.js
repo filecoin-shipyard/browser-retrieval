@@ -58,7 +58,7 @@ class Lotus {
     message.GasPrice = gasPrice;
     message.Nonce = nonce;
 
-    const signedMessage = await signer.signMessage(message, this.privateKey);
+    const signedMessage = signer.signMessage(message, this.privateKey);
     return this.post('Filecoin.MpoolPush', [signedMessage]);
   }
 

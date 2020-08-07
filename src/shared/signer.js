@@ -37,10 +37,10 @@ const signer = {
     return privateKey;
   },
 
-  async signMessage(message, privateKey) {
+  signMessage(message, privateKey) {
     const encoded = encoder.encodeMessage(message);
     const cid = Buffer.concat([cidPrefix, blake2b(encoded, 32)]);
-    const signature = await signer.signBytes(cid, privateKey);
+    const signature = signer.signBytes(cid, privateKey);
 
     return {
       Message: message,
@@ -51,7 +51,7 @@ const signer = {
     };
   },
 
-  async signBytes(bytes, privateKey) {
+  signBytes(bytes, privateKey) {
     const digest = blake2b(bytes, 32);
     const { signature, recid } = secp256k1.ecdsaSign(digest, privateKey);
     return Buffer.concat([Buffer.from(signature), Buffer.from([recid])]).toString('base64');
