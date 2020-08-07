@@ -4,13 +4,22 @@ import useOptions from 'src/popup/hooks/useOptions';
 import Card from 'src/popup/components/Card';
 import Form from 'src/popup/components/Form';
 import InputField from 'src/popup/components/InputField';
+import signer from 'src/shared/signer';
 
 function LotusForm(props) {
-  const { handleSubmit, register, errors } = useForm();
+  const { handleSubmit, register, setError, errors } = useForm();
   const [options, setOptions] = useOptions();
 
   function onSubmit(data) {
-    setOptions(data);
+    try {
+      if (signer.matchWalletAndPrivateKey(data.wallet, data.privateKey)) {
+        setOptions(data);
+      } else {
+        setError('privateKey', { type: 'manual', message: "Wallet and private key don't match" });
+      }
+    } catch (error) {
+      setError('privateKey', error.message);
+    }
   }
 
   return (

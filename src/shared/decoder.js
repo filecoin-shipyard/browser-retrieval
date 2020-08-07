@@ -1,7 +1,7 @@
 import { Buffer } from 'buffer';
 import cbor from 'cbor';
 import base32Encode from 'base32-encode';
-import blake from 'blakejs';
+import blake2b from './blake2b';
 
 const decoder = {
   decodePaymentChannelAddressFromReceipt(receipt, testnet) {
@@ -12,18 +12,12 @@ const decoder = {
   },
 
   bytesToAddress(bytes, testnet) {
-    const checksum = decoder.getChecksum(bytes);
+    const checksum = blake2b(bytes, 4);
     const prefix = `${testnet ? 't' : 'f'}${bytes[0]}`;
     const encoded = base32Encode(Buffer.concat([bytes.slice(1), checksum]), 'RFC4648', {
       padding: false,
     }).toLowerCase();
     return `${prefix}${encoded}`;
-  },
-
-  getChecksum(payload) {
-    const blakeContext = blake.blake2bInit(4);
-    blake.blake2bUpdate(blakeContext, payload);
-    return Buffer.from(blake.blake2bFinal(blakeContext));
   },
 };
 

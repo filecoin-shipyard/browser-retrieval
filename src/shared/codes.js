@@ -1,6 +1,5 @@
 import { Buffer } from 'buffer';
 import CID from 'cids';
-import ports from '../ports';
 
 class EncodableCID extends CID {
   static TAG = 42; // https://github.com/ipld/cid-cbor
@@ -20,12 +19,13 @@ async function makeBuiltin(string) {
 const codes = {};
 
 async function make() {
-  codes.paymentChannel = await makeBuiltin('fil/1/paymentchannel');
+  try {
+    codes.paymentChannel = await makeBuiltin('fil/1/paymentchannel');
+  } catch (error) {
+    console.error(error);
+  }
 }
 
-make().catch(error => {
-  console.error(error);
-  ports.postLog(`ERROR: make lotus client codes failed: ${error.message}`);
-});
+make();
 
 export default codes;

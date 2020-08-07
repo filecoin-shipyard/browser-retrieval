@@ -1,12 +1,12 @@
 import BigNumber from 'bignumber.js';
 import onOptionsChanged from 'src/shared/onOptionsChanged';
 import getOptions from 'src/shared/getOptions';
+import encoder from 'src/shared/encoder';
+import decoder from 'src/shared/decoder';
+import signer from 'src/shared/signer';
 import ports from '../ports';
 import methods from './methods';
 import actors from './actors';
-import encoder from './encoder';
-import decoder from './decoder';
-import signer from './signer';
 
 const gasLimit = 20000000;
 const nblocksincl = 2;
