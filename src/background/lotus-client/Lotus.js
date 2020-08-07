@@ -72,7 +72,7 @@ class Lotus {
     const { error, result } = await response.json();
 
     if (error) {
-      throw error;
+      throw new Error(`Lotus ${method} failed: ${error.message}`);
     }
 
     return result;
