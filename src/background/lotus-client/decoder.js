@@ -5,7 +5,7 @@ import blake from 'blakejs';
 
 const decoder = {
   decodePaymentChannelAddressFromReceipt(receipt, testnet) {
-    const bytes = Buffer.from(receipt.Return, 'base64');
+    const bytes = Buffer.from(receipt, 'base64');
     const hex = bytes.toString('hex');
     const params = cbor.decode(hex);
     return decoder.bytesToAddress(params[1], testnet);

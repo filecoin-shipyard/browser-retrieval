@@ -104,7 +104,15 @@ class Lotus {
 
   // TODO: change default confidence to 5 after we make it work
   async waitForMessage(messageLink, confidence = 1) {
-    return this.post('Filecoin.StateWaitMsg', [messageLink, confidence]);
+    const result = this.post('Filecoin.StateWaitMsg', [messageLink, confidence]);
+
+    if (result.Receipt.ExitCode === 0) {
+      ports.postLog(`INFO: message accepted on the chain: ${messageLink['/']}`);
+    } else {
+      throw new Error(`Message failed to get on the chain (exit code: ${result.Receipt.ExitCode})`);
+    }
+
+    return result;
   }
 
   async getOrCreatePaymentChannel(to, value) {
@@ -122,7 +130,7 @@ class Lotus {
     const result = await this.waitForMessage(messageLink);
 
     const paymentChannel = decoder.decodePaymentChannelAddressFromReceipt(
-      result.Receipt,
+      result.Receipt.Return,
       isTestnet,
     );
 
