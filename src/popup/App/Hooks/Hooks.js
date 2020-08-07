@@ -22,7 +22,7 @@ function Hooks({ className, ...rest }) {
       new Function('cid', data.getDealParamsHook);
       setOptions(data);
     } catch (error) {
-      setError('getDealParamsHook', { type: 'manual', message: 'Invalid function body' });
+      setError('getDealParamsHook', { type: 'manual', message: `${error.name}: ${error.message}` });
     }
   }
 
