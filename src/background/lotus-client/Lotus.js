@@ -94,8 +94,9 @@ class Lotus {
       return await this.post('Filecoin.MpoolGetNonce', [this.wallet]);
     } catch (error) {
       if (error.message.includes('resolution lookup failed')) {
-        // not sure this should still be happening: https://github.com/filecoin-project/lotus/issues/1907
-        return 0;
+        throw new Error(
+          `Failed to get next nonce for wallet (probably doesn't have funds): $${error.message}`,
+        );
       }
 
       throw error;
@@ -104,7 +105,7 @@ class Lotus {
 
   // TODO: change default confidence to 5 after we make it work
   async waitForMessage(messageLink, confidence = 1) {
-    const result = this.post('Filecoin.StateWaitMsg', [messageLink, confidence]);
+    const result = await this.post('Filecoin.StateWaitMsg', [messageLink, confidence]);
 
     if (result.Receipt.ExitCode === 0) {
       ports.postLog(`INFO: message accepted on the chain: ${messageLink['/']}`);
