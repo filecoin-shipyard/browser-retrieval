@@ -149,7 +149,7 @@ class Lotus {
     return lane;
   }
 
-  async createPaymentVoucher(paymentChannel, lane, amount) {
+  createPaymentVoucher(paymentChannel, lane, amount) {
     const voucher = {
       Lane: lane,
       Amount: amount,

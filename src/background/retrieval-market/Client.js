@@ -159,11 +159,7 @@ class Client {
     const deal = this.ongoingDeals[dealId];
 
     const amount = deal.params.pricePerByte.multipliedBy(deal.sizeReceived - deal.sizePaid);
-    const paymentVoucher = await this.lotus.createPaymentVoucher(
-      deal.paymentChannel,
-      deal.lane,
-      amount,
-    );
+    const paymentVoucher = this.lotus.createPaymentVoucher(deal.paymentChannel, deal.lane, amount);
 
     deal.sink.push({
       dealId,
@@ -178,11 +174,7 @@ class Client {
     const deal = this.ongoingDeals[dealId];
 
     const amount = deal.params.pricePerByte.multipliedBy(deal.params.size - deal.sizePaid);
-    const paymentVoucher = await this.lotus.createPaymentVoucher(
-      deal.paymentChannel,
-      deal.lane,
-      amount,
-    );
+    const paymentVoucher = this.lotus.createPaymentVoucher(deal.paymentChannel, deal.lane, amount);
 
     deal.sink.push({
       dealId,
