@@ -11,6 +11,15 @@ function LotusForm(props) {
   const [options, setOptions] = useOptions();
 
   function onSubmit(data) {
+    if (data.wallet[1] !== '1') {
+      setError('wallet', {
+        type: 'manual',
+        message: 'Only secp256k1 wallets are curently supported',
+      });
+
+      return;
+    }
+
     try {
       if (signer.matchWalletAndPrivateKey(data.wallet, data.privateKey)) {
         setOptions(data);
@@ -18,7 +27,7 @@ function LotusForm(props) {
         setError('privateKey', { type: 'manual', message: "Wallet and private key don't match" });
       }
     } catch (error) {
-      setError('privateKey', error.message);
+      setError('privateKey', { type: 'manual', message: error.message });
     }
   }
 
