@@ -150,17 +150,15 @@ class Lotus {
   }
 
   createPaymentVoucher(paymentChannel, lane, amount) {
-    const voucher = {
-      Lane: lane,
-      Amount: amount,
-      Nonce: this.paymentChannelsInfo[paymentChannel].lanesNextNonce[lane]++,
-      ChannelAddr: paymentChannel,
-      Signature: null,
-    };
-
-    voucher.Signature = signer.signBytes(encoder.encodeVoucher(voucher), this.privateKey);
-
-    return voucher;
+    return signer.signVoucher(
+      {
+        Lane: lane,
+        Amount: amount,
+        Nonce: this.paymentChannelsInfo[paymentChannel].lanesNextNonce[lane]++,
+        ChannelAddr: paymentChannel,
+      },
+      this.privateKey,
+    );
   }
 
   async checkPaymentVoucherValid(paymentChannel, paymentVoucher) {

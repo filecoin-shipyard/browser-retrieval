@@ -40,21 +40,27 @@ const signer = {
   signMessage(message, privateKey) {
     const encoded = encoder.encodeMessage(message);
     const cid = Buffer.concat([cidPrefix, blake2b(encoded, 32)]);
-    const signature = signer.signBytes(cid, privateKey);
 
     return {
       Message: message,
-      Signature: {
-        Type: signatureTypes.secp256k1,
-        Data: signature,
-      },
+      Signature: signer.signBytes(cid, privateKey),
+    };
+  },
+
+  signVoucher(voucher, privateKey) {
+    const encoded = encoder.encodeVoucher({ ...voucher, Signature: null });
+
+    return {
+      ...voucher,
+      Signature: signer.signBytes(encoded, privateKey),
     };
   },
 
   signBytes(bytes, privateKey) {
     const digest = blake2b(bytes, 32);
     const { signature, recid } = secp256k1.ecdsaSign(digest, privateKey);
-    return Buffer.concat([Buffer.from(signature), Buffer.from([recid])]).toString('base64');
+    const data = Buffer.concat([Buffer.from(signature), Buffer.from([recid])]).toString('base64');
+    return { Type: signatureTypes.secp256k1, Data: data };
   },
 };
 
