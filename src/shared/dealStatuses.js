@@ -1,15 +1,16 @@
 const dealStatuses = {
-  new: 'DealStatusNew',
-  awaitingAcceptance: 'DealStatusAwaitingAcceptance',
-  accepted: 'DealStatusAccepted',
-  paymentChannelReady: 'DealStatusPaymentChannelReady',
-  fundsNeeded: 'DealStatusFundsNeeded',
-  ongoing: 'DealStatusOngoing',
-  paymentSent: 'DealStatusPaymentSent',
-  fundsNeededLastPayment: 'DealStatusFundsNeededLastPayment',
-  lastPaymentSent: 'DealStatusLastPaymentSent',
-  finalizing: 'DealStatusFinalizing',
-  completed: 'DealStatusCompleted',
+  client: {
+    awaitingAcceptance: 'DealStatusAwaitingAcceptance',
+    paymentChannelReady: 'DealStatusPaymentChannelReady',
+    paymentSent: 'DealStatusPaymentSent',
+    lastPaymentSent: 'DealStatusLastPaymentSent',
+  },
+  provider: {
+    accepted: 'DealStatusAccepted',
+    fundsNeeded: 'DealStatusFundsNeeded',
+    fundsNeededLastPayment: 'DealStatusFundsNeededLastPayment',
+    completed: 'DealStatusCompleted',
+  },
 };
 
 export default dealStatuses;

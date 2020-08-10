@@ -32,7 +32,6 @@ class Client {
     const dealId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
     this.ongoingDeals[dealId] = {
       id: dealId,
-      status: dealStatuses.new,
       cid,
       params: {
         ...dealParams,
@@ -60,28 +59,25 @@ class Client {
         }
 
         switch (message.status) {
-          case dealStatuses.accepted: {
-            deal.status = dealStatuses.accepted;
+          case dealStatuses.provider.accepted: {
             await this.setupPaymentChannel(message);
             break;
           }
 
-          case dealStatuses.fundsNeeded: {
-            deal.status = dealStatuses.ongoing;
+          case dealStatuses.provider.fundsNeeded: {
             await this.receiveBlocks(message);
             await this.sendPayment(message);
             break;
           }
 
-          case dealStatuses.fundsNeededLastPayment: {
-            deal.status = dealStatuses.finalizing;
+          case dealStatuses.provider.fundsNeededLastPayment: {
             await this.receiveBlocks(message);
             await this.finishImport(message);
             await this.sendLastPayment(message);
             break;
           }
 
-          case dealStatuses.completed: {
+          case dealStatuses.provider.completed: {
             await this.closeDeal(message);
             break;
           }
@@ -103,14 +99,13 @@ class Client {
     ports.postLog(`DEBUG: sending deal proposal ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
+    deal.status = dealStatuses.client.awaitingAcceptance;
     deal.sink.push({
       dealId,
-      status: dealStatuses.awaitingAcceptance,
+      status: deal.status,
       cid: deal.cid,
       params: deal.params,
     });
-
-    deal.status = dealStatuses.awaitingAcceptance;
   }
 
   async setupPaymentChannel({ dealId }) {
@@ -125,12 +120,12 @@ class Client {
     deal.lane = await this.lotus.allocateLane(deal.paymentChannel);
 
     ports.postLog(`DEBUG: sending payment channel ready ${dealId}`);
+    deal.status = dealStatuses.client.paymentChannelReady;
     deal.sink.push({
       dealId,
-      status: dealStatuses.paymentChannelReady,
+      status: deal.status,
+      paymentChannel: deal.paymentChannel,
     });
-
-    deal.status = dealStatuses.paymentChannelReady;
   }
 
   async receiveBlocks({ dealId, blocks }) {
@@ -159,10 +154,10 @@ class Client {
     const amount = deal.params.pricePerByte.multipliedBy(deal.sizeReceived - deal.sizePaid);
     const paymentVoucher = this.lotus.createPaymentVoucher(deal.paymentChannel, deal.lane, amount);
 
+    deal.status = dealStatuses.client.paymentSent;
     deal.sink.push({
       dealId,
-      status: dealStatuses.paymentSent,
-      paymentChannel: deal.paymentChannel,
+      status: deal.status,
       paymentVoucher,
     });
   }
@@ -174,10 +169,10 @@ class Client {
     const amount = deal.params.pricePerByte.multipliedBy(deal.params.size - deal.sizePaid);
     const paymentVoucher = this.lotus.createPaymentVoucher(deal.paymentChannel, deal.lane, amount);
 
+    deal.status = dealStatuses.client.lastPaymentSent;
     deal.sink.push({
       dealId,
-      status: dealStatuses.lastPaymentSent,
-      paymentChannel: deal.paymentChannel,
+      status: deal.status,
       paymentVoucher,
     });
   }

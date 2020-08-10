@@ -99,23 +99,24 @@ class Provider {
           ports.postLog(`DEBUG: handling protocol message ${JSON.stringify(message)}`);
 
           switch (message.status) {
-            case dealStatuses.awaitingAcceptance: {
+            case dealStatuses.client.awaitingAcceptance: {
               await this.handleNewDeal(message, sink);
               break;
             }
 
-            case dealStatuses.paymentChannelReady: {
+            case dealStatuses.client.paymentChannelReady: {
+              await this.savePaymentChannel(message);
               await this.sendBlocks(message);
               break;
             }
 
-            case dealStatuses.paymentSent: {
+            case dealStatuses.client.paymentSent: {
               await this.checkPaymentVoucherValid(message);
               await this.sendBlocks(message);
               break;
             }
 
-            case dealStatuses.lastPaymentSent: {
+            case dealStatuses.client.lastPaymentSent: {
               await this.submitPaymentVoucher(message);
               await this.sendDealCompleted(message);
               await this.closeDeal(message);
@@ -162,27 +163,30 @@ class Provider {
       throw new Error('Payment interval increase too large');
     }
 
-    this.ongoingDeals[dealId] = {
+    const deal = {
       id: dealId,
-      status: dealStatuses.awaitingAcceptance,
       cid,
       params,
       sink,
       sizeSent: 0,
     };
 
-    await this.sendDealAccepted({ dealId, wallet: this.wallet });
+    this.ongoingDeals[dealId] = deal;
+
+    ports.postLog(`DEBUG: sending deal accepted ${dealId}`);
+    deal.status = dealStatuses.provider.accepted;
+    deal.sink.push({
+      dealId,
+      status: deal.status,
+    });
+
     ports.postOutboundDeals(this.ongoingDeals);
   }
 
-  sendDealAccepted({ dealId }) {
-    ports.postLog(`DEBUG: sending deal accepted ${dealId}`);
+  async savePaymentChannel({ dealId, paymentChannel }) {
+    ports.postLog(`DEBUG: saving payment channel ${dealId}`);
     const deal = this.ongoingDeals[dealId];
-
-    deal.sink.push({
-      dealId,
-      status: dealStatuses.accepted,
-    });
+    deal.paymentChannel = paymentChannel;
   }
 
   async sendBlocks({ dealId }) {
@@ -202,35 +206,39 @@ class Provider {
     }
 
     deal.params.paymentInterval += deal.params.paymentIntervalIncrease;
+    deal.sizeSent += blocksSize;
+    deal.status =
+      deal.sizeSent < deal.params.size
+        ? dealStatuses.provider.fundsNeeded
+        : dealStatuses.provider.fundsNeededLastPayment;
 
     deal.sink.push({
       dealId,
-      status:
-        deal.sizeSent + blocksSize >= deal.params.size
-          ? dealStatuses.fundsNeededLastPayment
-          : dealStatuses.fundsNeeded,
+      status: deal.status,
       blocks,
     });
 
-    deal.sizeSent += blocksSize;
     ports.postOutboundDeals(this.ongoingDeals);
   }
 
-  async checkPaymentVoucherValid({ dealId, paymentChannel, paymentVoucher }) {
+  async checkPaymentVoucherValid({ dealId, paymentVoucher }) {
     ports.postLog(`DEBUG: checking voucher ${dealId}`);
-    await this.lotus.checkPaymentVoucherValid(paymentChannel, paymentVoucher);
+    const deal = this.ongoingDeals[dealId];
+    await this.lotus.checkPaymentVoucherValid(deal.paymentChannel, paymentVoucher);
     // TODO: save voucher to submit later if deal fails
   }
 
-  async submitPaymentVoucher({ dealId, paymentChannel, paymentVoucher }) {
+  async submitPaymentVoucher({ dealId, paymentVoucher }) {
     ports.postLog(`DEBUG: submitting voucher ${dealId}`);
-    await this.lotus.submitPaymentVoucher(paymentChannel, paymentVoucher);
+    const deal = this.ongoingDeals[dealId];
+    await this.lotus.submitPaymentVoucher(deal.paymentChannel, paymentVoucher);
   }
 
   async sendDealCompleted({ dealId }) {
     ports.postLog(`DEBUG: sending deal completed ${dealId}`);
     const deal = this.ongoingDeals[dealId];
-    deal.sink.push({ dealId, status: dealStatuses.completed });
+    deal.status = dealStatuses.provider.completed;
+    deal.sink.push({ dealId, status: deal.status });
   }
 
   async closeDeal({ dealId }) {
