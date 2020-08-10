@@ -20,7 +20,7 @@ class Client {
     this.cidReceivedCallback = cidReceivedCallback;
   }
 
-  async retrieve(cid, dealParams, peerMultiaddr, peerWallet) {
+  async retrieve(cid, dealParams, peerMultiaddr) {
     ports.postLog(`DEBUG: dialing peer ${peerMultiaddr}`);
     const { stream } = await this.node.dialProtocol(peerMultiaddr, protocols.filecoinRetrieval);
 
@@ -38,8 +38,6 @@ class Client {
         ...dealParams,
         pricePerByte: new BigNumber(dealParams.pricePerByte),
       },
-      peerMultiaddr,
-      peerWallet,
       sink,
       sizeReceived: 0,
       sizePaid: 0,

@@ -144,13 +144,13 @@ class Node {
     }
   }
 
-  async handleQueryResponse({ cid, params, multiaddrs: [multiaddr], wallet }) {
+  async handleQueryResponse({ cid, params, multiaddrs: [multiaddr] }) {
     if (this.queriedCids.has(cid)) {
       try {
         this.queriedCids.delete(cid);
         ports.postLog(`INFO: this peer has the CID I asked for: ${multiaddr}`);
         ports.postLog(`INFO: deal params: ${JSON.stringify(params)}`);
-        await this.client.retrieve(cid, params, multiaddr, wallet);
+        await this.client.retrieve(cid, params, multiaddr);
       } catch (error) {
         console.error(error);
         ports.postLog(`ERROR: handle query response failed: ${error.message}`);
