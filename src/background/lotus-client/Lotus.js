@@ -155,6 +155,7 @@ class Lotus {
       Amount: amount,
       Nonce: this.paymentChannelsInfo[paymentChannel].lanesNextNonce[lane]++,
       ChannelAddr: paymentChannel,
+      Signature: null,
     };
 
     voucher.Signature = signer.signBytes(encoder.encodeVoucher(voucher), this.privateKey);
@@ -172,7 +173,7 @@ class Lotus {
       From: this.wallet,
       Value: new BigNumber(0),
       Method: methods.paych.updateChannelState,
-      Params: encoder.encodeVoucher(paymentVoucher).toString('base64'),
+      Params: encoder.encodeVoucherParams(paymentVoucher).toString('base64'),
     });
   }
 

@@ -35,7 +35,15 @@ const encoder = {
       encoder.bigNumberAsBytes(voucher.Amount),
       0, // MinSettleHeight
       [], // Merges
-      null, // Signature
+      voucher.Signature,
+    ]);
+  },
+
+  encodeVoucherParams(voucher) {
+    return cbor.encode([
+      encoder.encodeVoucher(voucher),
+      Buffer.from(''), // Secret
+      Buffer.from(''), // Proof
     ]);
   },
 
