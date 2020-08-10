@@ -1,5 +1,6 @@
 import cbor from 'cbor';
 import base32Decode from 'base32-decode';
+import BigNumber from 'bignumber.js';
 import codes from './codes';
 import addressProtocols from './addressProtocols';
 
@@ -24,8 +25,19 @@ const encoder = {
   },
 
   encodeVoucher(voucher) {
+    return cbor.encode(encoder.buildVoucherArrayToEncode(voucher));
+  },
+
+  encodeVoucherParams(voucher) {
     return cbor.encode([
-      encoder.addressAsBytes(voucher.ChannelAddr),
+      encoder.buildVoucherArrayToEncode(voucher),
+      Buffer.from(''), // Secret
+      Buffer.from(''), // Proof
+    ]);
+  },
+
+  buildVoucherArrayToEncode(voucher) {
+    return [
       0, // TimeLockMin
       0, // TimeLockMax
       Buffer.from(''), // SecretPreimage
@@ -35,16 +47,8 @@ const encoder = {
       encoder.bigNumberAsBytes(voucher.Amount),
       0, // MinSettleHeight
       [], // Merges
-      voucher.Signature,
-    ]);
-  },
-
-  encodeVoucherParams(voucher) {
-    return cbor.encode([
-      encoder.encodeVoucher(voucher),
-      Buffer.from(''), // Secret
-      Buffer.from(''), // Proof
-    ]);
+      encoder.signatureAsBytes(voucher.Signature),
+    ];
   },
 
   addressAsBytes(address) {
@@ -64,9 +68,27 @@ const encoder = {
   },
 
   bigNumberAsBytes(bigNumber) {
+    if (typeof bigNumber === 'string') {
+      bigNumber = new BigNumber(bigNumber);
+    }
+
+    if (bigNumber.isZero()) {
+      return Buffer.from('');
+    }
+
     const hex = bigNumber.toString(16);
     const hexFixed = hex.length % 2 ? `0${hex}` : hex;
     return Buffer.concat([Buffer.from('00', 'hex'), Buffer.from(hexFixed, 'hex')]);
+  },
+
+  signatureAsBytes(signature) {
+    if (!signature) {
+      return null;
+    }
+
+    return Buffer.concat([
+      Buffer.concat([Buffer.from([signature.Type]), Buffer.from(signature.Data, 'base64')]),
+    ]);
   },
 };
 

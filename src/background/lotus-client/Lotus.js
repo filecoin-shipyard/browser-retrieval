@@ -143,7 +143,7 @@ class Lotus {
     return paymentChannel;
   }
 
-  async allocateLane(paymentChannel) {
+  allocateLane(paymentChannel) {
     const lane = this.paymentChannelsInfo[paymentChannel].nextLane++;
     this.paymentChannelsInfo[paymentChannel].lanesNextNonce[lane] = 0;
     return lane;
@@ -155,7 +155,6 @@ class Lotus {
         Lane: lane,
         Amount: amount,
         Nonce: this.paymentChannelsInfo[paymentChannel].lanesNextNonce[lane]++,
-        ChannelAddr: paymentChannel,
       },
       this.privateKey,
     );
