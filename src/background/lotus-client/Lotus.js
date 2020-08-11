@@ -165,22 +165,27 @@ class Lotus {
   }
 
   async submitPaymentVoucher(paymentChannel, paymentVoucher) {
-    await this.signAndPostMessage({
+    const messageLink = await this.signAndPostMessage({
       To: paymentChannel,
       From: this.wallet,
       Value: new BigNumber(0),
       Method: methods.paych.updateChannelState,
       Params: encoder.encodeVoucherParams(paymentVoucher).toString('base64'),
     });
+
+    await this.waitForMessage(messageLink);
   }
 
   async closePaymentChannel(paymentChannel) {
-    await this.signAndPostMessage({
+    const messageLink = await this.signAndPostMessage({
       To: paymentChannel,
       From: this.wallet,
       Value: new BigNumber(0),
       Method: methods.paych.settle,
     });
+
+    await this.waitForMessage(messageLink);
+
     delete this.paymentChannelsInfo[paymentChannel];
   }
 }

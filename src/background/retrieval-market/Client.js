@@ -169,6 +169,8 @@ class Client {
     const amount = deal.params.pricePerByte.multipliedBy(deal.params.size);
     const paymentVoucher = this.lotus.createPaymentVoucher(deal.paymentChannel, deal.lane, amount);
 
+    await this.lotus.closePaymentChannel(deal.paymentChannel);
+
     deal.status = dealStatuses.client.lastPaymentSent;
     deal.sink.push({
       dealId,
@@ -180,7 +182,6 @@ class Client {
   async closeDeal({ dealId }) {
     ports.postLog(`DEBUG: closing deal ${dealId}`);
     const deal = this.ongoingDeals[dealId];
-    this.lotus.closePaymentChannel(deal.paymentChannel);
     deal.sink.end();
     delete this.ongoingDeals[dealId];
     await this.cidReceivedCallback(deal.cid, deal.params.size);
