@@ -79,7 +79,7 @@ class Lotus {
   }
 
   async getGasPrice() {
-    const gasPrice = await this.post('Filecoin.GasEstimateGasPrice', [
+    const gasPrice = await this.post('Filecoin.GasEsitmateGasPremium', [
       nblocksincl,
       this.wallet,
       gasLimit,
