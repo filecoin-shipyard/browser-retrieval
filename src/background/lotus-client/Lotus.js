@@ -152,6 +152,7 @@ class Lotus {
   createPaymentVoucher(paymentChannel, lane, amount) {
     return signer.signVoucher(
       {
+        ChannelAddr: paymentChannel,
         Lane: lane,
         Amount: amount,
         Nonce: this.paymentChannelsInfo[paymentChannel].lanesNextNonce[lane]++,

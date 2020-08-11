@@ -38,6 +38,7 @@ const encoder = {
 
   buildVoucherArrayToEncode(voucher) {
     return [
+      encoder.addressAsBytes(voucher.ChannelAddr),
       0, // TimeLockMin
       0, // TimeLockMax
       Buffer.from(''), // SecretPreimage
