@@ -225,6 +225,7 @@ class Provider {
     ports.postLog(`DEBUG: checking voucher ${dealId}`);
     const deal = this.ongoingDeals[dealId];
     await this.lotus.checkPaymentVoucherValid(deal.paymentChannel, paymentVoucher);
+    // TODO: check voucher amount
     // TODO: save voucher to submit later if deal fails
   }
 

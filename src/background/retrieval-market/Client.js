@@ -151,7 +151,7 @@ class Client {
     ports.postLog(`DEBUG: sending payment ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
-    const amount = deal.params.pricePerByte.multipliedBy(deal.sizeReceived - deal.sizePaid);
+    const amount = deal.params.pricePerByte.multipliedBy(deal.sizeReceived);
     const paymentVoucher = this.lotus.createPaymentVoucher(deal.paymentChannel, deal.lane, amount);
 
     deal.status = dealStatuses.client.paymentSent;
@@ -166,7 +166,7 @@ class Client {
     ports.postLog(`DEBUG: sending last payment ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
-    const amount = deal.params.pricePerByte.multipliedBy(deal.params.size - deal.sizePaid);
+    const amount = deal.params.pricePerByte.multipliedBy(deal.params.size);
     const paymentVoucher = this.lotus.createPaymentVoucher(deal.paymentChannel, deal.lane, amount);
 
     deal.status = dealStatuses.client.lastPaymentSent;
