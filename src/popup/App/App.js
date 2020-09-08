@@ -4,6 +4,7 @@ import Tabs from 'src/popup/components/Tabs';
 import Home from './Home';
 import Options from './Options';
 import Logs from './Logs';
+import Editor from './Editor';
 import ConnectionIndicator from './ConnectionIndicator';
 import PeersIndicator from './PeersIndicator';
 
@@ -19,6 +20,10 @@ const tabs = [
   {
     label: 'Logs',
     component: Logs,
+  },
+  {
+    label: 'Automation',
+    component: Editor,
   },
 ];
 
