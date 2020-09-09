@@ -8,8 +8,6 @@ import Button from 'src/popup/components/Button';
 import Card from 'src/popup/components/Card';
 import Label from 'src/popup/components/Label';
 import TextArea from 'src/popup/components/TextArea';
-import usePort from 'src/popup/hooks/usePort';
-import channels from 'src/shared/channels';
 import messageTypes from 'src/shared/messageTypes';
 import './Editor.css';
 import Error from "src/popup/components/Error";
@@ -21,6 +19,7 @@ function Editor({className, ...rest}) {
 
   function onSubmit(data) {
     setOptions(data);
+    chrome.runtime.sendMessage({ messageType: messageTypes.editor, data });
   }
 
   return (

@@ -181,6 +181,16 @@ class Node {
     }
   }
 
+  saveEditor(code) {
+    try {
+      console.log(JSON.parse(code));
+      ports.postLog(`INFO: querying for ${code}`);
+    } catch (error) {
+      console.error(error);
+      ports.postLog(`ERROR: publish to topic failed: ${error.message}`);
+    }
+  }
+
   async uploadFiles(files) {
     try {
       ports.postLog(`DEBUG: uploading ${files.length} files`);

@@ -7,6 +7,7 @@ const messageTypes = {
   queryResponse: 'RetrievalQueryResponse',
   dealProposal: 'RetrievalDealProposal',
   dealResponse: 'RetrievalDealResponse',
+  editor: 'CustomEditorCode',
 };
 
 export default messageTypes;
