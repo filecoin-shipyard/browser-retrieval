@@ -4,6 +4,7 @@ import Tabs from 'src/popup/components/Tabs';
 import Home from './Home';
 import Options from './Options';
 import Logs from './Logs';
+import Upload from './Upload';
 import ConnectionIndicator from './ConnectionIndicator';
 import PeersIndicator from './PeersIndicator';
 
@@ -19,6 +20,10 @@ const tabs = [
   {
     label: 'Logs',
     component: Logs,
+  },
+  {
+    label: 'Upload',
+    component: Upload,
   },
 ];
 
