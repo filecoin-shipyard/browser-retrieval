@@ -8,6 +8,7 @@ import Mplex from 'libp2p-mplex';
 import { NOISE } from 'libp2p-noise';
 import Secio from 'libp2p-secio';
 import Gossipsub from 'libp2p-gossipsub';
+import vm from 'vm';
 import topics from 'src/shared/topics';
 import messageTypes from 'src/shared/messageTypes';
 import getOptions from 'src/shared/getOptions';
@@ -181,10 +182,11 @@ class Node {
     }
   }
 
-  saveEditor(code) {
+  async saveEditor() {
     try {
-      console.log(JSON.parse(code));
-      ports.postLog(`INFO: querying for ${code}`);
+      const { codeEditor } = await getOptions();
+      vm.runInThisContext(codeEditor);
+      ports.postLog(`INFO: Parse this code: ${codeEditor}`);
     } catch (error) {
       console.error(error);
       ports.postLog(`ERROR: publish to topic failed: ${error.message}`);

@@ -29,8 +29,7 @@ chrome.runtime.onMessage.addListener(({ messageType, cid }, sender, sendResponse
       break;
 
     case messageTypes.editor:
-      console.log(JSON.parse(cid))
-      node.saveEditor(cid);
+      node.saveEditor();
       break;
 
     case messageTypes.clearLogs:
