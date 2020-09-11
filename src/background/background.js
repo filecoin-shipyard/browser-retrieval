@@ -28,8 +28,8 @@ chrome.runtime.onMessage.addListener(({ messageType, cid }, sender, sendResponse
       node.query(cid);
       break;
 
-    case messageTypes.editor:
-      node.saveEditor();
+    case messageTypes.automation:
+      node.runAutomationCode();
       break;
 
     case messageTypes.clearLogs:

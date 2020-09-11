@@ -11,7 +11,23 @@ const defaultValues = {
   lotusToken: '',
   paymentInterval: 1024 * 1024,
   paymentIntervalIncrease: 1024 * 1024,
-  codeEditor: '//Type your code here',
+  automationCode:
+      '//Dummy example (code will run every 10 minutes)\n' +
+      '// Here\'s how to query the storage network for a CID\n' +
+      '//let cid = "bafk2bzacedgizbdbiiji5rohflf47ax2zgmnkbl2kx3nezrr2ygb7mxdoc3x6"\n' +
+      '//let asks = this.queryStorageMiners(cid)  // dummy func for now\n' +
+      '//for ask in asks {\n' +
+      '//ask["price"], ask["minerId"])\n' +
+      '////////////////////////////////////////////////////////////////////////////////////\n' +
+      '// Here\'s how to retrieve a CID from a storage miner\n' +
+      '// let amt = asks[0]["price"];\n' +
+      '// let miner = ask[0]["minerId"];\n' +
+      '// this.retrieveFromStorageMiner(cid, miner, amt); //dummy for now\n' +
+      '////////////////////////////////////////////////////////////////////////////////////\n' +
+      '// Here\'s how to change the price of a CID your node is offering\n' +
+      '// let cid = "bafk2bzacedgizbdbiiji5rohflf47ax2zgmnkbl2kx3nezrr2ygb7mxdoc3x6"\n' +
+      '// let priceInFil = "0.000000005"; // total price for the CID\n' +
+      '// cids.updatePrice(cid, priceInFil);',
 };
 
 export const optionsKeys = Object.keys(defaultValues);

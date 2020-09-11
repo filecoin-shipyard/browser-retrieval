@@ -26,6 +26,10 @@ class Node {
     return node;
   }
 
+  //Run every 10 minutes
+  automationLoopTime = 600000;
+  lastIntervalId = 0;
+
   connectedPeers = new Set();
   queriedCids = new Set();
 
@@ -182,14 +186,33 @@ class Node {
     }
   }
 
-  async saveEditor() {
+  runInLoop(stop = false) {
+    if (stop) {
+      return clearInterval(this.lastIntervalId);
+    }
+
+    return setInterval(async function(){
+      const {automationCode} = await getOptions();
+
+      try {
+        vm.runInThisContext(automationCode);
+      } catch (error) {
+        ports.postLog(`ERROR: automation loop failed: ${error.message}`);
+      }
+    }, this.automationLoopTime);
+  }
+
+  async runAutomationCode() {
     try {
-      const { codeEditor } = await getOptions();
-      vm.runInThisContext(codeEditor);
-      ports.postLog(`INFO: Parse this code: ${codeEditor}`);
+      const {automationCode} = await getOptions();
+      ports.postLog(`INFO: automation code saved`);
+
+      vm.runInThisContext(automationCode);
+      this.lastIntervalId = this.runInLoop();
     } catch (error) {
       console.error(error);
-      ports.postLog(`ERROR: publish to topic failed: ${error.message}`);
+      ports.postLog(`ERROR: automation code failed: ${error.message}`);
+      this.runInLoop(true);
     }
   }
 
