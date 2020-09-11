@@ -210,7 +210,6 @@ class Node {
       vm.runInThisContext(automationCode);
       this.lastIntervalId = this.runInLoop();
     } catch (error) {
-      console.error(error);
       ports.postLog(`ERROR: automation code failed: ${error.message}`);
       this.runInLoop(true);
     }
