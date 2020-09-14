@@ -8,6 +8,7 @@ const messageTypes = {
   dealProposal: 'RetrievalDealProposal',
   dealResponse: 'RetrievalDealResponse',
   automation: 'AutomationCode',
+  automationStop: 'AutomationCodeStop',
 };
 
 export default messageTypes;

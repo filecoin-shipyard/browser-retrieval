@@ -22,8 +22,12 @@ function Editor({className, ...rest}) {
     chrome.runtime.sendMessage({ messageType: messageTypes.automation, data });
   }
 
+  function onBlur() {
+    chrome.runtime.sendMessage({ messageType: messageTypes.automationStop });
+  }
+
   return (
-      <div className={classNames(className, 'p-4')} {...rest}>
+      <div className={classNames(className, 'p-4')} {...rest} onBlur={onBlur}>
         <Card className="p-4">
           <Form className="flex-col" onSubmit={handleSubmit(onSubmit)}>
             <div className="flex">

@@ -27,7 +27,7 @@ class Node {
   }
 
   //Run every 10 minutes
-  automationLoopTime = 600000;
+  automationLoopTime = 10000;
   lastIntervalId = 0;
 
   connectedPeers = new Set();
@@ -191,15 +191,19 @@ class Node {
       return clearInterval(this.lastIntervalId);
     }
 
-    return setInterval(async function(){
+    return setInterval(async () => {
       const {automationCode} = await getOptions();
 
       try {
-        vm.runInThisContext(automationCode);
+        eval(automationCode);
       } catch (error) {
         ports.postLog(`ERROR: automation loop failed: ${error.message}`);
       }
     }, this.automationLoopTime);
+  }
+
+  stopLoop() {
+    return clearInterval(this.lastIntervalId);
   }
 
   async runAutomationCode() {
@@ -207,7 +211,7 @@ class Node {
       const {automationCode} = await getOptions();
       ports.postLog(`INFO: automation code saved`);
 
-      vm.runInThisContext(automationCode);
+      eval(automationCode)
       this.lastIntervalId = this.runInLoop();
     } catch (error) {
       ports.postLog(`ERROR: automation code failed: ${error.message}`);
