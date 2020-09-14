@@ -20,7 +20,7 @@ const defaultValues = {
       '// Here\'s how to retrieve a CID from a storage miner\n' +
       '//let amt = \'12\';\n' +
       '//let miner = \'t1234\';\n' +
-      'this.retrieveFromStorageMiner(cid, miner, amt); //dummy for now\n' +
+      '//this.retrieveFromStorageMiner(cid, miner, amt); //dummy for now\n' +
       '////////////////////////////////////////////////////////////////////////////////////\n' +
       '// Here\'s how to change the price of a CID your node is offering\n' +
       'let price = "5000"; // total price for the CID (Price/byte AttoFIL)\n' +
