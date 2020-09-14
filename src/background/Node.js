@@ -219,6 +219,18 @@ class Node {
     }
   }
 
+  queryStorageMiners(cid) {
+    ports.postLog(`INFO: dummy query storage miners function called with cid: ${cid}`);
+  }
+
+  retrieveFromStorageMiner(cid, miner, amount) {
+    ports.postLog(`INFO: dummy retrieve from storage miners function called with cid: ${cid}, miner: ${miner}, amount: ${amount}`);
+  }
+
+  updatePrice(cid, price) {
+    ports.postLog(`INFO: dummy update price function called with cid: ${cid}, price: ${price}`);
+  }
+
   async uploadFiles(files) {
     try {
       ports.postLog(`DEBUG: uploading ${files.length} files`);
