@@ -8,7 +8,6 @@ import Mplex from 'libp2p-mplex';
 import { NOISE } from 'libp2p-noise';
 import Secio from 'libp2p-secio';
 import Gossipsub from 'libp2p-gossipsub';
-import vm from 'vm';
 import topics from 'src/shared/topics';
 import messageTypes from 'src/shared/messageTypes';
 import getOptions from 'src/shared/getOptions';
@@ -27,7 +26,7 @@ class Node {
   }
 
   //Run every 10 minutes
-  automationLoopTime = 10000;
+  automationLoopTime = 600000;
   lastIntervalId = 0;
 
   connectedPeers = new Set();
