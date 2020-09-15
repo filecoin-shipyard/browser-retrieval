@@ -7,7 +7,7 @@ const messageTypes = {
   queryResponse: 'RetrievalQueryResponse',
   dealProposal: 'RetrievalDealProposal',
   dealResponse: 'RetrievalDealResponse',
-  automationStart: 'AutomationCode',
+  automationStart: 'AutomationCodeStart',
   automationStop: 'AutomationCodeStop',
 };
 
