@@ -19,7 +19,7 @@ function Editor({className, ...rest}) {
 
   function onSubmit(data) {
     setOptions(data);
-    chrome.runtime.sendMessage({ messageType: messageTypes.automation, data });
+    chrome.runtime.sendMessage({ messageType: messageTypes.automationStart, data });
   }
 
   function onBlur() {

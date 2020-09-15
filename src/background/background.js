@@ -28,7 +28,7 @@ chrome.runtime.onMessage.addListener(({ messageType, cid }, sender, sendResponse
       node.query(cid);
       break;
 
-    case messageTypes.automation:
+    case messageTypes.automationStart:
       node.runAutomationCode();
       break;
 
