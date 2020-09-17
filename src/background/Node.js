@@ -218,14 +218,6 @@ class Node {
     }
   }
 
-  queryStorageMiners(cid) {
-    ports.postLog(`INFO: dummy query storage miners function called with cid: ${cid}`);
-  }
-
-  retrieveFromStorageMiner(cid, miner, amount) {
-    ports.postLog(`INFO: dummy retrieve from storage miners function called with cid: ${cid}, miner: ${miner}, amount: ${amount}`);
-  }
-
   async updatePrice(cid, price) {
     ports.postLog(`INFO: update price: ${price} for cid: ${cid}`);
     const { pricesPerByte } = await getOptions();
