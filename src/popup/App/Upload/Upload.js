@@ -1,13 +1,15 @@
 /* global chrome */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import classNames from 'classnames';
 import { useDropzone } from 'react-dropzone';
 import usePort from 'src/popup/hooks/usePort';
+import IconButton from 'src/popup/components/IconButton';
 import messageTypes from 'src/shared/messageTypes';
 import channels from 'src/shared/channels';
 
 function Upload({ className, ...rest }) {
+  const [finishUpload, setFinishUpload] = useState(false);
   const progress = usePort(channels.uploadProgress) || 0;
   const onDrop = useCallback(files => {
     // workaround because files are not JSON-ifiable
@@ -16,6 +18,16 @@ function Upload({ className, ...rest }) {
 
     chrome.runtime.sendMessage({ messageType: messageTypes.uploadFiles });
   }, []);
+
+  useEffect(() => {
+      if (progress === 1) {
+          setFinishUpload(true);
+
+          setTimeout(() => {
+              setFinishUpload(false)
+          }, 2000)
+      }
+  }, [progress])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
@@ -37,7 +49,7 @@ function Upload({ className, ...rest }) {
             style={{ transform: `translateX(${(progress - 1) * 100}%)` }}
         />
         <input {...getInputProps()} />
-        <span className="relative">Drop files or click here</span>
+        <span className="relative">{finishUpload ? <IconButton icon="success" /> : 'Drop files or click here'}</span>
       </div>
     </div>
   );
