@@ -8,6 +8,7 @@ import Mplex from 'libp2p-mplex';
 import { NOISE } from 'libp2p-noise';
 import Secio from 'libp2p-secio';
 import Gossipsub from 'libp2p-gossipsub';
+import Boostrap from 'libp2p-bootstrap';
 import topics from 'src/shared/topics';
 import messageTypes from 'src/shared/messageTypes';
 import getOptions from 'src/shared/getOptions';
@@ -29,9 +30,10 @@ class Node {
   queriedCids = new Set();
 
   async initialize({ rendezvousIp, rendezvousPort, wallet }) {
-    const rendezvousProtocol = /^\d+\.\d+\.\d+\.\d+$/.test(rendezvousIp) ? 'ip4' : 'dns4';
-    const rendezvousWsProtocol = `${rendezvousPort}` === '443' ? 'wss' : 'ws';
-    const rendezvousAddress = `/${rendezvousProtocol}/${rendezvousIp}/tcp/${rendezvousPort}/${rendezvousWsProtocol}/p2p-webrtc-star`;
+    // ToDo: remove these lines at cleanup
+    // const rendezvousProtocol = /^\d+\.\d+\.\d+\.\d+$/.test(rendezvousIp) ? 'ip4' : 'dns4';
+    // const rendezvousWsProtocol = `${rendezvousPort}` === '443' ? 'wss' : 'ws';
+    // const rendezvousAddress = `/${rendezvousProtocol}/${rendezvousIp}/tcp/${rendezvousPort}/${rendezvousWsProtocol}/p2p-webrtc-star`;
 
     ports.postLog('DEBUG: creating peer id');
     this.peerId = await PeerId.create();
@@ -41,14 +43,29 @@ class Node {
     this.node = await Libp2p.create({
       peerId: this.peerId,
       modules: {
-        transport: [Websockets, WebrtcStar],
+        transport: [Websockets],
         streamMuxer: [Mplex],
         connEncryption: [NOISE, Secio],
         pubsub: Gossipsub,
+        peerDiscovery: [Boostrap]
       },
       addresses: {
-        listen: [rendezvousAddress],
+        listen: [], 
       },
+      config: {
+        peerDiscovery: {
+          bootstrap: {
+            list: [
+              '/dns4/bootstrap-0.testnet.fildev.network/tcp/1347/ws',
+              '/dns4/bootstrap-1.testnet.fildev.network/tcp/1347/ws',
+              '/dns4/bootstrap-2.testnet.fildev.network/tcp/1347/ws',
+              '/dns4/bootstrap-4.testnet.fildev.network/tcp/1347/ws',
+              '/dns4/bootstrap-3.testnet.fildev.network/tcp/1347/ws',
+              '/dns4/bootstrap-5.testnet.fildev.network/tcp/1347/ws'
+            ]
+          }
+        }
+      }
     });
 
     ports.postLog('DEBUG: creating lotus client');
