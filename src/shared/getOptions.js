@@ -11,6 +11,10 @@ const defaultValues = {
   lotusToken: '',
   paymentInterval: 1024 * 1024,
   paymentIntervalIncrease: 1024 * 1024,
+  offerInfo: {
+    cid: undefined,
+    offers: [],
+  },
 };
 
 export const optionsKeys = Object.keys(defaultValues);

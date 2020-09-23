@@ -25,6 +25,12 @@ const iconRenderers = {
             d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/>
     </svg>
   ),
+  close: () => (
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+      <line x1="2" y1="2" x2="12" y2="12" style={ { stroke: 'rgb(255,0,0)', 'stroke-width': 2 } } />
+      <line x1="12" y1="2" x2="2" y2="12" style={ { stroke: 'rgb(255,0,0)', 'stroke-width': 2 } } />
+    </svg>    
+  ),
 };
 
 function IconButton({ className, icon, danger, ...rest }) {
