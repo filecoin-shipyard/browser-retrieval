@@ -32,6 +32,10 @@ chrome.runtime.onMessage.addListener(({ messageType, cid }, sender, sendResponse
       ports.clearLogs();
       break;
 
+    case messageTypes.openExtensionInBrowser:
+      openExtensionInBrowser();
+      break;
+
     default:
       break;
   }
@@ -70,3 +74,9 @@ async function startNode() {
 }
 
 startNode();
+
+function openExtensionInBrowser() {
+  chrome.tabs.create({
+    url: "index.html"
+  });
+}
