@@ -1,21 +1,19 @@
-import React from 'react';
-import OpenInBrowserIndicator from 'src/popup/components/OpenInBrowserIndicator';
+/* global chrome */
 
-function OpenExtensionInBrowserIndicator(props) {
+import React from 'react';
+import IconButton from "src/popup/components/IconButton";
+import messageTypes from "src/shared/messageTypes";
+import classNames from "classnames";
+
+function OpenExtensionInBrowserIndicator({ className, ...rest }) {
+    function toggleSendMessage() {
+        chrome.runtime.sendMessage({ messageType: messageTypes.openExtensionInBrowser });
+    }
 
   return (
-      <OpenInBrowserIndicator
-          icon={
-              <svg width="16" height="16" viewBox="0 0 433 466" version="1.1" xmlns="http://www.w3.org/2000/svg">
-                  <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                      <g id="open-in-browser" fill="#000000" fill-rule="nonzero">
-                          <path d="M382.257812,0 C286.960345,0 222.895318,0 190.062732,0 C173.761349,0 159.083238,0 146.0284,0 C124.853686,0 93.0916154,0 50.7421875,0 C22.7613063,0 0,25.8549438 0,57.6388889 L0,357.361111 C0,389.145056 22.7613063,415 50.7421875,415 L164.912109,415 L164.912109,376.574074 L50.7421875,376.574074 C41.4163282,376.574074 33.828125,367.954509 33.828125,357.361111 L33.828125,153.703704 L399.171875,153.703704 L399.171875,357.361111 C399.171875,367.954509 391.583672,376.574074 382.257812,376.574074 L267.242188,376.574074 L267.242188,415 L382.257812,415 C410.238694,415 433,389.145056 433,357.361111 L433,57.6388889 C433,25.8549438 410.238694,0 382.257812,0 Z M38.3675889,123 L38.3675889,55.5 C38.3675889,43.094238 45.9486525,33 55.2657371,33 L386.469441,33 C395.786525,33 403.367589,43.094238 403.367589,55.5 L403.367589,123 L38.3675889,123 Z M87.8695652,60.5 C87.8695652,70.1660156 80.0665452,78 70.4387352,78 C60.8109251,78 53.0079051,70.1660156 53.0079051,60.5 C53.0079051,50.8339844 60.8109251,43 70.4387352,43 C80.0665452,43 87.8695652,50.8339844 87.8695652,60.5 Z M148.87747,60.5 C148.87747,70.1660156 141.07445,78 131.44664,78 C121.81883,78 114.01581,70.1660156 114.01581,60.5 C114.01581,50.8339844 121.81883,43 131.44664,43 C141.07445,43 148.87747,50.8339844 148.87747,60.5 Z M265.664032,306.705729 L231.673913,271.613287 L231.673913,411.726471 C231.673913,441.497404 208.217191,465.714844 179.381423,465.714844 L79.1541502,465.714844 L79.1541502,429.722595 L179.381423,429.722595 C188.992211,429.722595 196.812253,421.648944 196.812253,411.726471 L196.812253,271.613287 L162.822134,306.705729 L138.170447,281.25457 L214.243083,202.714844 L290.315719,281.25457 L265.664032,306.705729 Z" id="Shape"></path>
-                      </g>
-                  </g>
-              </svg>
-          }
-          {...props}
-      />
+      <div className={classNames(className, 'relative mx-2')} {...rest}>
+          <IconButton icon="openInBrowser" onClick={toggleSendMessage} />
+      </div>
   );
 }
 
