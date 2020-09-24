@@ -10,15 +10,28 @@ function RendezvousForm(props) {
   const [options, setOptions] = useOptions();
 
   function onSubmit(data) {
-    setOptions({...data, unsaved: false});
+    const aggregated = options.unsavedForms.payment || options.unsavedForms.price || options.unsavedForms.lotus;
+
+    setOptions({
+      ...data, unsavedForms: {
+        ...options.unsavedForms,
+        rendezvous: false,
+        unsaved: aggregated
+      }
+    });
   }
 
   function handleChange() {
-    setOptions({unsaved: true});
+    setOptions({
+      unsavedForms: {
+        ...options.unsavedForms,
+        rendezvous: true,
+      }
+    });
   }
 
   return (
-    <Card {...props}>
+    <Card {...props} className={options.unsavedForms.rendezvous && options.unsaved ? 'border-2-blue mb-4' : 'mb-4'}>
       <Form onSubmit={handleSubmit(onSubmit)} onChange={handleChange}>
         <InputField
           ref={register({ required: 'Required' })}

@@ -12,20 +12,31 @@ function LotusForm(props) {
 
   function onSubmit(data) {
     const key = signer.keyRecover(data.privateKey);
+    const aggregated = options.unsavedForms.payment || options.unsavedForms.price || options.unsavedForms.rendezvous;
 
     if (key.address === data.wallet || key.address === data.wallet.replace(/^t/, 'f')) {
-      setOptions({...data, unsaved: false});
+      setOptions({
+        ...data, unsavedForms: {
+          ...options.unsavedForms,
+          lotus: false,
+        }, unsaved: aggregated,
+      });
     } else {
       setError('privateKey', { type: 'manual', message: "Wallet and private key don't match" });
     }
   }
 
   function handleChange() {
-    setOptions({unsaved: true});
+    setOptions({
+      unsavedForms: {
+        ...options.unsavedForms,
+        lotus: true,
+      }
+    });
   }
 
   return (
-    <Card {...props}>
+    <Card {...props} className={options.unsavedForms.lotus && options.unsaved ? 'border-2-blue mb-4' : 'mb-4'}>
       <Form className="flex-col" onSubmit={handleSubmit(onSubmit)} onChange={handleChange}>
         <div className="flex mb-4">
           <InputField

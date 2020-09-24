@@ -10,21 +10,32 @@ function PriceForm(props) {
   const [options, setOptions] = useOptions();
 
   function onSubmit({ cid, price }) {
+    const aggregated = options.unsavedForms.payment || options.unsavedForms.rendezvous || options.unsavedForms.lotus;
+
     setOptions({
       pricesPerByte: {
         ...options.pricesPerByte,
         [cid]: parseInt(price, 10),
       },
-      unsaved: false,
+      unsavedForms: {
+        ...options.unsavedForms,
+        price: false,
+      },
+      unsaved: aggregated,
     });
   }
 
   function handleChange() {
-    setOptions({unsaved: true});
+    setOptions({
+      unsavedForms: {
+        ...options.unsavedForms,
+        price: true,
+      }
+    });
   }
 
   return (
-    <Card {...props}>
+    <Card {...props} className={options.unsavedForms.price && options.unsaved ? 'border-2-blue mb-4' : 'mb-4'}>
       <Form onSubmit={handleSubmit(onSubmit)} onChange={handleChange}>
         <InputField
           ref={register({ required: 'Required' })}

@@ -7,14 +7,21 @@ function Tabs({ className, tabs, children, ...rest }) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState(tabs[0]);
   const Component = currentTab.component;
-  const [options] = useOptions();
+  const [options, setOptions] = useOptions();
 
   function toggleIsOpen() {
     setIsOpen(!isOpen);
   }
 
   function checkUnsaved(tab) {
-    options.unsaved ? setIsOpen(true) : setCurrentTab(tab);
+    const aggregated = options.unsavedForms.rendezvous || options.unsavedForms.price || options.unsavedForms.lotus || options.unsavedForms.payment;
+
+    if (aggregated && tab.label !== 'Options') {
+      setIsOpen(true);
+      setOptions({unsaved: true});
+    } else {
+      setCurrentTab(tab);
+    }
   }
 
   return (

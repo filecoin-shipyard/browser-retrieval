@@ -25,7 +25,8 @@ const defaultValues = {
       '// Here\'s how to change the price of a CID your node is offering\n' +
       'let price = "5000"; // total price for the CID (Price/byte AttoFIL)\n' +
       'this.updatePrice(cid, price);',
-  unsaved: false
+  unsaved: false,
+  unsavedForms: {lotus: false, payment: false, price: false, rendezvous: false}
 };
 
 export const optionsKeys = Object.keys(defaultValues);
