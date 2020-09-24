@@ -4,6 +4,7 @@ import Tabs from 'src/popup/components/Tabs';
 import Home from './Home';
 import Options from './Options';
 import Logs from './Logs';
+import Editor from './Editor';
 import Upload from './Upload';
 import ConnectionIndicator from './ConnectionIndicator';
 import PeersIndicator from './PeersIndicator';
@@ -25,6 +26,10 @@ const tabs = [
   {
     label: 'Upload',
     component: Upload,
+  },
+  {
+    label: 'Automation',
+    component: Editor,
   },
 ];
 

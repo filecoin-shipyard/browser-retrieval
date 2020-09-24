@@ -7,6 +7,8 @@ const messageTypes = {
   queryResponse: 'RetrievalQueryResponse',
   dealProposal: 'RetrievalDealProposal',
   dealResponse: 'RetrievalDealResponse',
+  automationStart: 'AutomationCodeStart',
+  automationStop: 'AutomationCodeStop',
   openExtensionInBrowser: 'openExtensionInBrowser',
 };
 

@@ -28,6 +28,14 @@ chrome.runtime.onMessage.addListener(({ messageType, cid }, sender, sendResponse
       node.query(cid);
       break;
 
+    case messageTypes.automationStart:
+      node.runAutomationCode();
+      break;
+
+    case messageTypes.automationStop:
+      node.stopLoop();
+      break;
+
     case messageTypes.clearLogs:
       ports.clearLogs();
       break;

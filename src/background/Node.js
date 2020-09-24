@@ -8,6 +8,7 @@ import Mplex from 'libp2p-mplex';
 import { NOISE } from 'libp2p-noise';
 import Secio from 'libp2p-secio';
 import Gossipsub from 'libp2p-gossipsub';
+import Boostrap from 'libp2p-bootstrap';
 import topics from 'src/shared/topics';
 import messageTypes from 'src/shared/messageTypes';
 import getOptions from 'src/shared/getOptions';
@@ -25,13 +26,18 @@ class Node {
     return node;
   }
 
+  //Run every 10 minutes
+  automationLoopTime = 600000;
+  lastIntervalId = 0;
+
   connectedPeers = new Set();
   queriedCids = new Set();
 
   async initialize({ rendezvousIp, rendezvousPort, wallet }) {
-    const rendezvousProtocol = /^\d+\.\d+\.\d+\.\d+$/.test(rendezvousIp) ? 'ip4' : 'dns4';
-    const rendezvousWsProtocol = `${rendezvousPort}` === '443' ? 'wss' : 'ws';
-    const rendezvousAddress = `/${rendezvousProtocol}/${rendezvousIp}/tcp/${rendezvousPort}/${rendezvousWsProtocol}/p2p-webrtc-star`;
+    // ToDo: remove these lines at cleanup
+    // const rendezvousProtocol = /^\d+\.\d+\.\d+\.\d+$/.test(rendezvousIp) ? 'ip4' : 'dns4';
+    // const rendezvousWsProtocol = `${rendezvousPort}` === '443' ? 'wss' : 'ws';
+    // const rendezvousAddress = `/${rendezvousProtocol}/${rendezvousIp}/tcp/${rendezvousPort}/${rendezvousWsProtocol}/p2p-webrtc-star`;
 
     ports.postLog('DEBUG: creating peer id');
     this.peerId = await PeerId.create();
@@ -41,14 +47,29 @@ class Node {
     this.node = await Libp2p.create({
       peerId: this.peerId,
       modules: {
-        transport: [Websockets, WebrtcStar],
+        transport: [Websockets],
         streamMuxer: [Mplex],
         connEncryption: [NOISE, Secio],
         pubsub: Gossipsub,
+        peerDiscovery: [Boostrap]
       },
       addresses: {
-        listen: [rendezvousAddress],
+        listen: [], 
       },
+      config: {
+        peerDiscovery: {
+          bootstrap: {
+            list: [
+              '/dns4/bootstrap-0.testnet.fildev.network/tcp/1347/ws',
+              '/dns4/bootstrap-1.testnet.fildev.network/tcp/1347/ws',
+              '/dns4/bootstrap-2.testnet.fildev.network/tcp/1347/ws',
+              '/dns4/bootstrap-4.testnet.fildev.network/tcp/1347/ws',
+              '/dns4/bootstrap-3.testnet.fildev.network/tcp/1347/ws',
+              '/dns4/bootstrap-5.testnet.fildev.network/tcp/1347/ws'
+            ]
+          }
+        }
+      }
     });
 
     ports.postLog('DEBUG: creating lotus client');
@@ -179,6 +200,51 @@ class Node {
       console.error(error);
       ports.postLog(`ERROR: publish to topic failed: ${error.message}`);
     }
+  }
+
+  runInLoop(stop = false) {
+    if (stop) {
+      return clearInterval(this.lastIntervalId);
+    }
+
+    return setInterval(async () => {
+      const {automationCode} = await getOptions();
+
+      try {
+        eval(automationCode);
+      } catch (error) {
+        ports.postLog(`ERROR: automation loop failed: ${error.message}`);
+      }
+    }, this.automationLoopTime);
+  }
+
+  stopLoop() {
+    return clearInterval(this.lastIntervalId);
+  }
+
+  async runAutomationCode() {
+    try {
+      const {automationCode} = await getOptions();
+      ports.postLog(`INFO: automation code saved`);
+
+      eval(automationCode)
+      this.lastIntervalId = this.runInLoop();
+    } catch (error) {
+      ports.postLog(`ERROR: automation code failed: ${error.message}`);
+      this.runInLoop(true);
+    }
+  }
+
+  async updatePrice(cid, price) {
+    ports.postLog(`INFO: update price: ${price} for cid: ${cid}`);
+    const { pricesPerByte } = await getOptions();
+
+    return await setOptions({
+      pricesPerByte: {
+        ...pricesPerByte,
+        [cid]: parseInt(price, 10),
+      },
+    });
   }
 
   async uploadFiles(files) {
