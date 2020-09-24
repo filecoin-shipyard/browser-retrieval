@@ -9,10 +9,10 @@ function PriceForm(props) {
   const { handleSubmit, register, errors } = useForm();
   const [options, setOptions] = useOptions();
 
-  function onSubmit({ cid, price }) {
+  async function onSubmit({ cid, price }) {
     const aggregated = options.unsavedForms.payment || options.unsavedForms.rendezvous || options.unsavedForms.lotus;
 
-    setOptions({
+    await setOptions({
       pricesPerByte: {
         ...options.pricesPerByte,
         [cid]: parseInt(price, 10),
