@@ -53,7 +53,7 @@ function Tabs({ className, tabs, children, ...rest }) {
                 className="relative flex-1 m-8 min-w-0 rounded bg-white p-4 shadow-xl"
                 onClick={event => event.stopPropagation()}
             >
-              <Label>You have unsaved options! Please check them and hit save button!</Label>
+              <Label>You have unsaved values in the Options fields. Please press Save to set those values.</Label>
             </div>
           </div>
       )}
