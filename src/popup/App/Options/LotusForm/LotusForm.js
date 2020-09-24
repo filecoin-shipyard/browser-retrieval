@@ -14,15 +14,19 @@ function LotusForm(props) {
     const key = signer.keyRecover(data.privateKey);
 
     if (key.address === data.wallet || key.address === data.wallet.replace(/^t/, 'f')) {
-      setOptions(data);
+      setOptions({...data, unsaved: false});
     } else {
       setError('privateKey', { type: 'manual', message: "Wallet and private key don't match" });
     }
   }
 
+  function handleChange() {
+    setOptions({unsaved: true});
+  }
+
   return (
     <Card {...props}>
-      <Form className="flex-col" onSubmit={handleSubmit(onSubmit)}>
+      <Form className="flex-col" onSubmit={handleSubmit(onSubmit)} onChange={handleChange}>
         <div className="flex mb-4">
           <InputField
             ref={register({ required: 'Required' })}

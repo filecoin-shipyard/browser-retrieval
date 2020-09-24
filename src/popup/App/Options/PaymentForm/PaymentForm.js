@@ -13,12 +13,17 @@ function PaymentForm(props) {
     setOptions({
       paymentInterval: parseInt(paymentInterval, 10),
       paymentIntervalIncrease: parseInt(paymentIntervalIncrease, 10),
+      unsaved: false
     });
+  }
+
+  function handleChange() {
+    setOptions({unsaved: true});
   }
 
   return (
     <Card {...props}>
-      <Form onSubmit={handleSubmit(onSubmit)}>
+      <Form onSubmit={handleSubmit(onSubmit)} onChange={handleChange}>
         <InputField
           ref={register({ required: 'Required' })}
           className="flex-1 mr-4"

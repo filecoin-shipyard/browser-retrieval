@@ -10,12 +10,16 @@ function RendezvousForm(props) {
   const [options, setOptions] = useOptions();
 
   function onSubmit(data) {
-    setOptions(data);
+    setOptions({...data, unsaved: false});
+  }
+
+  function handleChange() {
+    setOptions({unsaved: true});
   }
 
   return (
     <Card {...props}>
-      <Form onSubmit={handleSubmit(onSubmit)}>
+      <Form onSubmit={handleSubmit(onSubmit)} onChange={handleChange}>
         <InputField
           ref={register({ required: 'Required' })}
           className="flex-1 mr-4"
