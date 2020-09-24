@@ -10,12 +10,12 @@ function LotusForm(props) {
   const { handleSubmit, register, setError, errors } = useForm();
   const [options, setOptions] = useOptions();
 
-  async function onSubmit(data) {
+  function onSubmit(data) {
     const key = signer.keyRecover(data.privateKey);
     const aggregated = options.unsavedForms.payment || options.unsavedForms.price || options.unsavedForms.rendezvous;
 
     if (key.address === data.wallet || key.address === data.wallet.replace(/^t/, 'f')) {
-      await setOptions({
+      setOptions({
         ...data, unsavedForms: {
           ...options.unsavedForms,
           lotus: false,

@@ -9,10 +9,10 @@ function PaymentForm(props) {
   const { handleSubmit, register, errors } = useForm();
   const [options, setOptions] = useOptions();
 
-  async function onSubmit({ paymentInterval, paymentIntervalIncrease }) {
+   function onSubmit({ paymentInterval, paymentIntervalIncrease }) {
     const aggregated = options.unsavedForms.rendezvous || options.unsavedForms.price || options.unsavedForms.lotus;
 
-    await setOptions({
+    setOptions({
       paymentInterval: parseInt(paymentInterval, 10),
       paymentIntervalIncrease: parseInt(paymentIntervalIncrease, 10),
       unsavedForms: {

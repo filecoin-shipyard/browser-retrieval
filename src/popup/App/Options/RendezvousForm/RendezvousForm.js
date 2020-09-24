@@ -9,15 +9,15 @@ function RendezvousForm(props) {
   const { handleSubmit, register, errors } = useForm();
   const [options, setOptions] = useOptions();
 
-  async function onSubmit(data) {
+  function onSubmit(data) {
     const aggregated = options.unsavedForms.payment || options.unsavedForms.price || options.unsavedForms.lotus;
 
-    await setOptions({
+    setOptions({
       ...data, unsavedForms: {
         ...options.unsavedForms,
         rendezvous: false,
-        unsaved: aggregated
-      }
+      },
+      unsaved: aggregated
     });
   }
 
