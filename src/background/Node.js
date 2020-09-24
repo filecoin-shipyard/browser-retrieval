@@ -3,7 +3,7 @@
 import PeerId from 'peer-id';
 import Libp2p from 'libp2p';
 import Websockets from 'libp2p-websockets';
-import WebrtcStar from 'libp2p-webrtc-star';
+import WebRTCStar from 'libp2p-webrtc-star';
 import Mplex from 'libp2p-mplex';
 import { NOISE } from 'libp2p-noise';
 import Secio from 'libp2p-secio';
@@ -47,25 +47,29 @@ class Node {
     this.node = await Libp2p.create({
       peerId: this.peerId,
       modules: {
-        transport: [Websockets],
+        transport: [Websockets, WebRTCStar],
         streamMuxer: [Mplex],
         connEncryption: [NOISE, Secio],
         pubsub: Gossipsub,
         peerDiscovery: [Boostrap]
       },
       addresses: {
-        listen: [], 
+        listen: [
+          '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
+          //'/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star'
+        ],
       },
       config: {
         peerDiscovery: {
-          bootstrap: {
+          [Boostrap.tag]: {
+            enabled: true,
             list: [
-              '/dns4/bootstrap-0.testnet.fildev.network/tcp/1347/ws',
-              '/dns4/bootstrap-1.testnet.fildev.network/tcp/1347/ws',
-              '/dns4/bootstrap-2.testnet.fildev.network/tcp/1347/ws',
-              '/dns4/bootstrap-4.testnet.fildev.network/tcp/1347/ws',
-              '/dns4/bootstrap-3.testnet.fildev.network/tcp/1347/ws',
-              '/dns4/bootstrap-5.testnet.fildev.network/tcp/1347/ws'
+              '/dns4/bootstrap-0.testnet.fildev.network/tcp/1347/wss/12D3KooWJTUBUjtzWJGWU1XSiY21CwmHaCNLNYn2E7jqHEHyZaP7',
+              '/dns4/bootstrap-1.testnet.fildev.network/tcp/1347/wss/12D3KooW9yeKXha4hdrJKq74zEo99T8DhriQdWNoojWnnQbsgB3v',
+              '/dns4/bootstrap-2.testnet.fildev.network/tcp/1347/wss/12D3KooWCrx8yVG9U9Kf7w8KLN3Edkj5ZKDhgCaeMqQbcQUoB6CT',
+              '/dns4/bootstrap-4.testnet.fildev.network/tcp/1347/wss/12D3KooWPkL9LrKRQgHtq7kn9ecNhGU9QaziG8R5tX8v9v7t3h34',
+              '/dns4/bootstrap-3.testnet.fildev.network/tcp/1347/wss/12D3KooWKYSsbpgZ3HAjax5M1BXCwXLa6gVkUARciz7uN3FNtr7T',
+              '/dns4/bootstrap-5.testnet.fildev.network/tcp/1347/wss/12D3KooWQYzqnLASJAabyMpPb1GcWZvNSe7JDcRuhdRqonFoiK9W',
             ]
           }
         }
