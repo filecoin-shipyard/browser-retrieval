@@ -11,8 +11,8 @@ function OpenExtensionInBrowserIndicator({ className, ...rest }) {
     }
 
   return (
-      <div className={classNames(className, 'relative mx-2')} {...rest}>
-          <IconButton icon="openInBrowser" onClick={toggleSendMessage} />
+      <div className={classNames(className, 'relative mx-2')} {...rest} onClick={toggleSendMessage}>
+          <IconButton icon="openInBrowser"/>
       </div>
   );
 }
