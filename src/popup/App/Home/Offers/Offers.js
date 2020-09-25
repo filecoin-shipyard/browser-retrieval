@@ -1,7 +1,8 @@
 /* global chrome */
 import './Offers.css';
 
-import React from 'react';
+import classNames from 'classnames';
+import React, { useState } from 'react';
 import Button from 'src/popup/components/Button';
 import Card from 'src/popup/components/Card';
 import IconButton from 'src/popup/components/IconButton';
@@ -13,11 +14,15 @@ import messageTypes from 'src/shared/messageTypes';
 
 import useOptions from '../../../hooks/useOptions';
 
-function downloadFile(cid) {
-  chrome.runtime.sendMessage({ messageType: messageTypes.downloadFile, cid });
-}
-
 function Offers(props) {
+  function downloadFile(cid, offer) {
+    setDownloadedMap({ ...downloadedMap, [offer.address]: 1 });
+    
+    chrome.runtime.sendMessage({ messageType: messageTypes.downloadFile, cid });
+  }
+
+  const [downloadedMap, setDownloadedMap] = useState({});
+
   const [options, setOptions] = useOptions();
   const { offerInfo } = options;
 
@@ -46,14 +51,19 @@ function Offers(props) {
       <Table>
         <tbody>
           {offers.map((offer) => (
-            <TableRow key={cid}>
+            <TableRow key={offer.address}>
               <TableCell className="font-mono">{offer.address}</TableCell>
 
               <TableCell number>{offer.price} attoFIL</TableCell>
 
               <TableCell buttons>
                 <div className="flex">
-                  <Button type="submit" onClick={() => downloadFile(cid)}>
+                  <Button
+                    type="submit"
+                    onClick={() => downloadFile(cid, offer)}
+                    disabled={!!downloadedMap[offer.address]}
+                    className={classNames({ disabled: !!downloadedMap[offer.address] })}
+                  >
                     Buy
                   </Button>
                 </div>

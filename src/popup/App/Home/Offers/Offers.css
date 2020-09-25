@@ -3,3 +3,7 @@
   padding-bottom: 0.5rem;
   text-align: right;
 }
+
+.disabled[disabled], .disabled[disabled]:hover {
+  background-color: silver;
+}
