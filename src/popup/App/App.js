@@ -8,6 +8,7 @@ import Editor from './Editor';
 import Upload from './Upload';
 import ConnectionIndicator from './ConnectionIndicator';
 import PeersIndicator from './PeersIndicator';
+import OpenExtensionInBrowserIndicator from './OpenExtensionInBrowserIndicator';
 
 const tabs = [
   {
@@ -45,6 +46,7 @@ function App() {
       <li className="flex mr-8">
         <ConnectionIndicator />
         <PeersIndicator />
+        <OpenExtensionInBrowserIndicator />
       </li>
     </Tabs>
   );

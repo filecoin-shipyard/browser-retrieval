@@ -9,6 +9,7 @@ const messageTypes = {
   dealResponse: 'RetrievalDealResponse',
   automationStart: 'AutomationCodeStart',
   automationStop: 'AutomationCodeStop',
+  openExtensionInBrowser: 'openExtensionInBrowser',
 };
 
 export default messageTypes;
