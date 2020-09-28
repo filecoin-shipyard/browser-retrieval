@@ -23,3 +23,7 @@ svg {
 .min-h-10 {
   min-height: 2.5rem;
 }
+
+.border-2-blue {
+  border: 2px solid blue;
+}

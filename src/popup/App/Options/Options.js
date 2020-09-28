@@ -9,10 +9,10 @@ import PriceTable from './PriceTable';
 function Options({ className, ...rest }) {
   return (
     <div className={classNames(className, 'p-4')} {...rest}>
-      <RendezvousForm className="mb-4" />
-      <LotusForm className="mb-4" />
-      <PaymentForm className="mb-4" />
-      <PriceForm className="mb-4" />
+      <RendezvousForm />
+      <LotusForm />
+      <PaymentForm />
+      <PriceForm />
       <PriceTable />
     </div>
   );
