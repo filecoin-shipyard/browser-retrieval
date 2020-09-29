@@ -81,10 +81,10 @@ async function startNode() {
   }
 }
 
-startNode();
-
 function openExtensionInBrowser() {
   chrome.tabs.create({
-    url: "index.html"
+    url: "home.html"
   });
 }
+
+startNode();
