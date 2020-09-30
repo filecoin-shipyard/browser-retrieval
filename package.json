@@ -12,7 +12,6 @@
     "buffer": "^5.6.0",
     "cids": "^0.8.3",
     "classnames": "^2.2.6",
-    "html-webpack-plugin": "^4.5.0",
     "interface-datastore": "^1.0.4",
     "ipfs-block-service": "^0.17.1",
     "ipfs-repo": "^5.0.0",
