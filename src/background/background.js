@@ -28,8 +28,20 @@ chrome.runtime.onMessage.addListener(({ messageType, cid }, sender, sendResponse
       node.query(cid);
       break;
 
+    case messageTypes.automationStart:
+      node.runAutomationCode();
+      break;
+
+    case messageTypes.automationStop:
+      node.stopLoop();
+      break;
+
     case messageTypes.clearLogs:
       ports.clearLogs();
+      break;
+
+    case messageTypes.openExtensionInBrowser:
+      openExtensionInBrowser();
       break;
 
     default:
@@ -70,3 +82,9 @@ async function startNode() {
 }
 
 startNode();
+
+function openExtensionInBrowser() {
+  chrome.tabs.create({
+    url: "index.html"
+  });
+}

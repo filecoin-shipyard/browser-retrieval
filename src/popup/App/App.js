@@ -4,9 +4,11 @@ import Tabs from 'src/popup/components/Tabs';
 import Home from './Home';
 import Options from './Options';
 import Logs from './Logs';
+import Editor from './Editor';
 import Upload from './Upload';
 import ConnectionIndicator from './ConnectionIndicator';
 import PeersIndicator from './PeersIndicator';
+import OpenExtensionInBrowserIndicator from './OpenExtensionInBrowserIndicator';
 
 const tabs = [
   {
@@ -25,6 +27,10 @@ const tabs = [
     label: 'Upload',
     component: Upload,
   },
+  {
+    label: 'Automation',
+    component: Editor,
+  },
 ];
 
 function App() {
@@ -40,6 +46,7 @@ function App() {
       <li className="flex mr-8">
         <ConnectionIndicator />
         <PeersIndicator />
+        <OpenExtensionInBrowserIndicator />
       </li>
     </Tabs>
   );

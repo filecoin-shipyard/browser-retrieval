@@ -12,17 +12,32 @@ function LotusForm(props) {
 
   function onSubmit(data) {
     const key = signer.keyRecover(data.privateKey);
+    const aggregated = options.unsavedForms.payment || options.unsavedForms.price || options.unsavedForms.rendezvous;
 
     if (key.address === data.wallet || key.address === data.wallet.replace(/^t/, 'f')) {
-      setOptions(data);
+      setOptions({
+        ...data, unsavedForms: {
+          ...options.unsavedForms,
+          lotus: false,
+        }, unsaved: aggregated,
+      });
     } else {
       setError('privateKey', { type: 'manual', message: "Wallet and private key don't match" });
     }
   }
 
+  function handleChange() {
+    setOptions({
+      unsavedForms: {
+        ...options.unsavedForms,
+        lotus: true,
+      }
+    });
+  }
+
   return (
-    <Card {...props}>
-      <Form className="flex-col" onSubmit={handleSubmit(onSubmit)}>
+    <Card {...props} className={options.unsavedForms.lotus && options.unsaved ? 'border-2-blue mb-4' : 'mb-4'}>
+      <Form className="flex-col" onSubmit={handleSubmit(onSubmit)} onChange={handleChange}>
         <div className="flex mb-4">
           <InputField
             ref={register({ required: 'Required' })}

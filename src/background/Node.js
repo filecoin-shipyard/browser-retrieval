@@ -25,6 +25,10 @@ class Node {
     return node;
   }
 
+  //Run every 10 minutes
+  automationLoopTime = 600000;
+  lastIntervalId = 0;
+
   connectedPeers = new Set();
   queriedCids = new Set();
 
@@ -194,6 +198,51 @@ class Node {
       offerInfo: {
         cid: undefined,
         offers: [],
+      }
+    })
+  }
+  
+  runInLoop(stop = false) {
+    if (stop) {
+      return clearInterval(this.lastIntervalId);
+    }
+
+    return setInterval(async () => {
+      const {automationCode} = await getOptions();
+
+      try {
+        eval(automationCode);
+      } catch (error) {
+        ports.postLog(`ERROR: automation loop failed: ${error.message}`);
+      }
+    }, this.automationLoopTime);
+  }
+
+  stopLoop() {
+    return clearInterval(this.lastIntervalId);
+  }
+
+  async runAutomationCode() {
+    try {
+      const {automationCode} = await getOptions();
+      ports.postLog(`INFO: automation code saved`);
+
+      eval(automationCode)
+      this.lastIntervalId = this.runInLoop();
+    } catch (error) {
+      ports.postLog(`ERROR: automation code failed: ${error.message}`);
+      this.runInLoop(true);
+    }
+  }
+
+  async updatePrice(cid, price) {
+    ports.postLog(`INFO: update price: ${price} for cid: ${cid}`);
+    const { pricesPerByte } = await getOptions();
+
+    return await setOptions({
+      pricesPerByte: {
+        ...pricesPerByte,
+        [cid]: parseInt(price, 10),
       },
     });
   }

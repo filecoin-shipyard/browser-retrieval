@@ -9,16 +9,32 @@ function PaymentForm(props) {
   const { handleSubmit, register, errors } = useForm();
   const [options, setOptions] = useOptions();
 
-  function onSubmit({ paymentInterval, paymentIntervalIncrease }) {
+   function onSubmit({ paymentInterval, paymentIntervalIncrease }) {
+    const aggregated = options.unsavedForms.rendezvous || options.unsavedForms.price || options.unsavedForms.lotus;
+
     setOptions({
       paymentInterval: parseInt(paymentInterval, 10),
       paymentIntervalIncrease: parseInt(paymentIntervalIncrease, 10),
+      unsavedForms: {
+        ...options.unsavedForms,
+        payment: false,
+      },
+      unsaved: aggregated,
+    });
+  }
+
+  function handleChange() {
+    setOptions({
+      unsavedForms: {
+        ...options.unsavedForms,
+        payment: true,
+      }
     });
   }
 
   return (
-    <Card {...props}>
-      <Form onSubmit={handleSubmit(onSubmit)}>
+    <Card {...props} className={options.unsavedForms.payment && options.unsaved ? 'border-2-blue mb-4' : 'mb-4'}>
+      <Form onSubmit={handleSubmit(onSubmit)} onChange={handleChange}>
         <InputField
           ref={register({ required: 'Required' })}
           className="flex-1 mr-4"
