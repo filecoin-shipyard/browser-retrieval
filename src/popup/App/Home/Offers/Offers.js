@@ -33,6 +33,8 @@ function Offers(props) {
   const { cid, offers } = offerInfo;
 
   function closeOffers() {
+    setDownloadedMap({})
+    
     setOptions({
       ...options,
       offerInfo: {
