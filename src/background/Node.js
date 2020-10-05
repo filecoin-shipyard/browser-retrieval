@@ -148,18 +148,20 @@ class Node {
     }
   }
 
-  async handleQueryResponse({ cid, params, multiaddrs: [multiaddr], wallet }) {
-    if (this.queriedCids.has(cid)) {
-      try {
-        this.queriedCids.delete(cid);
-        ports.postLog(`INFO: this peer has the CID I asked for: ${multiaddr}`);
-        ports.postLog(`INFO: deal params: ${JSON.stringify(params)}`);
-        await this.client.retrieve(cid, params, multiaddr, wallet);
-      } catch (error) {
-        console.error(error);
-        ports.postLog(`ERROR: handle query response failed: ${error.message}`);
-      }
-    }
+  async handleQueryResponse({ messageType, cid, multiaddrs, params }) {
+    const options = await getOptions()
+    const offers = options.offerInfo?.offers || []
+
+    await setOptions({
+      ...options,
+      offerInfo: {
+        cid,
+        offers: offers.concat(multiaddrs.map((address) => ({
+          address,
+          price: params.size * params.pricePerByte,
+        }))),
+      },
+    });
   }
 
   handleCidReceived = async (cid, size) => {
@@ -174,8 +176,11 @@ class Node {
     }
   };
 
-  async query(cid) {
+  async query(rawCid) {
     try {
+      await this.clearOffers()
+
+      const cid = rawCid.trim()
       this.queriedCids.add(cid);
       ports.postLog(`INFO: querying for ${cid}`);
       await this.publish({ messageType: messageTypes.query, cid });
@@ -185,6 +190,18 @@ class Node {
     }
   }
 
+  async clearOffers() {
+    const options = await getOptions()
+
+    await setOptions({
+      ...options,
+      offerInfo: {
+        cid: undefined,
+        offers: [],
+      }
+    })
+  }
+  
   runInLoop(stop = false) {
     if (stop) {
       return clearInterval(this.lastIntervalId);

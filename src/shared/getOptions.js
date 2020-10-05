@@ -11,6 +11,10 @@ const defaultValues = {
   lotusToken: '',
   paymentInterval: 1024 * 1024,
   paymentIntervalIncrease: 1024 * 1024,
+  offerInfo: {
+    cid: undefined,
+    offers: [],
+  },
   automationCode:
       '//Dummy example (code will run every 10 minutes)\n' +
       '// Here\'s how to query the storage market for a CID\n' +
