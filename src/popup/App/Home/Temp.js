@@ -15,7 +15,12 @@ const addHandlers = (socket) => {
     socket.emit('funds_confirmed', messages.createFundsSent());
   });
 
-  socket.on('funds_confirmed', () => {})
+  socket.on('funds_confirmed', (message) => {
+    console.log('funds_confirmed');
+    console.log(message);
+
+    // TODO: next step
+  })
   socket.on('funds_confirmed_error_insufficient_funds', () => {})
   socket.on('funds_confirmed_error_price_changed', () => {})
 }
