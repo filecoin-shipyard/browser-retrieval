@@ -66,9 +66,9 @@ const addHandlers = (socket) => {
 function Temp({ className, ...rest }) {
   const [options] = useOptions();
 
-  console.log('options.wsEndpoin', options.wsEndpoin);
+  console.log('options.wsEndpoint', options.wsEndpoint);
 
-  const socket = socketIO(options.wsEndpoin);
+  const socket = socketIO(options.wsEndpoint);
   addHandlers(socket);
 
   const clickme = () => {
