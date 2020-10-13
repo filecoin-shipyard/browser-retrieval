@@ -15,6 +15,7 @@ class Lotus {
 
   id = 0;
 
+  /* TODO: use new Map ? */
   paymentChannelsInfo = {};
 
   async initialize() {
@@ -26,7 +27,9 @@ class Lotus {
     const { lotusEndpoint, lotusToken, wallet, privateKey } = await getOptions();
     this.lotusEndpoint = lotusEndpoint;
     this.lotusToken = lotusToken;
+    /* TODO: get wallet address with keyRecover */
     this.wallet = wallet;
+    /* TODO: store as base64 string */
     this.privateKey = signer.keyRecover(privateKey).private_hexstring;
   }
 
@@ -64,7 +67,7 @@ class Lotus {
 
     return JSON.parse(signer.transactionSignLotus(message, this.privateKey));
   }
-
+  
   async post(method, params = []) {
     console.log(method, params);
     const response = await fetch(this.lotusEndpoint, {
@@ -85,6 +88,10 @@ class Lotus {
   async getNextNonce() {
     const nonce = await this.post('Filecoin.MpoolGetNonce', [this.wallet]);
     return nonce + 1;
+  }
+  
+  async getGasEstimation(message) {
+    return await this.post('Filecoin.GasEstimateMessageGas', [message, { MaxFee: "0" }, null])
   }
 
   async waitForMessage(messageLink) {
@@ -108,8 +115,29 @@ class Lotus {
       }
     }
   }
+  
+  async createPaymentChannel(to, value) {
+    const nonce = await this.getNextNonce();
+    let message = signer.createPymtChan(this.wallet, to, value, nonce);
+    let messageWithGas = await getGasEstimation(message);
+    let signedMessage = signer.transactionSignLotus(messageWithGas, Buffer.from(this.privateKey, 'hex').toDtring('base64')); 
+    
+    const messageCID = await this.post('Filecoin.MpoolPush', [signedMessage]);
+    
+    const receipt = await this.waitForMessage(messageCID);
+    
+    const paymentChannel = receipt.ReturnDec.IDAddress;
+    
+    this.paymentChannelsInfo[paymentChannel] = {
+      nextLane: 0,
+      lanesNextNonce: {},
+    };
+    
+    return paymentChannel;
+  }
 
-  async getOrCreatePaymentChannel(to, value) {
+  /* NOTE: this won't work. Existing payment channel need to be cached locally */
+  /*async getOrCreatePaymentChannel(to, value) {
     // TODO: recycle existing channel
 
     const messageLink = await this.post('Filecoin.MpoolPush', [
@@ -143,34 +171,39 @@ class Lotus {
     };
 
     return paymentChannel;
-  }
+  }*/
 
-  async allocateLane(paymentChannel) {
+  allocateLane(paymentChannel) {
     const lane = this.paymentChannelsInfo[paymentChannel].nextLane++;
     this.paymentChannelsInfo[paymentChannel].lanesNextNonce[lane] = 0;
   }
 
-  async createPaymentVoucher(paymentChannel, lane, amount) {
-    const voucher = {
-      Lane: lane,
-      Amount: amount,
-      Nonce: this.paymentChannelsInfo[paymentChannel].lanesNextNonce[lane]++,
-    };
+  createPaymentVoucher(paymentChannel, lane, amount) {    
+    let nonce = BigInt(this.paymentChannelsInfo[paymentChannel].lanesNextNonce[lane]++);
+    
+    let voucher = signer.createVoucher(paymentChannel, "0", "0", amount, lane, nonce, "0")
 
-    // TODO: create voucher cbor as per https://github.com/filecoin-project/specs-actors/blob/master/actors/builtin/paych/cbor_gen.go#L552
-    const voucherCbor = this.cbor(voucher);
+    let signedVoucher = signer.signVoucher(voucher, Buffer.from(this.privateKey, 'hex').toDtring('base64'))
 
-    voucher.Signature = signer.transactionSignRaw(voucherCbor, this.privateKey);
-
-    return voucher;
+    return signedVoucher;
   }
 
   async checkPaymentVoucherValid(paymentChannel, paymentVoucher) {
     await this.post('Filecoin.PaychVoucherCheckValid', [paymentChannel, paymentVoucher]);
   }
 
-  closePaymentChannel(paymentChannel) {
-    // TODO: actually close payment channel
+  async closePaymentChannel(paymentChannel) {
+    const nonce = await this.getNextNonce();
+
+    const settleMessage = signer.settlePymtChan(paymentChannel, this.wallet, nonce);
+    let messageWithGas = await getGasEstimation(settleMessage);
+    let signedMessage = signer.transactionSignLotus(messageWithGas, Buffer.from(this.privateKey, 'hex').toDtring('base64')); 
+    
+    const messageCID = await this.post('Filecoin.MpoolPush', [signedMessage]);
+    
+    const receipt = await this.waitForMessage(messageCID);
+    
+    /* TODO: maybe don't delete until it has been collected */
     delete this.paymentChannelsInfo[paymentChannel];
   }
 }

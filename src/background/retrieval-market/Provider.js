@@ -191,15 +191,18 @@ class Provider {
 
   async checkPaymentVoucherValid({ dealId, paymentChannel, paymentVoucher }) {
     ports.postLog(`DEBUG: checking voucher ${dealId}`);
-    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
-    // await this.lotus.checkPaymentVoucherValid(paymentChannel, paymentVoucher);
     // TODO: save voucher to submit later if deal fails
+    // NOTE: Only verify signature
+    const deal = this.ongoingDeals[dealId];
+    
+    // TODO: retrieve the payment channel other address somewhere
+    // return signer.verifyVoucherSignature(paymentVoucher, ))
+    return true
   }
 
   async submitPaymentVoucher({ dealId, paymentChannel, paymentVoucher }) {
     ports.postLog(`DEBUG: submitting voucher ${dealId}`);
-    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
-    // await this.lotus.submitPaymentVoucher(paymentChannel, paymentVoucher);
+    await this.lotus.submitPaymentVoucher(paymentChannel, paymentVoucher);
   }
 
   async sendDealCompleted({ dealId }) {
