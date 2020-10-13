@@ -9,7 +9,7 @@ const defaultValues = {
   privateKey: '',
   lotusEndpoint: 'http://127.0.0.1:1234/rpc/v0',
   lotusToken: '',
-  wsEndpoint: 'http://localhost:3000',
+  wsEndpoint: process.env.REACT_APP_PROXY_SERVER || 'ws://localhost:3000',
   paymentInterval: 1024 * 1024,
   paymentIntervalIncrease: 1024 * 1024,
   offerInfo: {
