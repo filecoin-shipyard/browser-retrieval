@@ -9,7 +9,7 @@ const defaultValues = {
   privateKey: '',
   lotusEndpoint: 'http://127.0.0.1:1234/rpc/v0',
   lotusToken: '',
-  wsEndpoin: 'ws://3.236.16.245',
+  wsEndpoint: 'http://localhost:3000',
   paymentInterval: 1024 * 1024,
   paymentIntervalIncrease: 1024 * 1024,
   offerInfo: {
