@@ -43,6 +43,9 @@ const handleFundsConfirmed = (socket) => {
 
 const handleChunk = (socket) => {
   socket.on(messageResponseTypes.chunk, (message) => {
+    console.log('got message from server: chunk');
+    console.log('message', message);
+
     const dataBuffer = Buffer.from(message.chunk_data, 'base64');
     const validSha256 = message.chunk_sha256 === sha256(dataBuffer);
     const validSize = dataBuffer.length === message.chunk_len_bytes;
@@ -51,8 +54,11 @@ const handleChunk = (socket) => {
       socket.emit(messageRequestTypes.chunkReceived, messages.createChunkReceived(message))
 
       // TODO: proccess received data
+      console.log('chunk is valid')
     } else {
-      socket.emit(messageRequestTypes.chunkReceived, messages.createChunkResend(message))
+      socket.emit(messageRequestTypes.chunkResend, messages.createChunkResend(message))
+
+      console.log('chunk is NOT valid, sending `chunkResend`')
     }
   });
 };
