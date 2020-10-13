@@ -10,7 +10,8 @@ ports.startListening();
 
 let node;
 
-chrome.runtime.onMessage.addListener(({ messageType, cid }, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(({ messageType, msg }, sender, sendResponse) => {
+  const cid = msg;
   switch (messageType) {
     case messageTypes.uploadFiles:
       node.uploadFiles(window.filesToUpload);
@@ -25,7 +26,7 @@ chrome.runtime.onMessage.addListener(({ messageType, cid }, sender, sendResponse
       break;
 
     case messageTypes.query:
-      node.query(cid);
+      node.query(msg.cid, msg.minerID);
       break;
 
     case messageTypes.automationStart:
