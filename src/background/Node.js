@@ -117,6 +117,7 @@ class Node {
 
     switch (message.messageType) {
       case messageTypes.query:
+        ports.postLog(`INFO: someone queried node`);
         this.handleQuery(message);
         break;
 
@@ -176,13 +177,13 @@ class Node {
     }
   };
 
-  async query(rawCid) {
+  async query(rawCid, minerID) {
     try {
       await this.clearOffers()
 
       const cid = rawCid.trim()
       this.queriedCids.add(cid);
-      ports.postLog(`INFO: querying for ${cid}`);
+      ports.postLog(`INFO: querying for ${cid} , minerID:  ${minerID}`);
       await this.publish({ messageType: messageTypes.query, cid });
     } catch (error) {
       console.error(error);

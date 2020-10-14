@@ -13,13 +13,18 @@ import messageTypes from 'src/shared/messageTypes';
 function QueryForm(props) {
   const { handleSubmit, register, errors } = useForm();
 
-  function onSubmit({ cid }) {
-    chrome.runtime.sendMessage({ messageType: messageTypes.query, cid });
+  function onSubmit({ cid, minerID }) {
+    const msg = {
+      cid: cid,
+      minerID: minerID
+    }
+    chrome.runtime.sendMessage({ messageType: messageTypes.query, msg});
   }
 
   return (
     <Card {...props}>
       <Form className="flex-col" onSubmit={handleSubmit(onSubmit)}>
+        
         <Label className="mb-2" for="cid">
           Query CID
         </Label>
@@ -27,6 +32,14 @@ function QueryForm(props) {
           <Input ref={register({ required: 'Required' })} name="cid" className="flex-1 mr-4" />
           <Button type="submit">Query</Button>
         </div>
+
+        <Label className="mb-2" for="minerID">
+          Miner ID
+        </Label>
+        <div className="flex">
+          <Input ref={register({ required: 'Required' })} name="minerID" className="flex-1 mr-4" />
+        </div>
+
         <Error className="mt-1" error={errors.cid} />
       </Form>
     </Card>
