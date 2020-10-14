@@ -17,8 +17,12 @@ import useOptions from '../../../hooks/useOptions';
 function Offers(props) {
   function downloadFile(cid, offer) {
     setDownloadedMap({ ...downloadedMap, [offer.address]: 1 });
-    
-    chrome.runtime.sendMessage({ messageType: messageTypes.downloadFile, cid });
+
+    const msg = {
+      cid,
+    };
+
+    chrome.runtime.sendMessage({ messageType: messageTypes.downloadFile, msg });
   }
 
   const [downloadedMap, setDownloadedMap] = useState({});
@@ -33,8 +37,8 @@ function Offers(props) {
   const { cid, offers } = offerInfo;
 
   function closeOffers() {
-    setDownloadedMap({})
-    
+    setDownloadedMap({});
+
     setOptions({
       ...options,
       offerInfo: {
