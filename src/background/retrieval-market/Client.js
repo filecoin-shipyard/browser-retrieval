@@ -13,6 +13,7 @@ class Client {
   ongoingDeals = {};
 
   constructor(node, datastore, lotus, cidReceivedCallback) {
+    ports.postLog("DEBUG: Client.constructor()")
     this.node = node;
     this.datastore = datastore;
     this.lotus = lotus;
@@ -20,6 +21,7 @@ class Client {
   }
 
   async retrieve(cid, dealParams, peerMultiaddr, peerWallet) {
+    ports.postLog("DEBUG: Client.retrieve()")
     ports.postLog(`DEBUG: dialing peer ${peerMultiaddr}`);
     const { stream } = await this.node.dialProtocol(peerMultiaddr, protocols.filecoinRetrieval);
 
@@ -50,7 +52,7 @@ class Client {
   handleMessage = async source => {
     for await (const message of source) {
       try {
-        ports.postLog(`DEBUG: handling protocol message with status: ${message.status}`);
+        ports.postLog(`DEBUG: Client.handleMessage(): handling protocol message with status: ${message.status}`);
         const deal = this.ongoingDeals[message.dealId];
 
         if (!deal) {
@@ -59,12 +61,14 @@ class Client {
 
         switch (message.status) {
           case dealStatuses.accepted: {
+            ports.postLog('DEBUG: Client.handleMessage(): case dealStatuses.accepted');
             deal.status = dealStatuses.accepted;
             await this.setupPaymentChannel(message);
             break;
           }
 
           case dealStatuses.fundsNeeded: {
+            ports.postLog('DEBUG: Client.handleMessage(): case dealStatuses.fundsNeeded');
             deal.status = dealStatuses.ongoing;
             await this.receiveBlocks(message);
             await this.sendPayment(message);
@@ -72,6 +76,7 @@ class Client {
           }
 
           case dealStatuses.fundsNeededLastPayment: {
+            ports.postLog('DEBUG: Client.handleMessage(): case dealStatuses.fundsNeededLastPayment');
             deal.status = dealStatuses.finalizing;
             await this.receiveBlocks(message);
             await this.finishImport(message);
@@ -80,25 +85,27 @@ class Client {
           }
 
           case dealStatuses.completed: {
+            ports.postLog('DEBUG: Client.handleMessage(): case dealStatuses.completed');
             await this.closeDeal(message);
             break;
           }
 
           default: {
-            ports.postLog(`ERROR: unknown deal message status received: ${message.status}`);
+            ports.postLog('DEBUG: Client.handleMessage(): case default')
+            ports.postLog(`ERROR: Client.handleMessage(): unknown deal message status received: ${message.status}`);
             deal.sink.end();
             break;
           }
         }
       } catch (error) {
         console.error(error);
-        ports.postLog(`ERROR: handle deal message failed: ${error.message}`);
+        ports.postLog(`ERROR: Client.handleMessage(): handle deal message failed: ${error.message}`);
       }
     }
   };
 
   sendDealProposal({ dealId }) {
-    ports.postLog(`DEBUG: sending deal proposal ${dealId}`);
+    ports.postLog(`DEBUG: Client.sendDealProposal: sending deal proposal ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
     deal.sink.push({
@@ -112,7 +119,7 @@ class Client {
   }
 
   async setupPaymentChannel({ dealId }) {
-    ports.postLog(`DEBUG: setting up payment channel ${dealId}`);
+    ports.postLog(`DEBUG: Client.setupPaymentChannel(): setting up payment channel ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
     // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
@@ -122,7 +129,7 @@ class Client {
     // );
     // deal.lane = await this.lotus.allocateLane(deal.paymentChannel);
 
-    ports.postLog(`DEBUG: sending payment channel ready ${dealId}`);
+    ports.postLog(`DEBUG: Client.setupPaymentChannel(): sending payment channel ready ${dealId}`);
     deal.sink.push({
       dealId,
       status: dealStatuses.paymentChannelReady,
@@ -132,7 +139,7 @@ class Client {
   }
 
   async receiveBlocks({ dealId, blocks }) {
-    ports.postLog(`DEBUG: received ${blocks.length} blocks ${dealId}`);
+    ports.postLog(`DEBUG: Client.setupReceieveBlocks(): received ${blocks.length} blocks ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
     for (const block of blocks) {
@@ -144,14 +151,14 @@ class Client {
   }
 
   async finishImport({ dealId, blocks }) {
-    ports.postLog(`DEBUG: finishing import ${dealId}`);
+    ports.postLog(`DEBUG: Client.finishImport(): finishing import ${dealId}`);
     const deal = this.ongoingDeals[dealId];
     deal.importerSink.end();
     await deal.importer;
   }
 
   async sendPayment({ dealId }) {
-    ports.postLog(`DEBUG: sending payment ${dealId}`);
+    ports.postLog(`DEBUG: Client.sendPayment(): sending payment ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
     // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
@@ -171,7 +178,7 @@ class Client {
   }
 
   async sendLastPayment({ dealId }) {
-    ports.postLog(`DEBUG: sending last payment ${dealId}`);
+    ports.postLog(`DEBUG: Client.sendLastPayment(): sending last payment ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
     // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
@@ -191,7 +198,7 @@ class Client {
   }
 
   async closeDeal({ dealId }) {
-    ports.postLog(`DEBUG: closing deal ${dealId}`);
+    ports.postLog(`DEBUG: Client.closeDeal: closing deal ${dealId}`);
     const deal = this.ongoingDeals[dealId];
     // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
     // this.lotus.closePaymentChannel(deal.paymentChannel);

@@ -37,11 +37,12 @@ class Node {
     const rendezvousWsProtocol = `${rendezvousPort}` === '443' ? 'wss' : 'ws';
     const rendezvousAddress = `/${rendezvousProtocol}/${rendezvousIp}/tcp/${rendezvousPort}/${rendezvousWsProtocol}/p2p-webrtc-star`;
 
-    ports.postLog('DEBUG: creating peer id');
+    ports.postLog('DEBUG: Node.initialize(): creating peer id');
     this.peerId = await PeerId.create();
     this.id = this.peerId.toB58String();
+    ports.postLog(`DEBUG: Node.initialize(): our peer id is ${this.id}`);
 
-    ports.postLog('DEBUG: creating libp2p node');
+    ports.postLog('DEBUG: Node.initialize(): creating libp2p node');
     this.node = await Libp2p.create({
       peerId: this.peerId,
       modules: {
@@ -55,16 +56,16 @@ class Node {
       },
     });
 
-    ports.postLog('DEBUG: creating lotus client');
+    ports.postLog('DEBUG: Node.initialize(): creating lotus client');
     this.lotus = await Lotus.create();
 
-    ports.postLog('DEBUG: creating datastore');
+    ports.postLog('DEBUG: Node.initialize(): creating datastore');
     this.datastore = await Datastore.create('/blocks', {
       prefix: 'filecoin-retrieval',
       version: 1,
     });
 
-    ports.postLog('DEBUG: creating retrieval market client');
+    ports.postLog('DEBUG: Node.initialize(): creating Client.js (retrieval market client)');
     this.client = await Client.create(
       this.node,
       this.datastore,
@@ -72,21 +73,21 @@ class Node {
       this.handleCidReceived,
     );
 
-    ports.postLog('DEBUG: creating retrieval market provider');
+    ports.postLog('DEBUG: Node.initialize(): creating Provider.js (retrieval market provider)');
     this.provider = await Provider.create(this.node, this.datastore, this.lotus);
 
-    ports.postLog('DEBUG: starting libp2p node');
+    ports.postLog('DEBUG: Node.initialize(): starting libp2p node');
     await this.node.start();
 
-    ports.postLog('DEBUG: adding listeners to node');
+    ports.postLog('DEBUG: Node.initialize(): adding listeners to node');
     this.node.connectionManager.on('peer:connect', this.handlePeerConnect);
     this.node.connectionManager.on('peer:disconnect', this.handlePeerDisconnect);
     this.node.pubsub.subscribe(topics.filecoinRetrieval, this.handleMessage);
 
-    ports.postLog('DEBUG: getting node info');
+    ports.postLog('DEBUG: Node.initialize(): getting node info');
     this.getInfo();
 
-    ports.postLog('DEBUG: node created');
+    ports.postLog('DEBUG: Node.initialize(): node created');
   }
 
   async getInfo() {
@@ -250,7 +251,7 @@ class Node {
 
   async uploadFiles(files) {
     try {
-      ports.postLog(`DEBUG: uploading ${files.length} files`);
+      ports.postLog(`DEBUG: Node.uploadFiles(): uploading ${files.length} files`);
       const { knownCids } = await getOptions();
 
       const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
@@ -270,16 +271,16 @@ class Node {
       );
 
       ports.postUploadProgress(0);
-      ports.postLog(`DEBUG: ${files.length} files uploaded`);
+      ports.postLog(`DEBUG: Node.uploadFiles(): ${files.length} files uploaded`);
     } catch (error) {
       console.error(error);
-      ports.postLog(`ERROR: upload failed: ${error.message}`);
+      ports.postLog(`ERROR: Node.uploadFiles(): upload failed: ${error.message}`);
     }
   }
 
   async downloadFile(cid) {
     try {
-      ports.postLog(`DEBUG: downloading ${cid}`);
+      ports.postLog(`DEBUG: Node.downloadFile(): downloading ${cid}`);
       const data = await this.datastore.cat(cid);
       const response = await fetch(
         `data:application/octet-stream;base64,${data.toString('base64')}`,
@@ -290,7 +291,7 @@ class Node {
 
       function handleDownloadChanged(delta) {
         if (delta.state && delta.state.current === 'complete' && delta.id === downloadId) {
-          ports.postLog(`DEBUG: download completed, revoking object url ${cid}`);
+          ports.postLog(`DEBUG: Node.downloadFile.handleDownloadChanged():  download completed, revoking object url ${cid}`);
           URL.revokeObjectURL(url);
           chrome.downloads.onChanged.removeListener(handleDownloadChanged);
         }
@@ -299,19 +300,19 @@ class Node {
       chrome.downloads.onChanged.addListener(handleDownloadChanged);
     } catch (error) {
       console.error(error);
-      ports.postLog(`ERROR: download failed: ${error.message}`);
+      ports.postLog(`ERROR:  Node.downloadFile():  download failed: ${error.message}`);
     }
   }
 
   async deleteFile(cid) {
     try {
-      ports.postLog(`DEBUG: deleting ${cid}`);
+      ports.postLog(`DEBUG: Node.deleteFile(): deleting ${cid}`);
       const [{ knownCids }] = await Promise.all([getOptions(), this.datastore.delete(cid)]);
       delete knownCids[cid];
       setOptions({ knownCids });
     } catch (error) {
       console.error(error);
-      ports.postLog(`ERROR: delete failed: ${error.message}`);
+      ports.postLog(`ERROR: Node.deleteFile(): delete failed: ${error.message}`);
     }
   }
 

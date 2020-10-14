@@ -9,6 +9,7 @@ import ports from 'src/background/ports';
 
 class Provider {
   static async create(...args) {
+    ports.postLog("DEBUG: Provider.create()")
     const provider = new Provider(...args);
     await provider.initialize();
     return provider;
@@ -17,18 +18,22 @@ class Provider {
   ongoingDeals = {};
 
   constructor(node, datastore, lotus) {
+    ports.postLog("DEBUG: Provider.constructor()")
+    const provider = new Provider(...args);
     this.node = node;
     this.datastore = datastore;
     this.lotus = lotus;
   }
 
   async initialize() {
+    ports.postLog("DEBUG: Provider.initialize()")
     await this.updateOptions();
     onOptionsChanged(this.handleOptionsChange);
     this.node.handle(protocols.filecoinRetrieval, this.handleProtocol);
   }
 
   async updateOptions() {
+    ports.postLog("DEBUG: Provider.updateOptions()")
     const { paymentInterval, paymentIntervalIncrease } = await getOptions();
     this.paymentInterval = paymentInterval;
     this.paymentIntervalIncrease = paymentIntervalIncrease;
@@ -40,13 +45,13 @@ class Provider {
         await this.updateOptions();
       } catch (error) {
         console.error(error);
-        ports.postLog(`ERROR: update payment interval failed: ${error.message}`);
+        ports.postLog(`ERROR: Provider.handleOptionsChange():  update payment interval failed: ${error.message}`);
       }
     }
   };
 
   async getDealParams(cid) {
-    ports.postLog(`DEBUG: getting deal params for ${cid}`);
+    ports.postLog(`DEBUG: Provider.getDealParams(): cid = ${cid}`);
     const { pricesPerByte, knownCids } = await getOptions();
     const cidInfo = knownCids[cid];
 
@@ -65,12 +70,12 @@ class Provider {
   }
 
   handleProtocol = async ({ stream }) => {
-    ports.postLog(`DEBUG: handling protocol ${protocols.filecoinRetrieval}`);
+    ports.postLog(`DEBUG: Provider.handleProtocol(): ${protocols.filecoinRetrieval}`);
     const sink = pushable();
     pipe(sink, jsonStream.stringify, stream, jsonStream.parse, async source => {
       for await (const message of source) {
         try {
-          ports.postLog(`DEBUG: handling protocol message ${JSON.stringify(message)}`);
+          ports.postLog(`DEBUG: Provider.handleProtocol():  message ${JSON.stringify(message)}`);
 
           switch (message.status) {
             case dealStatuses.awaitingAcceptance: {
@@ -112,6 +117,7 @@ class Provider {
   };
 
   async handleNewDeal({ dealId, cid, params }, sink) {
+    ports.postLog("DEBUG: Provider.handleNewDeal()")
     ports.postLog(`DEBUG: handling new deal ${dealId}`);
     if (this.ongoingDeals[dealId]) {
       throw new Error('A deal already exists for the given id');
@@ -149,6 +155,7 @@ class Provider {
   }
 
   sendDealAccepted({ dealId }) {
+    ports.postLog("DEBUG: Provider.sendDealAccepted()")
     ports.postLog(`DEBUG: sending deal accepted ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
@@ -159,6 +166,7 @@ class Provider {
   }
 
   async sendBlocks({ dealId }) {
+    ports.postLog("DEBUG: Provider.sendBlocks()")
     ports.postLog(`DEBUG: sending blocks ${dealId}`);
     const deal = this.ongoingDeals[dealId];
     const entry = await this.datastore.get(deal.cid);
@@ -190,6 +198,7 @@ class Provider {
   }
 
   async checkPaymentVoucherValid({ dealId, paymentChannel, paymentVoucher }) {
+    ports.postLog("DEBUG: Provider.checkPaymentVoucher()")
     ports.postLog(`DEBUG: checking voucher ${dealId}`);
     // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
     // await this.lotus.checkPaymentVoucherValid(paymentChannel, paymentVoucher);
@@ -197,18 +206,21 @@ class Provider {
   }
 
   async submitPaymentVoucher({ dealId, paymentChannel, paymentVoucher }) {
+    ports.postLog("DEBUG: Provider.submitPaymentVoucher()")
     ports.postLog(`DEBUG: submitting voucher ${dealId}`);
     // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
     // await this.lotus.submitPaymentVoucher(paymentChannel, paymentVoucher);
   }
 
   async sendDealCompleted({ dealId }) {
+    ports.postLog("DEBUG: Provider.sendDealCompleted()")
     ports.postLog(`DEBUG: sending deal completed ${dealId}`);
     const deal = this.ongoingDeals[dealId];
     deal.sink.push({ dealId, status: dealStatuses.completed });
   }
 
   async closeDeal({ dealId }) {
+    ports.postLog("DEBUG: Provider.closeDeal()")
     ports.postLog(`DEBUG: closing deal ${dealId}`);
     const deal = this.ongoingDeals[dealId];
     deal.sink.end();
