@@ -51,6 +51,7 @@ chrome.runtime.onMessage.addListener(({ messageType, msg }, sender, sendResponse
 });
 
 onOptionsChanged(async changes => {
+  ports.postLog(`INFO: Changes ${changes}`);
   if (!node || changes['rendezvousIp'] || changes['rendezvousPort']) {
     ports.postLog('INFO: restarting');
 

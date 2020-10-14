@@ -30,7 +30,8 @@ class Lotus {
     /* TODO: get wallet address with keyRecover */
     this.wallet = wallet;
     /* TODO: store as base64 string */
-    this.privateKey = signer.keyRecover(privateKey).private_hexstring;
+    let recoveredKey = signer.keyRecover(privateKey);
+    this.privateKey = recoveredKey.private_hexstring;
   }
 
   handleOptionsChange = async changes => {

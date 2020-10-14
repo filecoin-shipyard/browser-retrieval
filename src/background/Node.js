@@ -153,6 +153,8 @@ class Node {
     const options = await getOptions()
     const offers = options.offerInfo?.offers || []
 
+    ports.postLog(`DEBUG: Handle query response`);
+
     await setOptions({
       ...options,
       offerInfo: {
