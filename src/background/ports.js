@@ -2,7 +2,7 @@
 
 import channels from 'src/shared/channels';
 
-const debug = process.env.DEBUG === 'true';
+const debug = true;
 const portsByChannel = {};
 const lastMessages = {};
 const deals = { inbound: [], outbound: [] };
