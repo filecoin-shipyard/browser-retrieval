@@ -1,22 +1,24 @@
 /* global chrome */
-
-import PeerId from 'peer-id';
 import Libp2p from 'libp2p';
-import Websockets from 'libp2p-websockets';
-import WebrtcStar from 'libp2p-webrtc-star';
+import Gossipsub from 'libp2p-gossipsub';
 import Mplex from 'libp2p-mplex';
 import { NOISE } from 'libp2p-noise';
 import Secio from 'libp2p-secio';
-import Gossipsub from 'libp2p-gossipsub';
-import topics from 'src/shared/topics';
-import messageTypes from 'src/shared/messageTypes';
+import WebrtcStar from 'libp2p-webrtc-star';
+import Websockets from 'libp2p-websockets';
+import PeerId from 'peer-id';
 import getOptions from 'src/shared/getOptions';
+import messages from 'src/shared/messages';
+import messageTypes from 'src/shared/messageTypes';
 import setOptions from 'src/shared/setOptions';
-import ports from './ports';
-import Lotus from './lotus-client/Lotus';
+import topics from 'src/shared/topics';
+
 import Datastore from './Datastore';
+import Lotus from './lotus-client/Lotus';
+import ports from './ports';
 import Client from './retrieval-market/Client';
 import Provider from './retrieval-market/Provider';
+import SocketClient from './socket-client/SocketClient';
 
 class Node {
   static async create(options) {
@@ -65,12 +67,7 @@ class Node {
     });
 
     ports.postLog('DEBUG: creating retrieval market client');
-    this.client = await Client.create(
-      this.node,
-      this.datastore,
-      this.lotus,
-      this.handleCidReceived,
-    );
+    this.client = await Client.create(this.node, this.datastore, this.lotus, this.handleCidReceived);
 
     ports.postLog('DEBUG: creating retrieval market provider');
     this.provider = await Provider.create(this.node, this.datastore, this.lotus);
@@ -90,18 +87,16 @@ class Node {
   }
 
   async getInfo() {
-    this.multiaddrs = this.node.multiaddrs.map(
-      multiaddr => `${multiaddr.toString()}/p2p/${this.id}`,
-    );
+    this.multiaddrs = this.node.multiaddrs.map((multiaddr) => `${multiaddr.toString()}/p2p/${this.id}`);
     this.postMultiaddrs();
   }
 
-  handlePeerConnect = connection => {
+  handlePeerConnect = (connection) => {
     this.connectedPeers.add(connection.remotePeer.toB58String());
     this.postPeers();
   };
 
-  handlePeerDisconnect = connection => {
+  handlePeerDisconnect = (connection) => {
     this.connectedPeers.delete(connection.remotePeer.toB58String());
     this.postPeers();
   };
@@ -150,17 +145,19 @@ class Node {
   }
 
   async handleQueryResponse({ messageType, cid, multiaddrs, params }) {
-    const options = await getOptions()
-    const offers = options.offerInfo?.offers || []
+    const options = await getOptions();
+    const offers = options.offerInfo?.offers || [];
 
     await setOptions({
       ...options,
       offerInfo: {
         cid,
-        offers: offers.concat(multiaddrs.map((address) => ({
-          address,
-          price: params.size * params.pricePerByte,
-        }))),
+        offers: offers.concat(
+          multiaddrs.map((address) => ({
+            address,
+            price: params.size * params.pricePerByte,
+          })),
+        ),
       },
     });
   }
@@ -179,12 +176,23 @@ class Node {
 
   async query(rawCid, minerID) {
     try {
-      await this.clearOffers()
+      await this.clearOffers();
 
-      const cid = rawCid.trim()
+      const cid = rawCid.trim();
       this.queriedCids.add(cid);
-      ports.postLog(`INFO: querying for ${cid} , minerID:  ${minerID}`);
-      await this.publish({ messageType: messageTypes.query, cid });
+
+      if (minerID) {
+        // query for CID on a miner
+        ports.postLog(`INFO: querying for ${cid} , minerID:  ${minerID}`);
+
+        const options = await getOptions();
+        const socketClient = SocketClient.create(options, { cid, minerID });
+        socketClient.query()
+      } else {
+        // query for CID on other peers
+        ports.postLog(`INFO: querying for ${cid}`);
+        await this.publish({ messageType: messageTypes.query, cid });
+      }
     } catch (error) {
       console.error(error);
       ports.postLog(`ERROR: publish to topic failed: ${error.message}`);
@@ -192,24 +200,24 @@ class Node {
   }
 
   async clearOffers() {
-    const options = await getOptions()
+    const options = await getOptions();
 
     await setOptions({
       ...options,
       offerInfo: {
         cid: undefined,
         offers: [],
-      }
-    })
+      },
+    });
   }
-  
+
   runInLoop(stop = false) {
     if (stop) {
       return clearInterval(this.lastIntervalId);
     }
 
     return setInterval(async () => {
-      const {automationCode} = await getOptions();
+      const { automationCode } = await getOptions();
 
       try {
         eval(automationCode);
@@ -225,10 +233,10 @@ class Node {
 
   async runAutomationCode() {
     try {
-      const {automationCode} = await getOptions();
+      const { automationCode } = await getOptions();
       ports.postLog(`INFO: automation code saved`);
 
-      eval(automationCode)
+      eval(automationCode);
       this.lastIntervalId = this.runInLoop();
     } catch (error) {
       ports.postLog(`ERROR: automation code failed: ${error.message}`);
@@ -257,9 +265,9 @@ class Node {
       let totalBytesLoaded = 0;
 
       await Promise.all(
-        files.map(async file => {
+        files.map(async (file) => {
           const { cid, size } = await this.datastore.putFile(file, {
-            progress: bytesLoaded => {
+            progress: (bytesLoaded) => {
               totalBytesLoaded += bytesLoaded;
               ports.postUploadProgress(totalBytesLoaded / totalBytes);
             },
@@ -281,9 +289,7 @@ class Node {
     try {
       ports.postLog(`DEBUG: downloading ${cid}`);
       const data = await this.datastore.cat(cid);
-      const response = await fetch(
-        `data:application/octet-stream;base64,${data.toString('base64')}`,
-      );
+      const response = await fetch(`data:application/octet-stream;base64,${data.toString('base64')}`);
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const downloadId = await chrome.downloads.download({ url, filename: cid, saveAs: true });
@@ -315,6 +321,10 @@ class Node {
     }
   }
 
+  /**
+   * Sends a message to other peers in the network asking for a CID
+   * @param  {} message Contains `cid` that the node is looking for
+   */
   async publish(message) {
     const string = JSON.stringify(message);
     ports.postLog(`DEBUG: publishing message ${string}`);

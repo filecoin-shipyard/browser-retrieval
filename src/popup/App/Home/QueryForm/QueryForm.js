@@ -15,16 +15,17 @@ function QueryForm(props) {
 
   function onSubmit({ cid, minerID }) {
     const msg = {
-      cid: cid,
-      minerID: minerID
-    }
-    chrome.runtime.sendMessage({ messageType: messageTypes.query, msg});
+      cid,
+      minerID,
+    };
+
+    console.log('[Submit]', msg);
+    chrome.runtime.sendMessage({ messageType: messageTypes.query, msg });
   }
 
   return (
     <Card {...props}>
       <Form className="flex-col" onSubmit={handleSubmit(onSubmit)}>
-        
         <Label className="mb-2" for="cid">
           Query CID *
         </Label>

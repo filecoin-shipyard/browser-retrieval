@@ -1,5 +1,3 @@
-import { cid } from 'ipld-dag-cbor/src/util';
-
 export const messageRequestTypes = {
   queryCid: 'query_cid',
 
@@ -22,11 +20,11 @@ export const messageResponseTypes = {
 };
 
 export const messages = {
-  createGetQueryCID(cid) {
+  createGetQueryCID({ cid, minerID }) {
     return {
       message: messageRequestTypes.queryCid,
       cid,
-      miner: 't01352',
+      miner: minerID,
     };
   },
 
