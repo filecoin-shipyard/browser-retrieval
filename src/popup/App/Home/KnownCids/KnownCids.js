@@ -1,14 +1,13 @@
 /* global chrome */
-
-import React from 'react';
 import prettyBytes from 'pretty-bytes';
-import useOptions from 'src/popup/hooks/useOptions';
+import React from 'react';
 import Card from 'src/popup/components/Card';
-import Table from 'src/popup/components/Table';
-import TableRow from 'src/popup/components/TableRow';
-import TableCell from 'src/popup/components/TableCell';
 import IconButton from 'src/popup/components/IconButton';
 import Label from 'src/popup/components/Label';
+import Table from 'src/popup/components/Table';
+import TableCell from 'src/popup/components/TableCell';
+import TableRow from 'src/popup/components/TableRow';
+import useOptions from 'src/popup/hooks/useOptions';
 import messageTypes from 'src/shared/messageTypes';
 
 function KnownCids(props) {
@@ -20,11 +19,13 @@ function KnownCids(props) {
   }
 
   function downloadFile(cid) {
-    chrome.runtime.sendMessage({ messageType: messageTypes.downloadFile, cid });
+    const msg = { cid };
+    chrome.runtime.sendMessage({ messageType: messageTypes.downloadFile, msg });
   }
 
   function deleteFile(cid) {
-    chrome.runtime.sendMessage({ messageType: messageTypes.deleteFile, cid });
+    const msg = { cid };
+    chrome.runtime.sendMessage({ messageType: messageTypes.deleteFile, msg });
   }
 
   return (
@@ -32,12 +33,10 @@ function KnownCids(props) {
       <Label className="p-4 pb-2">Known CIDs</Label>
       <Table>
         <tbody>
-          {knownCidsIds.sort().map(cid => (
+          {knownCidsIds.sort().map((cid) => (
             <TableRow key={cid}>
               <TableCell className="font-mono">{cid}</TableCell>
-              <TableCell number>
-                {Boolean(knownCids[cid].size) && prettyBytes(knownCids[cid].size)}
-              </TableCell>
+              <TableCell number>{Boolean(knownCids[cid].size) && prettyBytes(knownCids[cid].size)}</TableCell>
               <TableCell buttons>
                 <div className="flex">
                   <IconButton className="mr-4" icon="download" onClick={() => downloadFile(cid)} />

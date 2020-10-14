@@ -11,18 +11,17 @@ ports.startListening();
 let node;
 
 chrome.runtime.onMessage.addListener(({ messageType, msg }, sender, sendResponse) => {
-  const cid = msg;
   switch (messageType) {
     case messageTypes.uploadFiles:
       node.uploadFiles(window.filesToUpload);
       break;
 
     case messageTypes.downloadFile:
-      node.downloadFile(cid);
+      node.downloadFile(msg.cid);
       break;
 
     case messageTypes.deleteFile:
-      node.deleteFile(cid);
+      node.deleteFile(msg.cid);
       break;
 
     case messageTypes.query:

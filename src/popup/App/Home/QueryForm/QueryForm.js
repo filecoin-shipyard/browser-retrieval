@@ -26,7 +26,7 @@ function QueryForm(props) {
       <Form className="flex-col" onSubmit={handleSubmit(onSubmit)}>
         
         <Label className="mb-2" for="cid">
-          Query CID
+          Query CID *
         </Label>
         <div className="flex">
           <Input ref={register({ required: 'Required' })} name="cid" className="flex-1 mr-4" />
@@ -37,7 +37,7 @@ function QueryForm(props) {
           Miner ID
         </Label>
         <div className="flex">
-          <Input ref={register({ required: 'Required' })} name="minerID" className="flex-1 mr-4" />
+          <Input ref={register({})} name="minerID" className="flex-1 mr-4" />
         </div>
 
         <Error className="mt-1" error={errors.cid} />
