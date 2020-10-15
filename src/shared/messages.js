@@ -28,33 +28,35 @@ export const messages = {
     };
   },
 
-  createFundsSent() {
+  createFundsSent({ clientToken }) {
     return {
       message: messageRequestTypes.fundsConfirmed,
-      client_token: 'HIgP2JW9wHdlTYb89rjEy9/IQDR02EwMvtg4XN5Y/kY=',
+      client_token: clientToken,
       payment_wallet: 'f1stoztiw5sxeyvezjttq5727wfdkooweskpue5fa',
     };
   },
 
-  createQueryRetrievalStatus(cid) {
+  createQueryRetrievalStatus({ cid, clientToken }) {
     return {
       message: messageRequestTypes.queryRetrievalStatus,
       cid,
-      client_token: 'HIgP2JW9wHdlTYb89rjEy9/IQDR02EwMvtg4XN5Y/kY=',
+      client_token: clientToken,
     };
   },
 
-  createChunkReceived({ cid, id }) {
+  createChunkReceived({ cid, id, clientToken }) {
     return {
       message: messageRequestTypes.chunkReceived,
+      client_token: clientToken,
       cid,
       id,
     };
   },
 
-  createChunkResend({ cid, id }) {
+  createChunkResend({ cid, id, clientToken }) {
     return {
       message: messageRequestTypes.chunkResend,
+      client_token: clientToken,
       cid,
       id,
     };

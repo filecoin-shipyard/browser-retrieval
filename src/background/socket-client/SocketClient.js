@@ -7,12 +7,16 @@ export default class SocketClient {
   socket;
   cid;
   minerID;
+  clientToken;
+
+  maxResendAttempts;
 
   static create(options, { cid, minerID }) {
     const client = new SocketClient();
 
     client.cid = cid;
     client.minerID = minerID;
+    client.maxResendAttempts = 3;
 
     client._connect(options);
     client._addHandlers();
@@ -21,8 +25,6 @@ export default class SocketClient {
   }
 
   query() {
-    console.log('messages', messages)
-
     const getQueryCIDMessage = messages.createGetQueryCID({ cid: this.cid, minerID: this.minerID });
     this.socket.emit(getQueryCIDMessage.message, getQueryCIDMessage);
   }
@@ -41,8 +43,9 @@ export default class SocketClient {
 
   _handleCidAvailability() {
     this.socket.on(messageResponseTypes.cidAvailability, (message) => {
-      console.log(messageResponseTypes.cidAvailability);
-      console.log(message);
+      console.log(`Got ${messageResponseTypes.cidAvailability} message:`, message);
+
+      this.clientToken = message.client_token;
 
       if (!message.available) {
         // TODO: give up
@@ -50,7 +53,7 @@ export default class SocketClient {
         return;
       }
 
-      this.socket.emit(messageRequestTypes.fundsConfirmed, messages.createFundsSent());
+      this.socket.emit(messageRequestTypes.fundsConfirmed, messages.createFundsSent({ clientToken: this.clientToken }));
     });
   }
 
@@ -60,7 +63,10 @@ export default class SocketClient {
       console.log(message);
 
       // TODO: periodically send this message to check on status
-      this.socket.emit(messageRequestTypes.queryRetrievalStatus, messages.createQueryRetrievalStatus(this.cid));
+      this.socket.emit(
+        messageRequestTypes.queryRetrievalStatus,
+        messages.createQueryRetrievalStatus({ cid: this.cid, clientToken: this.clientToken }),
+      );
     });
 
     this.socket.on(messageResponseTypes.fundsConfirmedErrorInsufficientFunds, () => {
@@ -81,12 +87,31 @@ export default class SocketClient {
       const validSize = dataBuffer.length === message.chunk_len_bytes;
 
       if (validSha256 && validSize) {
-        this.socket.emit(messageRequestTypes.chunkReceived, messages.createChunkReceived(message));
+        this.socket.emit(
+          messageRequestTypes.chunkReceived,
+          messages.createChunkReceived({
+            ...message,
+            clientToken: this.clientToken,
+          }),
+        );
 
         // TODO: proccess received data
         console.log('chunk is valid');
       } else {
-        this.socket.emit(messageRequestTypes.chunkResend, messages.createChunkResend(message));
+        if (this.maxResendAttempts > 0) {
+          this.maxResendAttempts--;
+
+          this.socket.emit(
+            messageRequestTypes.chunkResend,
+            messages.createChunkResend({
+              ...message,
+              clientToken: this.clientToken,
+            }),
+          );
+        } else {
+          // give up after N attempts
+          this.socket.disconnect();
+        }
 
         console.log('chunk is NOT valid, sending `chunkResend`');
       }
