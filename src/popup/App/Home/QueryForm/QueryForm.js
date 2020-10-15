@@ -33,14 +33,16 @@ function QueryForm(props) {
           <Button type="submit">Query</Button>
         </div>
 
-        <Label className="mb-2" for="minerID">
+        <Error className="mb-2 mt-2" error={errors.cid} />
+
+        <Label className="mt-2" for="minerID">
           Miner ID
         </Label>
         <div className="flex">
           <Input ref={register({})} name="minerID" className="flex-1 mr-4" />
         </div>
 
-        <Error className="mt-1" error={errors.cid} />
+
       </Form>
     </Card>
   );
