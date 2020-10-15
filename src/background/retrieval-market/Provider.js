@@ -19,7 +19,6 @@ class Provider {
 
   constructor(node, datastore, lotus) {
     ports.postLog("DEBUG: Provider.constructor()")
-    const provider = new Provider(...args);
     this.node = node;
     this.datastore = datastore;
     this.lotus = lotus;
