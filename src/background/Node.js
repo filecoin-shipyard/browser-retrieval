@@ -123,6 +123,7 @@ class Node {
         break;
 
       case messageTypes.queryResponse:
+        ports.postLog(`INFO: handleMessage > queryResponse`);
         this.handleQueryResponse(message);
         break;
 
@@ -151,17 +152,23 @@ class Node {
   }
 
   async handleQueryResponse({ messageType, cid, multiaddrs, params }) {
-    const options = await getOptions()
-    const offers = options.offerInfo?.offers || []
+    if (!this.queriedCids.has(cid)) {
+      return;
+    }
+
+    const options = await getOptions();
+    const offers = options.offerInfo?.offers || [];
 
     await setOptions({
       ...options,
       offerInfo: {
         cid,
-        offers: offers.concat(multiaddrs.map((address) => ({
-          address,
-          price: params.size * params.pricePerByte,
-        }))),
+        offers: offers.concat(
+          multiaddrs.map((address) => ({
+            address,
+            price: params.size * params.pricePerByte,
+          })),
+        ),
       },
     });
   }
