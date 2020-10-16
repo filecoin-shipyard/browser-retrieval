@@ -32,6 +32,13 @@ class Node {
   connectedPeers = new Set();
   queriedCids = new Set();
 
+  node;
+
+  /**
+   * Retrieval market client
+   */
+  client;
+
   async initialize({ rendezvousIp, rendezvousPort, wallet }) {
     const rendezvousProtocol = /^\d+\.\d+\.\d+\.\d+$/.test(rendezvousIp) ? 'ip4' : 'dns4';
     const rendezvousWsProtocol = `${rendezvousPort}` === '443' ? 'wss' : 'ws';
@@ -66,12 +73,9 @@ class Node {
     });
 
     ports.postLog('DEBUG: Node.initialize(): creating Client.js (retrieval market client)');
-    this.client = await Client.create(
-      this.node,
-      this.datastore,
-      this.lotus,
-      this.handleCidReceived,
-    );
+
+    // retrieval-market client
+    this.client = await Client.create(this.node, this.datastore, this.lotus, this.handleCidReceived);
 
     ports.postLog('DEBUG: Node.initialize(): creating Provider.js (retrieval market provider)');
     this.provider = await Provider.create(this.node, this.datastore, this.lotus);
@@ -91,18 +95,16 @@ class Node {
   }
 
   async getInfo() {
-    this.multiaddrs = this.node.multiaddrs.map(
-      multiaddr => `${multiaddr.toString()}/p2p/${this.id}`,
-    );
+    this.multiaddrs = this.node.multiaddrs.map((multiaddr) => `${multiaddr.toString()}/p2p/${this.id}`);
     this.postMultiaddrs();
   }
 
-  handlePeerConnect = connection => {
+  handlePeerConnect = (connection) => {
     this.connectedPeers.add(connection.remotePeer.toB58String());
     this.postPeers();
   };
 
-  handlePeerDisconnect = connection => {
+  handlePeerDisconnect = (connection) => {
     this.connectedPeers.delete(connection.remotePeer.toB58String());
     this.postPeers();
   };
@@ -151,17 +153,20 @@ class Node {
   }
 
   async handleQueryResponse({ messageType, cid, multiaddrs, params }) {
-    const options = await getOptions()
-    const offers = options.offerInfo?.offers || []
+    const options = await getOptions();
+    const offers = options.offerInfo?.offers || [];
 
     await setOptions({
       ...options,
       offerInfo: {
         cid,
-        offers: offers.concat(multiaddrs.map((address) => ({
-          address,
-          price: params.size * params.pricePerByte,
-        }))),
+        offers: offers.concat(
+          multiaddrs.map((address) => ({
+            address,
+            price: params.size * params.pricePerByte,
+            params,
+          })),
+        ),
       },
     });
   }
@@ -180,9 +185,9 @@ class Node {
 
   async query(rawCid, minerID) {
     try {
-      await this.clearOffers()
+      await this.clearOffers();
 
-      const cid = rawCid.trim()
+      const cid = rawCid.trim();
       this.queriedCids.add(cid);
       ports.postLog(`INFO: querying for ${cid} , minerID:  ${minerID}`);
       await this.publish({ messageType: messageTypes.query, cid });
@@ -193,24 +198,25 @@ class Node {
   }
 
   async clearOffers() {
-    const options = await getOptions()
+    const options = await getOptions();
 
     await setOptions({
       ...options,
       offerInfo: {
         cid: undefined,
         offers: [],
-      }
-    })
+        params: undefined,
+      },
+    });
   }
-  
+
   runInLoop(stop = false) {
     if (stop) {
       return clearInterval(this.lastIntervalId);
     }
 
     return setInterval(async () => {
-      const {automationCode} = await getOptions();
+      const { automationCode } = await getOptions();
 
       try {
         eval(automationCode);
@@ -226,10 +232,10 @@ class Node {
 
   async runAutomationCode() {
     try {
-      const {automationCode} = await getOptions();
+      const { automationCode } = await getOptions();
       ports.postLog(`INFO: automation code saved`);
 
-      eval(automationCode)
+      eval(automationCode);
       this.lastIntervalId = this.runInLoop();
     } catch (error) {
       ports.postLog(`ERROR: automation code failed: ${error.message}`);
@@ -258,9 +264,9 @@ class Node {
       let totalBytesLoaded = 0;
 
       await Promise.all(
-        files.map(async file => {
+        files.map(async (file) => {
           const { cid, size } = await this.datastore.putFile(file, {
-            progress: bytesLoaded => {
+            progress: (bytesLoaded) => {
               totalBytesLoaded += bytesLoaded;
               ports.postUploadProgress(totalBytesLoaded / totalBytes);
             },
@@ -278,20 +284,39 @@ class Node {
     }
   }
 
-  async downloadFile(cid) {
+  async _downloadFromPeer({ cid, offer }) {
+    if (!this.queriedCids.has(cid)) {
+      return;
+    }
+    
+    ports.postLog(`Download\n  CID: ${cid}\n  from: ${offer.address}\n  price: ${offer.price} attoFil`);
+
+    const { params } = offer;
+    const multiaddr = offer.address;
+
+    try {
+      await this.client.retrieve(cid, params, multiaddr);
+      this.queriedCids.delete(cid);
+    } catch (error) {
+      console.error(error);
+      ports.postLog(`ERROR: Node.initiateRetrieval():  failed: ${error.message}`);
+    }
+  }
+
+  async _downloadLocally({ cid }) {
     try {
       ports.postLog(`DEBUG: Node.downloadFile(): downloading ${cid}`);
       const data = await this.datastore.cat(cid);
-      const response = await fetch(
-        `data:application/octet-stream;base64,${data.toString('base64')}`,
-      );
+      const response = await fetch(`data:application/octet-stream;base64,${data.toString('base64')}`);
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const downloadId = await chrome.downloads.download({ url, filename: cid, saveAs: true });
 
       function handleDownloadChanged(delta) {
         if (delta.state && delta.state.current === 'complete' && delta.id === downloadId) {
-          ports.postLog(`DEBUG: Node.downloadFile.handleDownloadChanged():  download completed, revoking object url ${cid}`);
+          ports.postLog(
+            `DEBUG: Node.downloadFile.handleDownloadChanged():  download completed, revoking object url ${cid}`,
+          );
           URL.revokeObjectURL(url);
           chrome.downloads.onChanged.removeListener(handleDownloadChanged);
         }
@@ -301,6 +326,14 @@ class Node {
     } catch (error) {
       console.error(error);
       ports.postLog(`ERROR:  Node.downloadFile():  download failed: ${error.message}`);
+    }
+  }
+
+  async downloadFile({ cid, offer }) {
+    if (offer) {
+      this._downloadFromPeer({ cid, offer });
+    } else {
+      this._downloadLocally({ cid });
     }
   }
 

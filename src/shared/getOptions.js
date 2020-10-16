@@ -14,6 +14,7 @@ const defaultValues = {
   offerInfo: {
     cid: undefined,
     offers: [],
+    params: undefined,
   },
   automationCode:
       '//Dummy example (code will run every 10 minutes)\n' +

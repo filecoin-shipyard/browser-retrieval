@@ -20,6 +20,7 @@ function Offers(props) {
 
     const msg = {
       cid,
+      offer,
     };
 
     chrome.runtime.sendMessage({ messageType: messageTypes.downloadFile, msg });
@@ -44,6 +45,7 @@ function Offers(props) {
       offerInfo: {
         cid: undefined,
         offers: [],
+        params: undefined,
       },
     });
   }
