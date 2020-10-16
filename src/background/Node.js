@@ -125,6 +125,7 @@ class Node {
         break;
 
       case messageTypes.queryResponse:
+        ports.postLog(`INFO: handleMessage > queryResponse`);
         this.handleQueryResponse(message);
         break;
 
@@ -153,6 +154,10 @@ class Node {
   }
 
   async handleQueryResponse({ messageType, cid, multiaddrs, params }) {
+    if (!this.queriedCids.has(cid)) {
+      return;
+    }
+
     const options = await getOptions();
     const offers = options.offerInfo?.offers || [];
 
