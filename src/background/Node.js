@@ -77,7 +77,12 @@ class Node {
     this.provider = await Provider.create(this.node, this.datastore, this.lotus);
 
     ports.postLog('DEBUG: Node.initialize(): starting libp2p node');
-    await this.node.start();
+    try {
+      await this.node.start();
+    } catch (e) {
+      await this.datastore.close();
+    }
+
 
     ports.postLog('DEBUG: Node.initialize(): adding listeners to node');
     this.node.connectionManager.on('peer:connect', this.handlePeerConnect);
