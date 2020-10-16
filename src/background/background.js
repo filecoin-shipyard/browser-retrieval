@@ -19,7 +19,7 @@ chrome.runtime.onMessage.addListener(({ messageType, msg }, sender, sendResponse
 
     case messageTypes.downloadFile:
       ports.postLog("DEBUG: global chrome: case messageTypes.downloadFile")
-      node.downloadFile(msg.cid);
+      node.downloadFile(msg);
       break;
 
     case messageTypes.deleteFile:

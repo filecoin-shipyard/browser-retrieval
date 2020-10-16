@@ -20,6 +20,16 @@ class Client {
     this.cidReceivedCallback = cidReceivedCallback;
   }
 
+  /**
+   * Retrieves a file
+   * @param  {string} cid CID of the file to retrieve
+   * @param  {object} dealParams Deal parameters
+   * @param  {string} dealParams.wallet Deal wallet
+   * @param  {number} dealParams.size File total size
+   * @param  {string} dealParams.pricePerByte Price to construct a BigNumber
+   * @param  {string} peerMultiaddr Address from where to get the file from
+   * @param  {string} peerWallet Wallet of the client requesting the file
+   */
   async retrieve(cid, dealParams, peerMultiaddr, peerWallet) {
     ports.postLog("DEBUG: Client.retrieve()")
     ports.postLog(`DEBUG: dialing peer ${peerMultiaddr}`);
@@ -139,7 +149,7 @@ class Client {
   }
 
   async receiveBlocks({ dealId, blocks }) {
-    ports.postLog(`DEBUG: Client.setupReceieveBlocks(): received ${blocks.length} blocks ${dealId}`);
+    ports.postLog(`DEBUG: Client.setupReceieveBlocks(): received ${blocks.length} blocks deal id: ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
     for (const block of blocks) {
