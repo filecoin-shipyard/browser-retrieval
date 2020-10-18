@@ -7,8 +7,10 @@
     "@babel/cli": "^7.10.4",
     "@babel/plugin-transform-runtime": "^7.10.4",
     "@babel/runtime": "^7.10.4",
-    "@zondax/filecoin-signing-tools": "^0.5.2",
+    "@zondax/filecoin-signing-tools": "^0.10.0",
     "autoprefixer": "^9.8.4",
+    "axios": "^0.20.0",
+    "browser-util-inspect": "^0.2.0",
     "buffer": "^5.6.0",
     "cids": "^0.8.3",
     "classnames": "^2.2.6",
@@ -55,7 +57,6 @@
     "build:background": "NODE_ENV=development webpack",
     "build": "yarn build:popup && yarn build:background",
     "build:debug": "DEBUG=true yarn build",
-
     "watch": "npm-watch"
   },
   "watch": {

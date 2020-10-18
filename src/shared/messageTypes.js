@@ -10,6 +10,7 @@ const messageTypes = {
   automationStart: 'AutomationCodeStart',
   automationStop: 'AutomationCodeStop',
   openExtensionInBrowser: 'openExtensionInBrowser',
+  mikeMessage: 'mikeMessage', // TEMP - WASM INTEG TEST
 };
 
 export default messageTypes;

@@ -12,6 +12,20 @@ let node;
 
 chrome.runtime.onMessage.addListener(({ messageType, msg }, sender, sendResponse) => {
   switch (messageType) {
+    // TEMP - WASM INTEG TEST
+    case messageTypes.mikeMessage:
+      ports.postLog(`DEBUG: >>> messageTypes.mikeMessage (messageType='${messageType}') <<<<`)
+      //const offerJsonStr = '{"paymentInterval":1048576,"paymentIntervalIncrease":1048576,"pricePerByte":10,"size":3775,"wallet":"f1jej4xfb2347wwy53mg3i3usje3exrp7mjk7i57a"}'
+      const cid = 'QmVmEHjr6xtNxHDbJ7kXenYMH6C4ZGpjqNnMeAEk9dQcR3';
+      const offerJsonStr = '{"address":"/dns4/webrtc-star-1.browser-retrieval.filecoin.io/tcp/443/wss/p2p-webrtc-star/p2p/QmXujxM6wb3pbwXDVGKrbzT93WDR739jd5PuQLLhtJVcke","params":{"paymentInterval":1048576,"paymentIntervalIncrease":1048576,"pricePerByte":1,"size":3775,"wallet":"f1jej4xfb2347wwy53mg3i3usje3exrp7mjk7i57a"},"price":3775}';
+      const offer = JSON.parse(offerJsonStr)
+      ports.postLog(`DEBUG: background.js:  offer=${JSON.stringify(offer)}`)
+      const args = { cid: cid, offer: offer };
+      node.queriedCids.add(cid);
+      node.downloadFile(args);
+      break;
+    // END - TEMP
+
     case messageTypes.uploadFiles:
       ports.postLog("DEBUG: global chrome: case messageTypes.uploadFiles")
       node.uploadFiles(window.filesToUpload);
@@ -53,6 +67,7 @@ chrome.runtime.onMessage.addListener(({ messageType, msg }, sender, sendResponse
       break;
 
     default:
+      ports.postLog("WARN: global chrome: unrecognized message received in background.js switch: messageType='"+messageType+"'")
       break;
   }
 });

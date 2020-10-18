@@ -4,6 +4,7 @@ import protocols from 'src/shared/protocols';
 import dealStatuses from 'src/shared/dealStatuses';
 import jsonStream from 'src/shared/jsonStream';
 import ports from 'src/background/ports';
+import inspect from 'browser-util-inspect';
 
 class Client {
   static async create(...args) {
@@ -24,13 +25,14 @@ class Client {
    * Retrieves a file
    * @param  {string} cid CID of the file to retrieve
    * @param  {object} dealParams Deal parameters
-   * @param  {string} dealParams.wallet Deal wallet
+   * @param  {string} dealParams.wallet Server wallet (PCH "To" wallet)
    * @param  {number} dealParams.size File total size
    * @param  {string} dealParams.pricePerByte Price to construct a BigNumber
    * @param  {string} peerMultiaddr Address from where to get the file from
-   * @param  {string} peerWallet Wallet of the client requesting the file
+   * @param  {string} peerWallet Client wallet addr (PCH "From" wallet)
    */
   async retrieve(cid, dealParams, peerMultiaddr, peerWallet) {
+    ports.postLog(`MIKE: retrieve called with\n  cid='${cid}'\n  dealParams='${inspect(dealParams)}'\n  peerMultiaddr=${peerMultiaddr}\n  peerWallet=${peerWallet}`);
     ports.postLog("DEBUG: Client.retrieve()")
     ports.postLog(`DEBUG: dialing peer ${peerMultiaddr}`);
     const { stream } = await this.node.dialProtocol(peerMultiaddr, protocols.filecoinRetrieval);
