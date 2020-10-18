@@ -1,7 +1,7 @@
 /* global chrome */
 
 const defaultValues = {
-  rendezvousIp: 'jsrc-bootstrap.goelzer.io',
+  rendezvousIp: 'webrtc-star-1.browser-retrieval.filecoin.io',
   rendezvousPort: '443',
   pricesPerByte: { '*': 1000 },
   knownCids: {},
