@@ -4,6 +4,8 @@ import ports from 'src/background/ports';
 import dealStatuses from 'src/shared/dealStatuses';
 import jsonStream from 'src/shared/jsonStream';
 import protocols from 'src/shared/protocols';
+import ports from 'src/background/ports';
+import inspect from 'browser-util-inspect';
 
 class Client {
   static async create(...args) {
@@ -44,14 +46,15 @@ class Client {
    * Retrieves a file
    * @param  {string} cid CID of the file to retrieve
    * @param  {object} dealParams Deal parameters
-   * @param  {string} dealParams.wallet Deal wallet
+   * @param  {string} dealParams.wallet Server wallet (PCH "To" wallet)
    * @param  {number} dealParams.size File total size
    * @param  {string} dealParams.pricePerByte Price to construct a BigNumber
    * @param  {string} peerMultiaddr Address from where to get the file from
-   * @param  {string} peerWallet Wallet of the client requesting the file
+   * @param  {string} peerWallet Client wallet addr (PCH "From" wallet)
    */
   async retrieve(cid, dealParams, peerMultiaddr, peerWallet) {
     ports.postLog('DEBUG: Client.retrieve()');
+    ports.postLog(`MIKE: retrieve called with\n  cid='${cid}'\n  dealParams='${inspect(dealParams)}'\n  peerMultiaddr=${peerMultiaddr}\n  peerWallet=${peerWallet}`);
     ports.postLog(`DEBUG: dialing peer ${peerMultiaddr}`);
     const { stream } = await this.node.dialProtocol(peerMultiaddr, protocols.filecoinRetrieval);
 
@@ -60,6 +63,8 @@ class Client {
 
     const importerSink = pushable();
 
+    // TODO:  should dealId be random?  Maybe, but check this
+    // TODO:  rand % max int  eliminate Math.floor
     const dealId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
     this.ongoingDeals[dealId] = {
       id: dealId,
@@ -157,14 +162,32 @@ class Client {
     ports.postLog(`DEBUG: Client.setupPaymentChannel(): setting up payment channel ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
-    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
+    const pchAmount = deal.params.size * deal.params.pricePerByte;
+
+    ports.postLog(`DEBUG: Client.setupPaymentChannel(): PCH creation parameters:\n  pchAmount=${pchAmount}\n  `);
+
+    // ------------ CREATE PCH HERE -------------------------------------
+
+    // ------------ END - CREATE PCH ------------------------------------
+
+    // ------------ OLD CODE REMOVE -------------------------------------
     // deal.paymentChannel = await this.lotus.getOrCreatePaymentChannel(
     //   deal.params.wallet,
     //   deal.params.size * deal.params.pricePerByte,
     // );
     // deal.lane = await this.lotus.allocateLane(deal.paymentChannel);
+    // ------------ END - OLD CODE REMOVE --------------------------------
 
-    ports.postLog(`DEBUG: Client.setupPaymentChannel(): sending payment channel ready ${dealId}`);
+
+    // TODO:  Set deal.paymentChannel
+
+    // Not using lanes currently
+    deal.Lane = 0;
+
+    // TODO:  fill this in
+    const pchAddr = "TODO TODO TODO"
+
+    ports.postLog(`DEBUG: Client.setupPaymentChannel(): sending payment channel ready (pchAddr='${pchAddr}') for dealId='${dealId}'`);
     deal.sink.push({
       dealId,
       status: dealStatuses.paymentChannelReady,

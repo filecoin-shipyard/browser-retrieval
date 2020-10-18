@@ -1,18 +1,19 @@
-import * as signer from '@zondax/filecoin-signing-tools';
-import getOptions from 'src/shared/getOptions';
+import dagCBOR from 'ipld-dag-cbor';
+import * as signer from '@zondax/filecoin-signing-tools';  // TODO:  rename to signer to filecoin_signer
 import onOptionsChanged from 'src/shared/onOptionsChanged';
-
+import getOptions from 'src/shared/getOptions';
 import ports from '../ports';
-
-// Required to workaround `Invalid asm.js: Unexpected token` error
+// Required to workaround `Invalid asm.js: Unexpected token` error:
 const importDagCBOR = () => {
   return require('ipld-dag-cbor');
 }
 
 class Lotus {
   static async create() {
+    ports.postLog(`DEBUG: entering Lotus.create`);
     const lotus = new Lotus();
     await lotus.initialize();
+    ports.postLog(`DEBUG: leaving Lotus.create`);
     return lotus;
   }
 
@@ -21,8 +22,18 @@ class Lotus {
   paymentChannelsInfo = {};
 
   async initialize() {
+    ports.postLog(`DEBUG: Lotus.initialize:  entering`);
     await this.updateOptions();
     onOptionsChanged(this.handleOptionsChange);
+    ports.postLog(`DEBUG: Lotus.initialize:  leaving`);
+  }
+
+  // for testing filecoin_signer
+  async keyRecover() {
+    // This is a dummy wallet with no funds. Recovered addr will be f156e3l2vwd5wi5jwdrd6gdg4y7t2yknq6see7xbq
+    privKey = "ciiFbmF7F7mrVs5E/IT8TV63PdFPLrRs9R/Cc3vri2I=";
+    let recoveredPKey = signer.keyRecover(privKey, true);
+    ports.postLog(`DEBUG: Lotus.keyRecover: recovered='${recoveredPKey.address}' (=='...7xbq'?)`);
   }
 
   async updateOptions() {
