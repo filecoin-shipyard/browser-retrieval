@@ -17,6 +17,7 @@ import Lotus from './lotus-client/Lotus';
 import Datastore from './Datastore';
 import Client from './retrieval-market/Client';
 import Provider from './retrieval-market/Provider';
+import inspect from 'browser-util-inspect';
 
 class Node {
   static async create(options) {
@@ -290,17 +291,21 @@ class Node {
   }
 
   async _downloadFromPeer({ cid, offer }) {
+    ports.postLog(`DEBUG:  Node._downloadFromPeer: starting`);
+
     if (!this.queriedCids.has(cid)) {
+      ports.postLog(`DEBUG:  Node._downloadFromPeer: exiting because Node.queriedCids does not contain '${cid}'`);
       return;
     }
     
-    ports.postLog(`Download\n  CID: ${cid}\n  from: ${offer.address}\n  price: ${offer.price} attoFil`);
+    ports.postLog(`DEBUG:  Node._downloadFromPeer:  offer=${JSON.stringify(offer)}`);
+    ports.postLog(`DEBUG:  Node._downloadFromPeer:\n  CID: ${cid}\n  from: ${offer.address}\n  price: ${offer.price} attoFil`);
 
     const { params } = offer;
     const multiaddr = offer.address;
 
     try {
-      await this.client.retrieve(cid, params, multiaddr);
+      await this.client.retrieve(cid, params, multiaddr);  // TODO:  peer wallet!
       this.queriedCids.delete(cid);
     } catch (error) {
       console.error(error);
@@ -310,7 +315,7 @@ class Node {
 
   async _downloadLocally({ cid }) {
     try {
-      ports.postLog(`DEBUG: Node.downloadFile(): downloading ${cid}`);
+      ports.postLog(`DEBUG: Node._downloadLocally(): downloading ${cid}`);
       const data = await this.datastore.cat(cid);
       const response = await fetch(`data:application/octet-stream;base64,${data.toString('base64')}`);
       const blob = await response.blob();
@@ -320,7 +325,7 @@ class Node {
       function handleDownloadChanged(delta) {
         if (delta.state && delta.state.current === 'complete' && delta.id === downloadId) {
           ports.postLog(
-            `DEBUG: Node.downloadFile.handleDownloadChanged():  download completed, revoking object url ${cid}`,
+            `DEBUG: Node._downloadLocally.handleDownloadChanged():  download completed, revoking object url ${cid}`,
           );
           URL.revokeObjectURL(url);
           chrome.downloads.onChanged.removeListener(handleDownloadChanged);
@@ -330,15 +335,21 @@ class Node {
       chrome.downloads.onChanged.addListener(handleDownloadChanged);
     } catch (error) {
       console.error(error);
-      ports.postLog(`ERROR:  Node.downloadFile():  download failed: ${error.message}`);
+      ports.postLog(`ERROR:  Node._downloadLocally():  download failed: ${error.message}`);
     }
   }
 
   async downloadFile({ cid, offer }) {
-    if (offer) {
-      this._downloadFromPeer({ cid, offer });
-    } else {
-      this._downloadLocally({ cid });
+    ports.postLog(`DEBUG:  Node.downloadFile:\n  cid:'${cid}'\n  offer=${inspect(offer)}`);
+    try {
+      if (offer) {
+        this._downloadFromPeer({ cid, offer });
+      } else {
+        this._downloadLocally({ cid });
+      }
+    } catch (error) {
+      console.error(error);
+      ports.postLog(`ERROR: Node.downloadFile(): error: ${error.message}`);
     }
   }
 

@@ -53,6 +53,7 @@ chrome.runtime.onMessage.addListener(({ messageType, msg }, sender, sendResponse
       break;
 
     default:
+      ports.postLog("WARN: global chrome: unrecognized message received in background.js switch: messageType='"+messageType+"'")
       break;
   }
 });
