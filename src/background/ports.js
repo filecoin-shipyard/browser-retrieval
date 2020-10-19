@@ -62,12 +62,13 @@ const ports = {
   },
 
   mapDeals(deals) {
-    return Object.values(deals).map(({ id, cid, params, sizeReceived, sizeSent }) => ({
+    return Object.values(deals).map(({ id, cid, params, sizeReceived, sizeSent, status }) => ({
       id,
       cid,
       params,
       sizeReceived,
       sizeSent,
+      status,
     }));
   },
 
