@@ -390,7 +390,7 @@ class Lotus {
     var signedCollectMessage;
     try {
       let nonce = await this.getNonce(toAddr);
-      let collect_paych_message = signer.collectPymtChan(PCH, fromAddr, nonce, "10000000", "16251176117", "140625002") // gas limit, fee cap, premium
+      let collect_paych_message = signer.collectPymtChanWithFee(pch, toAddr, nonce, "10000000", "16251176117", "140625002") // gas limit, fee cap, premium
       signedCollectMessage = JSON.parse(signer.transactionSignLotus(collect_paych_message, toPrivateKeyBase64));
     } catch (error) {
       ports.postLog(`ERROR: Lotus.collectPaymentChannel: error generating Collect msg: ${error.message}`);
@@ -404,7 +404,7 @@ class Lotus {
     //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
     ports.postLog(`DEBUG: Lotus.collectPaymentChannel:  msgCid = ${inspect(msgCid)}`);
     if (msgCid === undefined) {
-      ports.postLog(`ERROR: Lotus.collectPaymentChannel: fatal: pch Settle msgcid undefined`);
+      ports.postLog(`ERROR: Lotus.collectPaymentChannel: fatal: pch Collect msgcid undefined`);
       return;
     }
 

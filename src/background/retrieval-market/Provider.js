@@ -257,6 +257,12 @@ class Provider {
     ports.postLog(`DEBUG: Provider.closeDeal: dealId=${dealId}, paymentChannel=${paymentChannel}`);
     await this.lotus.settlePaymentChannel(paymentChannel);
     // TODO:  pend an operation to Collect the payment channel
+
+    // ------------- TEMP ------------------------------
+    setTimeout((()=>{
+      this.lotus.collectPaymentChannel(paymentChannel);
+    }).bind(this),1000*60*60*12);
+    // --------- END TEMP ------------------------------
     const deal = this.ongoingDeals[dealId];
     deal.sink.end();
 
