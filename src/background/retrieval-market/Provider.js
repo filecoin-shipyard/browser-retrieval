@@ -220,7 +220,8 @@ class Provider {
     const clientWalletAddr = deal.clientWalletAddr;
     ports.postLog(`DEBUG: Provider.checkPaymentVoucherValid: clientWalletAddr=${clientWalletAddr}`);
 
-    const expectedAmountAttoFil = 0; // TODO: figure out how to compute this here
+    const expectedAmountAttoFil = deal.sizeSent * deal.params.pricePerByte;
+    ports.postLog(`DEBUG: Provider.checkPaymentVoucherValid: expectedAmountAttoFil = ${expectedAmountAttoFil}\n  = [(${deal.sizeSent} bytes sent) * (${deal.params.pricePerByte} pricePerByte)]`);
 
     const svValid = await this.lotus.checkPaymentVoucherValid(signedVoucher, expectedAmountAttoFil, clientWalletAddr);
     ports.postLog(`DEBUG: Provider.checkPaymentVoucherValid: ${signedVoucher} => ${svValid}`);
@@ -234,12 +235,15 @@ class Provider {
    * @param  {number} dealId Deal Id to find this deal in this.ongoingDeals[]
    * @param  {string} paymentChannel PCH robust address
    * @param  {string} paymentVoucher Signed voucher to submit; assumed to already be validated successfully
-   * @return {boolean} Returns true if voucher is valid
    */
-  async submitPaymentVoucher({ dealId, paymentChannel, paymentVoucher }) {
-    ports.postLog('DEBUG: Provider.submitPaymentVoucher()');
-    ports.postLog(`DEBUG: submitting voucher ${dealId}`);
-    // TODO: await this.lotus.updatePaymentChannel(pch, toAddr, toPrivateKeyBase64, signedVoucher);
+  async submitPaymentVoucher({ dealId, paymentChannel, signedVoucher }) {
+    ports.postLog("DEBUG: Provider.submitPaymentVoucher()")
+    ports.postLog(`DEBUG: Provider.submitPaymentVoucher: submitting voucher dealId=${dealId},paymentChannel=${paymentChannel},signedVoucher=${signedVoucher}`);
+    const isUpdateSuccessful = await this.lotus.updatePaymentChannel(paymentChannel, signedVoucher);
+    ports.postLog(`DEBUG: Provider.submitPaymentVoucher: isUpdateSuccessful=${isUpdateSuccessful}`);
+    if (!isUpdateSuccessful) {
+      throw {"message":"ERROR: Provider.submitPaymentVoucher: failed to submit voucher"};
+    }
   }
 
   async sendDealCompleted({ dealId }) {

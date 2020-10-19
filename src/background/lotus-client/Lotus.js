@@ -64,9 +64,9 @@ class Lotus {
    * @return {number} Returns the next nonce, or undefined if an error occurred
    */
   async getNonce(addr) {
-    //ports.postLog(`DEBUG: entering Lotus.getNonce`);
+    ports.postLog(`DEBUG: entering Lotus.getNonce`);
     let headers = this.headers
-    //ports.postLog(`DEBUG: Lotus.getNonce:\n  this.headers=${inspect(headers)}\n  this.lotusEndpoint=${this.lotusEndpoint}\n  addr=${addr}`);
+    ports.postLog(`DEBUG: Lotus.getNonce:\n  addr=${addr}\n  this.headers=${inspect(headers)}\n  this.lotusEndpoint=${this.lotusEndpoint}`);
     var response;
     try {
       response = await axios.post(this.lotusEndpoint, {
@@ -82,8 +82,8 @@ class Lotus {
 		//ports.postLog("response.data = "+inspect(response.data));
 		let nonce = response.data.result;
     //ports.postLog(`Nonce (${addr}) = ${nonce}`);
-    //ports.postLog(`DEBUG: leaving Lotus.getNonce (ret = ${nonce})`);
-    ports.postLog(`DEBUG: Lotus.getNonce => ${nonce}`);
+    ports.postLog(`DEBUG: leaving Lotus.getNonce (ret = ${nonce})`);
+    //ports.postLog(`DEBUG: Lotus.getNonce => ${nonce}`);
 		return nonce;
   }
   
@@ -93,7 +93,7 @@ class Lotus {
    * @return {string} Returns the CID of the submitted message, or undefined if an error occurred
    */
   async mpoolPush(signedMessage) {
-    //ports.postLog(`DEBUG: entering Lotus.mpoolPush`);
+    ports.postLog(`DEBUG: entering Lotus.mpoolPush (signedMessage=${inspect(signedMessage)})`);
     let headers = this.headers
     var response;
     var msgCid;
@@ -104,12 +104,12 @@ class Lotus {
         id: 1,
         params: [signedMessage]
       }, {headers});
+      ports.postLog(`DEBUG: Lotus.mpoolPush: response.data = ${inspect(response.data)}`);
       msgCid = response.data.result;
     } catch (error) {
       ports.postLog(`ERROR: Lotus.mpoolPush(): axios error: ${error.message}`);
       return undefined
     }
-		//ports.postLog(`response.data = ${inspect(response.data)}`);
     //ports.postLog(`DEBUG: leaving Lotus.mpoolPush => ${inspect(msgCid)}`);
     ports.postLog(`DEBUG: Lotus.mpoolPush => ${inspect(msgCid)}`);
 		return msgCid;
@@ -140,6 +140,34 @@ class Lotus {
     //ports.postLog(`DEBUG: leaving Lotus.stateWaitMsg => ${inspect(msgCid)}`);
     ports.postLog(`--------------------------------------------------------------------------------------------------`);
     ports.postLog(`DEBUG: Lotus.stateWaitMsg => ${inspect(response.data)} ; ${inspect(response.data.result)}`);
+    ports.postLog(`--------------------------------------------------------------------------------------------------`);
+    return response.data;
+  }
+
+  /**
+   * Wraps Filecoin.StateReadState by taking a PCH address and waiting for its state to be returned
+   * @param  {string} pch The address of the payment chanel
+   * @return {object} Returns the wait's response.data member, or undefined if an error occurred
+   */
+  async stateReadState(pch) {
+    ports.postLog(`DEBUG: entering Lotus.stateReadState(pch='${pch}')`);
+    ports.postLog(`INFO: begining StateReadState. This will take a while...`);
+    let headers = this.headers
+    var response;
+    try {
+      response = await axios.post(this.lotusEndpoint, {
+        jsonrpc: "2.0",
+        method: "Filecoin.StateReadState",
+        id: 1,
+        params: [pch, null]
+      }, { headers });
+    } catch (error) {
+      ports.postLog(`ERROR: Lotus.stateReadState(): axios error: ${error.message}`);
+      return undefined
+    }
+		//ports.postLog(`response.data = ${inspect(response.data)}`);
+    ports.postLog(`--------------------------------------------------------------------------------------------------`);
+    ports.postLog(`DEBUG: Lotus.stateReadState => ${inspect(response.data)} ; ${inspect(response.data.result)}`);
     ports.postLog(`--------------------------------------------------------------------------------------------------`);
     return response.data;
   }
@@ -176,7 +204,7 @@ class Lotus {
 
     ports.postLog(`DEBUG: Lotus.createPaymentChannel: [from:${fromAddr}, fromKey:${fromKey}, to:${toAddr}, amount:${amountAttoFil}]`);
 
-    let nonce = await this.getNonce(fromAddr)
+    let nonce = await this.getNonce(fromAddr);
     ports.postLog(`DEBUG: Lotus.createPaymentChannel: nonce=${nonce}`);
 
     //
@@ -191,7 +219,7 @@ class Lotus {
       signedCreateMessage = JSON.parse(signer.transactionSignLotus(create_pymtchan, fromKey));
       ports.postLog("DEBUG: Lotus.createPaymentChannel: signedCreateMessage="+inspect(signedCreateMessage))
     } catch (error) {
-      ports.postLog(`ERROR (Lotus.createPaymentChannel) error creating and signing txn: ${error.message}`);
+      ports.postLog(`ERROR: Lotus.createPaymentChannel: error creating and signing txn: ${error.message}`);
       return undefined
     }
 
@@ -233,14 +261,64 @@ class Lotus {
   /**
    * Updates a payment channel with a specified signed voucher
    * @param  {string} pch The payment channel to update
-   * @param  {string} toAddr The "To" address on the payment channel. This will be the signer of this message.
-   * @param  {string} toPrivateKeyBase64 The "To" address private key
+   * TODO: DELETE @param  {string} toAddr The "To" address on the payment channel. This will be the signer of this message.
+   * TODO: DELETE @param  {string} toPrivateKeyBase64 The "To" address private key
    * @param  {string} signedVoucher The voucher to update the channel with
-   * @return {number} Returns the new PCH's robust address, or undefined if an error occurred
+   * @return {boolean} Returns true if update succeeds
    */
-  async updatePaymentChannel(pch, toAddr, toPrivateKeyBase64, signedVoucher) {
+  async updatePaymentChannel(pch, signedVoucher) {
+    const toAddr = this.wallet;
+    const toPrivateKeyBase64 = this.privateKeyBase64;
     ports.postLog(`DEBUG: Lotus.updatePaymentChannel:\n  pch=${pch}\n  toAddr=${toAddr}\n  toPrivateKeyBase64=${toPrivateKeyBase64}\n  signedVoucher=${signedVoucher}`);
-    // TODO:  write me
+    
+    //
+    // Generate update PCH message
+    //
+    var signedUpdateMessage;
+    try {
+      let nonce = await this.getNonce(toAddr);
+      let update_paych_message = signer.updatePymtChanWithFee(pch, toAddr, signedVoucher, nonce, "10000000", "16251176117", "140625002") // gas limit, fee cap, premium
+      //ports.postLog(`DEBUG: Lotus.updatePaymentChannel:  update_paych_message=${inspect(update_paych_message)}`);
+      signedUpdateMessage = JSON.parse(signer.transactionSignLotus(update_paych_message, toPrivateKeyBase64));
+    } catch (error) {
+      ports.postLog(`ERROR: Lotus.updatePaymentChannel: error updating pch: ${error.message}`);
+      return false
+    }
+
+    //
+    // Mpoolpush signed message
+    //
+    var msgCid = await this.mpoolPush(signedUpdateMessage);
+    //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
+    ports.postLog(`DEBUG: Lotus.updatePaymentChannel:  msgCid = ${inspect(msgCid)}`);
+    if (msgCid === undefined) {
+      ports.postLog(`ERROR: Lotus.updatePaymentChannel: fatal: pch update msgcid undefined`);
+      return false
+    }
+
+    //
+    // Wait for PCH update response
+    //
+    const waitUpdateResponseData = await this.stateWaitMsg(msgCid);
+    if (waitUpdateResponseData===undefined) {
+      ports.postLog(`ERROR: Lotus.updatePaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`);
+      return false;
+    }
+  	ports.postLog(`DEBUG: Lotus.updatePaymentChannel: response.data.result: ${inspect(waitUpdateResponseData.result)}`)
+
+    //
+    // Wait for new PCH state
+    //
+    const waitReadPchStateResponseData = await this.stateReadState(pch);
+    if (waitReadPchStateResponseData===undefined) {
+      ports.postLog(`ERROR: Lotus.updatePaymentChannel: fatal: Filecoin.StateReadState returned nothing`);
+      return false;
+    }
+  	ports.postLog(`DEBUG: Lotus.updatePaymentChannel: response.data.result: ${inspect(waitReadPchStateResponseData.result)}`)
+
+    // TODO:  once we have a function to extract the value field from a signed voucher, check here
+    // that it matches 
+    return true;
   }
 
 /*
