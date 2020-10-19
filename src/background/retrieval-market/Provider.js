@@ -253,9 +253,10 @@ class Provider {
     deal.sink.push({ dealId, status: dealStatuses.completed });
   }
 
-  async closeDeal({ dealId }) {
-    ports.postLog('DEBUG: Provider.closeDeal()');
-    ports.postLog(`DEBUG: closing deal ${dealId}`);
+  async closeDeal({ dealId, paymentChannel }) {
+    ports.postLog(`DEBUG: Provider.closeDeal: dealId=${dealId}, paymentChannel=${paymentChannel}`);
+    await this.lotus.settlePaymentChannel(paymentChannel);
+    // TODO:  pend an operation to Collect the payment channel
     const deal = this.ongoingDeals[dealId];
     deal.sink.end();
 

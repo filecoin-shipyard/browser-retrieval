@@ -259,7 +259,7 @@ class Lotus {
   }
 
   /**
-   * Updates a payment channel with a specified signed voucher
+   * Updates a payment channel with a specified signed voucher.  This is called by Provider.
    * @param  {string} pch The payment channel to update
    * TODO: DELETE @param  {string} toAddr The "To" address on the payment channel. This will be the signer of this message.
    * TODO: DELETE @param  {string} toPrivateKeyBase64 The "To" address private key
@@ -281,7 +281,7 @@ class Lotus {
       //ports.postLog(`DEBUG: Lotus.updatePaymentChannel:  update_paych_message=${inspect(update_paych_message)}`);
       signedUpdateMessage = JSON.parse(signer.transactionSignLotus(update_paych_message, toPrivateKeyBase64));
     } catch (error) {
-      ports.postLog(`ERROR: Lotus.updatePaymentChannel: error updating pch: ${error.message}`);
+      ports.postLog(`ERROR: Lotus.updatePaymentChannel: error generating Update message: ${error.message}`);
       return false
     }
 
@@ -304,7 +304,7 @@ class Lotus {
       ports.postLog(`ERROR: Lotus.updatePaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`);
       return false;
     }
-  	ports.postLog(`DEBUG: Lotus.updatePaymentChannel: response.data.result: ${inspect(waitUpdateResponseData.result)}`)
+  	ports.postLog(`DEBUG: Lotus.updatePaymentChannel: response.data.result: ${inspect(waitUpdateResponseData.result)}`);
 
     //
     // Wait for new PCH state
@@ -314,11 +314,119 @@ class Lotus {
       ports.postLog(`ERROR: Lotus.updatePaymentChannel: fatal: Filecoin.StateReadState returned nothing`);
       return false;
     }
-  	ports.postLog(`DEBUG: Lotus.updatePaymentChannel: response.data.result: ${inspect(waitReadPchStateResponseData.result)}`)
+  	ports.postLog(`DEBUG: Lotus.updatePaymentChannel: response.data.result: ${inspect(waitReadPchStateResponseData.result)}`);
 
     // TODO:  once we have a function to extract the value field from a signed voucher, check here
     // that it matches 
     return true;
+  }
+
+  /**
+   * Settles a payment channel.  This is called by Provider.
+   * @param  {string} pch The payment channel to settle
+   */
+  async settlePaymentChannel(pch) {
+    const toAddr = this.wallet;
+    const toPrivateKeyBase64 = this.privateKeyBase64;
+    ports.postLog(`DEBUG: Lotus.settlePaymentChannel:\n  pch=${pch}\n  toAddr=${toAddr}\n  toPrivateKeyBase64=${toPrivateKeyBase64}`);
+    
+    //
+    // Generate Settle PCH message
+    //
+    var signedSettleMessage;
+    try {
+      let nonce = await this.getNonce(toAddr);
+      let settle_paych_message = signer.settlePymtChanWithFee(pch, toAddr, nonce, "10000000", "16251176117", "140625002") // gas limit, fee cap, premium)
+      signedSettleMessage = JSON.parse(signer.transactionSignLotus(settle_paych_message, toPrivateKeyBase64));
+    } catch (error) {
+      ports.postLog(`ERROR: Lotus.settlePaymentChannel: error generating Settle msg: ${error.message}`);
+      return;
+    }
+
+    //
+    // Mpoolpush signed message
+    //
+    var msgCid = await this.mpoolPush(signedSettleMessage);
+    //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
+    ports.postLog(`DEBUG: Lotus.settlePaymentChannel:  msgCid = ${inspect(msgCid)}`);
+    if (msgCid === undefined) {
+      ports.postLog(`ERROR: Lotus.settlePaymentChannel: fatal: pch Settle msgcid undefined`);
+      return;
+    }
+
+    //
+    // Wait for PCH Settle response
+    //
+    const waitSettleResponseData = await this.stateWaitMsg(msgCid);
+    if (waitSettleResponseData===undefined) {
+      ports.postLog(`ERROR: Lotus.settlePaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`);
+      return;
+    }
+  	ports.postLog(`DEBUG: Lotus.settlePaymentChannel: response.data.result: ${inspect(waitSettleResponseData.result)}`);
+
+    //
+    // Wait for new PCH state
+    //
+    const waitReadPchStateResponseData = await this.stateReadState(pch);
+    if (waitReadPchStateResponseData===undefined) {
+      ports.postLog(`ERROR: Lotus.settlePaymentChannel: fatal: Filecoin.StateReadState returned nothing`);
+      return;
+    }
+  	ports.postLog(`DEBUG: leaving Lotus.settlePaymentChannel => response.data.result: ${inspect(waitReadPchStateResponseData.result)}`);
+  }
+
+  /**
+   * Collects a payment channel.  This is normally called by Provider.
+   * @param  {string} pch The payment channel to settle
+   */
+  async collectPaymentChannel(pch) {
+    const toAddr = this.wallet;
+    const toPrivateKeyBase64 = this.privateKeyBase64;
+    ports.postLog(`DEBUG: Lotus.collectPaymentChannel:\n  pch=${pch}\n  toAddr=${toAddr}\n  toPrivateKeyBase64=${toPrivateKeyBase64}`);
+    
+    //
+    // Generate Collect PCH message
+    //
+    var signedCollectMessage;
+    try {
+      let nonce = await this.getNonce(toAddr);
+      let collect_paych_message = signer.collectPymtChan(PCH, fromAddr, nonce, "10000000", "16251176117", "140625002") // gas limit, fee cap, premium
+      signedCollectMessage = JSON.parse(signer.transactionSignLotus(collect_paych_message, toPrivateKeyBase64));
+    } catch (error) {
+      ports.postLog(`ERROR: Lotus.collectPaymentChannel: error generating Collect msg: ${error.message}`);
+      return;
+    }
+
+    //
+    // Mpoolpush signed message
+    //
+    var msgCid = await this.mpoolPush(signedCollectMessage);
+    //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
+    ports.postLog(`DEBUG: Lotus.collectPaymentChannel:  msgCid = ${inspect(msgCid)}`);
+    if (msgCid === undefined) {
+      ports.postLog(`ERROR: Lotus.collectPaymentChannel: fatal: pch Settle msgcid undefined`);
+      return;
+    }
+
+    //
+    // Wait for PCH Collect response
+    //
+    const waitCollectResponseData = await this.stateWaitMsg(msgCid);
+    if (waitCollectResponseData===undefined) {
+      ports.postLog(`ERROR: Lotus.collectPaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`);
+      return;
+    }
+  	ports.postLog(`DEBUG: Lotus.collectPaymentChannel: response.data.result: ${inspect(waitCollectResponseData.result)}`);
+
+    //
+    // Wait for new PCH state
+    //
+    const waitReadPchStateResponseData = await this.stateReadState(pch);
+    if (waitReadPchStateResponseData===undefined) {
+      ports.postLog(`ERROR: Lotus.collectPaymentChannel: fatal: Filecoin.StateReadState returned nothing`);
+      return;
+    }
+  	ports.postLog(`DEBUG: Lotus.collectPaymentChannel: response.data.result: ${inspect(waitReadPchStateResponseData.result)}`);
   }
 
 /*
