@@ -77,13 +77,18 @@ const ports = {
       logs.push(message);
       ports.postMessage(channels.logs, logs);
     }
+  },
 
-    const isError = message.startsWith('ERROR');
-    const isWarning = message.startsWith('WARN');
+  alertError(message) {
+    toast.create({ message, type: 'error' });
+  },
 
-    if (isError || isWarning) {
-      toast.create({ message, type: isError ? 'error' : 'warning' });
-    }
+  alertWarning(message) {
+    toast.create({ message, type: 'warning' });
+  },
+
+  alertSuccess(message) {
+    toast.create({ message, type: 'success' });
   },
 
   clearLogs() {
