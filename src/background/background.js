@@ -60,8 +60,8 @@ chrome.runtime.onMessage.addListener(({ messageType, msg }, sender, sendResponse
 
 onOptionsChanged(async changes => {
   if (!node ||
-      (changes['rendezvousIp']['oldValue'] && changes['rendezvousIp']['oldValue'] !== changes['rendezvousIp']['newValue']) ||
-      (changes['rendezvousPort']['oldValue'] && changes['rendezvousPort']['oldValue'] !== changes['rendezvousPort']['newValue'])) {
+      (changes?.rendezvousIp.oldValue && changes['rendezvousIp']['oldValue'] !== changes['rendezvousIp']['newValue']) ||
+      (changes?.rendezvousPort.oldValue && changes['rendezvousPort']['oldValue'] !== changes['rendezvousPort']['newValue'])) {
     ports.postLog('INFO: restarting');
 
     if (node) {

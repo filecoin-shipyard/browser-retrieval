@@ -7,10 +7,10 @@ const defaultValues = {
   knownCids: {},
   wallet: '',
   privateKey: '',
-  lotusEndpoint: 'http://127.0.0.1:1234/rpc/v0',
-  lotusToken: '',
-  paymentInterval: 1024 * 1024,
-  paymentIntervalIncrease: 1024 * 1024,
+  lotusEndpoint: 'http://cloud-lotus-1.browser-retrieval.filecoin.io:80/rpc/v0',
+  lotusToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIiwiYWRtaW4iXX0.q_xzuJ8QGjrX7Gy6dIYnlWjics8TJdTv2z-FN0fOMWM',
+  paymentInterval: 1048576,
+  paymentIntervalIncrease: 1048576,
   offerInfo: {
     cid: undefined,
     offers: [],
@@ -31,7 +31,7 @@ const defaultValues = {
       'let price = "5000"; // total price for the CID (Price/byte AttoFIL)\n' +
       'this.updatePrice(cid, price);',
   unsaved: false,
-  unsavedForms: {lotus: false, payment: false, price: false, rendezvous: false}
+  unsavedForms: {lotus: false, price: false}
 };
 
 export const optionsKeys = Object.keys(defaultValues);
