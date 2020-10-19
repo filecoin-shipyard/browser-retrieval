@@ -6,7 +6,6 @@ import ProgressIndicator from 'src/popup/components/ProgressIndicator';
 
 function Deal({ deal, inbound, ...rest }) {
   const progress = (inbound ? deal.sizeReceived : deal.sizeSent) / deal.params.size;
-  console.log(progress);
 
   return (
     <TableRow {...rest}>

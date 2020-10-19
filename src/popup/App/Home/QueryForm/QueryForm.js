@@ -57,7 +57,7 @@ function QueryForm(props) {
               Miner ID
             </Label>
             <div className="flex">
-              <Input ref={register(checked ? {required: 'Required'} : {})} id="minerID" name="minerID" className="flex-1 mr-4" disabled={!checked}/>
+              <Input ref={register(checked ? {required: 'Required'} : {required: false})} id="minerID" name="minerID" className="flex-1 mr-4" disabled={!checked}/>
               <div style={{width: '85px', height: '40px'}} />
             </div>
             {checked && <Error className="mt-2" error={errors.minerID} />}
