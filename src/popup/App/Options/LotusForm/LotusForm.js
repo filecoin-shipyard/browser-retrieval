@@ -12,7 +12,7 @@ function LotusForm(props) {
 
   function onSubmit(data) {
     const key = signer.keyRecover(data.privateKey);
-    const aggregated = options.unsavedForms.payment || options.unsavedForms.price || options.unsavedForms.rendezvous;
+    const aggregated = options.unsavedForms.price;
 
     if (key.address === data.wallet || key.address === data.wallet.replace(/^t/, 'f')) {
       setOptions({
@@ -38,24 +38,6 @@ function LotusForm(props) {
   return (
     <Card {...props} className={options.unsavedForms.lotus && options.unsaved ? 'border-2-blue mb-4' : 'mb-4'}>
       <Form className="flex-col" onSubmit={handleSubmit(onSubmit)} onChange={handleChange}>
-        <div className="flex mb-4">
-          <InputField
-            ref={register({ required: 'Required' })}
-            className="flex-1 mr-4"
-            label="Lotus endpoint"
-            name="lotusEndpoint"
-            errors={errors}
-            defaultValue={options.lotusEndpoint}
-          />
-          <InputField
-            ref={register({ required: 'Required' })}
-            className="flex-1"
-            label="JWT token"
-            name="lotusToken"
-            errors={errors}
-            defaultValue={options.lotusToken}
-          />
-        </div>
         <div className="flex">
           <InputField
             ref={register({ required: 'Required' })}

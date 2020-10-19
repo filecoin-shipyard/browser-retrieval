@@ -10,7 +10,7 @@ function PriceForm(props) {
   const [options, setOptions] = useOptions();
 
   function onSubmit({ cid, price }) {
-    const aggregated = options.unsavedForms.payment || options.unsavedForms.rendezvous || options.unsavedForms.lotus;
+    const aggregated = options.unsavedForms.lotus;
 
     setOptions({
       pricesPerByte: {
