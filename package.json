@@ -51,12 +51,12 @@
     "webpack-cli": "^3.3.12"
   },
   "scripts": {
-    "build:popup:css": "NODE_ENV=production postcss src/popup/styles/tailwind.css -o src/popup/styles/tailwind.generated.css",
-    "build:popup:js": "INLINE_RUNTIME_CHUNK=false react-app-rewired build",
+    "build:popup:css": "cross-env NODE_ENV=production postcss src/popup/styles/tailwind.css -o src/popup/styles/tailwind.generated.css",
+    "build:popup:js": "cross-env INLINE_RUNTIME_CHUNK=false react-app-rewired build",
     "build:popup": "yarn build:popup:css && yarn build:popup:js",
-    "build:background": "NODE_ENV=development webpack",
+    "build:background": "cross-env NODE_ENV=development webpack",
     "build": "yarn build:popup && yarn build:background",
-    "build:debug": "DEBUG=true yarn build",
+    "build:debug": "cross-env DEBUG=true yarn build",
     "watch": "npm-watch"
   },
   "watch": {
@@ -77,5 +77,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.2",
+    "npm-watch": "^0.7.0"
   }
 }
