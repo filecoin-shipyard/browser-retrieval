@@ -6,6 +6,8 @@ import getOptions from 'src/shared/getOptions';
 import jsonStream from 'src/shared/jsonStream';
 import onOptionsChanged from 'src/shared/onOptionsChanged';
 import protocols from 'src/shared/protocols';
+import ports from 'src/background/ports';
+import inspect from 'browser-util-inspect';
 
 class Provider {
   static async create(...args) {
@@ -74,7 +76,7 @@ class Provider {
     pipe(sink, jsonStream.stringify, stream, jsonStream.parse, async (source) => {
       for await (const message of source) {
         try {
-          ports.postLog(`DEBUG: Provider.handleProtocol():  message ${JSON.stringify(message)}`);
+          ports.postLog(`DEBUG: Provider.handleProtocol():  message=${inspect(message)}`);
 
           switch (message.status) {
             case dealStatuses.awaitingAcceptance: {
@@ -88,15 +90,23 @@ class Provider {
             }
 
             case dealStatuses.paymentSent: {
-              await this.checkPaymentVoucherValid(message);
-              await this.sendBlocks(message);
+              if (!await this.checkPaymentVoucherValid(message)) {
+                throw {"message":`received invalid voucher (${message.paymentVoucher}) on dealId ${message.dealId}`}
+              } else {
+                await this.submitPaymentVoucher(message);
+                await this.sendBlocks(message);
+              }
               break;
             }
 
             case dealStatuses.lastPaymentSent: {
-              await this.submitPaymentVoucher(message);
-              await this.sendDealCompleted(message);
-              await this.closeDeal(message);
+              if (!await this.checkPaymentVoucherValid(message)) {
+                throw {"message":`received invalid voucher (${message.paymentVoucher}) on dealId ${message.dealId}`}
+              } else {
+                await this.submitPaymentVoucher(message);
+                await this.sendDealCompleted(message);
+                await this.closeDeal(message);
+              }
               break;
             }
 
@@ -115,9 +125,9 @@ class Provider {
     });
   };
 
-  async handleNewDeal({ dealId, cid, params }, sink) {
-    ports.postLog('DEBUG: Provider.handleNewDeal()');
-    ports.postLog(`DEBUG: handling new deal ${dealId}`);
+  async handleNewDeal({ dealId, cid, clientWalletAddr, params }, sink) {
+    ports.postLog(`DEBUG: Provider.handleNewDeal:\n  new deal id=${dealId}\n  cid=${cid}\n  clientWalletAddr=${clientWalletAddr}\n  params=${inspect(params)}`);
+    
     if (this.ongoingDeals[dealId]) {
       throw new Error('A deal already exists for the given id');
     }
@@ -145,6 +155,7 @@ class Provider {
       status: dealStatuses.awaitingAcceptance,
       customStatus: undefined,
       cid,
+      clientWalletAddr: clientWalletAddr,
       params,
       sink,
       sizeSent: 0,
@@ -195,19 +206,40 @@ class Provider {
     ports.postOutboundDeals(this.ongoingDeals);
   }
 
-  async checkPaymentVoucherValid({ dealId, paymentChannel, paymentVoucher }) {
-    ports.postLog('DEBUG: Provider.checkPaymentVoucher()');
-    ports.postLog(`DEBUG: checking voucher ${dealId}`);
-    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
-    // await this.lotus.checkPaymentVoucherValid(paymentChannel, paymentVoucher);
-    // TODO: save voucher to submit later if deal fails
+  /**
+   * Checks the validity of a signed payment voucher, including verifying the signature and the amount.
+   * @param  {number} dealId Deal Id to find this deal in this.ongoingDeals[]
+   * @param  {string} paymentChannel PCH robust address
+   * @param  {string} signedVoucher Signed payment voucher received from Client
+   * @return {boolean} Returns true if voucher is valid
+   */
+  async checkPaymentVoucherValid({ dealId, paymentChannel, signedVoucher }) {
+    ports.postLog(`DEBUG: Provider.checkPaymentVoucherValid: arguments = dealId=${dealId},paymentChannel=${paymentChannel},signedVoucher=${signedVoucher}`);
+    
+    const deal = this.ongoingDeals[dealId];
+    const clientWalletAddr = deal.clientWalletAddr;
+    ports.postLog(`DEBUG: Provider.checkPaymentVoucherValid: clientWalletAddr=${clientWalletAddr}`);
+
+    const expectedAmountAttoFil = 0; // TODO: figure out how to compute this here
+
+    const svValid = await this.lotus.checkPaymentVoucherValid(signedVoucher, expectedAmountAttoFil, clientWalletAddr);
+    ports.postLog(`DEBUG: Provider.checkPaymentVoucherValid: ${signedVoucher} => ${svValid}`);
+    return svValid;
+
+    // TODO (longer term): save voucher to submit later if deal fails
   }
 
+  /**
+   * Checks the validity of a signed payment voucher, including verifying the signature and the amount.
+   * @param  {number} dealId Deal Id to find this deal in this.ongoingDeals[]
+   * @param  {string} paymentChannel PCH robust address
+   * @param  {string} paymentVoucher Signed voucher to submit; assumed to already be validated successfully
+   * @return {boolean} Returns true if voucher is valid
+   */
   async submitPaymentVoucher({ dealId, paymentChannel, paymentVoucher }) {
     ports.postLog('DEBUG: Provider.submitPaymentVoucher()');
     ports.postLog(`DEBUG: submitting voucher ${dealId}`);
-    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
-    // await this.lotus.submitPaymentVoucher(paymentChannel, paymentVoucher);
+    // TODO: await this.lotus.updatePaymentChannel(pch, toAddr, toPrivateKeyBase64, signedVoucher);
   }
 
   async sendDealCompleted({ dealId }) {

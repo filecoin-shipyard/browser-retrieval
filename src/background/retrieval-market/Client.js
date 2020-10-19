@@ -7,6 +7,13 @@ import protocols from 'src/shared/protocols';
 import ports from 'src/background/ports';
 import inspect from 'browser-util-inspect';
 
+//
+// TODO:
+//  - https://github.com/filecoin-shipyard/browser-retrieval/issues/70
+//  - https://github.com/filecoin-shipyard/browser-retrieval/issues/71
+//  - https://github.com/filecoin-shipyard/browser-retrieval/issues/72
+//
+
 class Client {
   static async create(...args) {
     return new Client(...args);
@@ -79,6 +86,7 @@ class Client {
       sizePaid: 0,
       importerSink,
       importer: this.datastore.putContent(importerSink),
+      voucherNonce: 1,
     };
 
     await this.sendDealProposal({ dealId });
@@ -88,7 +96,7 @@ class Client {
   handleMessage = async (source) => {
     for await (const message of source) {
       try {
-        ports.postLog(`DEBUG: Client.handleMessage(): handling protocol message with status: ${message.status}`);
+        ports.postLog(`DEBUG: Client.handleMessage(): message: ${inspect(message)}`);
         const deal = this.ongoingDeals[message.dealId];
 
         if (!deal) {
@@ -109,7 +117,7 @@ class Client {
             deal.status = dealStatuses.ongoing;
             deal.customStatus = undefined;
             await this.receiveBlocks(message);
-            await this.sendPayment(message);
+            await this.sendPayment(message, false);
             break;
           }
 
@@ -119,7 +127,7 @@ class Client {
             deal.customStatus = undefined;
             await this.receiveBlocks(message);
             await this.finishImport(message);
-            await this.sendLastPayment(message);
+            await this.sendPayment(message, true);
             break;
           }
 
@@ -151,6 +159,7 @@ class Client {
       dealId,
       status: dealStatuses.awaitingAcceptance,
       cid: deal.cid,
+      clientWalletAddr: this.lotus.wallet,
       params: deal.params,
     });
 
@@ -163,31 +172,18 @@ class Client {
     const deal = this.ongoingDeals[dealId];
 
     const pchAmount = deal.params.size * deal.params.pricePerByte;
+    const toAddr = deal.params.wallet
 
-    ports.postLog(`DEBUG: Client.setupPaymentChannel(): PCH creation parameters:\n  pchAmount=${pchAmount}\n  `);
+    ports.postLog(`DEBUG: Client.setupPaymentChannel(): PCH creation parameters:\n  pchAmount='${pchAmount}'\n  toAddr='${toAddr}'`);
 
-    // ------------ CREATE PCH HERE -------------------------------------
-
-    // ------------ END - CREATE PCH ------------------------------------
-
-    // ------------ OLD CODE REMOVE -------------------------------------
-    // deal.paymentChannel = await this.lotus.getOrCreatePaymentChannel(
-    //   deal.params.wallet,
-    //   deal.params.size * deal.params.pricePerByte,
-    // );
-    // deal.lane = await this.lotus.allocateLane(deal.paymentChannel);
-    // ------------ END - OLD CODE REMOVE --------------------------------
-
-
-    // TODO:  Set deal.paymentChannel
+    //await this.lotus.keyRecoverLogMsg();  // testing only
+    
+    deal.paymentChannel = await this.lotus.createPaymentChannel(toAddr, pchAmount);
 
     // Not using lanes currently
     deal.Lane = 0;
 
-    // TODO:  fill this in
-    const pchAddr = "TODO TODO TODO"
-
-    ports.postLog(`DEBUG: Client.setupPaymentChannel(): sending payment channel ready (pchAddr='${pchAddr}') for dealId='${dealId}'`);
+    ports.postLog(`DEBUG: Client.setupPaymentChannel(): sending payment channel ready (pchAddr='${deal.paymentChannel}') for dealId='${dealId}'`);
     deal.sink.push({
       dealId,
       status: dealStatuses.paymentChannelReady,
@@ -195,10 +191,12 @@ class Client {
 
     deal.status = dealStatuses.paymentChannelReady;
     deal.customStatus = undefined;
+
+    ports.postLog(`DEBUG: Client.setupPaymentChannel(): done`);
   }
 
   async receiveBlocks({ dealId, blocks }) {
-    ports.postLog(`DEBUG: Client.setupReceieveBlocks(): received ${blocks.length} blocks deal id: ${dealId}`);
+    ports.postLog(`DEBUG: Client.receiveBlocks(): received ${blocks.length} blocks deal id: ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
     for (const block of blocks) {
@@ -216,26 +214,26 @@ class Client {
     await deal.importer;
   }
 
-  async sendPayment({ dealId }) {
-    ports.postLog(`DEBUG: Client.sendPayment(): sending payment ${dealId}`);
+  async sendPayment({ dealId }, isLastVoucher) {
+    ports.postLog(`DEBUG: Client.sendPayment(): sending payment ${dealId} (isLastVoucher=${isLastVoucher})`);
     const deal = this.ongoingDeals[dealId];
 
-    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
-    // const amount = (deal.sizeReceived - deal.sizePaid) * deal.params.pricePerByte;
-    // const paymentVoucher = await this.lotus.createPaymentVoucher(
-    //   deal.paymentChannel,
-    //   deal.lane,
-    //   amount,
-    // );
+    const amount = deal.sizeReceived * deal.params.pricePerByte;
+    const nonce = deal.voucherNonce++;
+    const sv = await this.lotus.createSignedVoucher(deal.paymentChannel,amount,nonce);
+    ports.postLog(`DEBUG: Client.sendPayment(): sv = '${sv}'`);
+
+    const newDealStatus = isLastVoucher ? dealStatuses.lastPaymentSent : dealStatuses.paymentSent;
 
     deal.sink.push({
       dealId,
-      status: dealStatuses.paymentSent,
-      // paymentChannel: deal.paymentChannel,
-      // paymentVoucher,
+      status: newDealStatus,
+      paymentChannel: deal.paymentChannel,
+      signedVoucher: sv,
     });
   }
 
+/*
   async sendLastPayment({ dealId }) {
     ports.postLog(`DEBUG: Client.sendLastPayment(): sending last payment ${dealId}`);
     const deal = this.ongoingDeals[dealId];
@@ -255,13 +253,16 @@ class Client {
       // paymentVoucher,
     });
   }
+*/
 
   async closeDeal({ dealId }) {
     ports.postLog(`DEBUG: Client.closeDeal: closing deal ${dealId}`);
     const deal = this.ongoingDeals[dealId];
-    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
+    // TODO:
     // this.lotus.closePaymentChannel(deal.paymentChannel);
     deal.sink.end();
+    // TODO:  pend an operation to call Collect on the channel when cron class is available
+    // TODO:  stopgap solution:  window.setTimeout() to try to ensure channel Collect
     delete this.ongoingDeals[dealId];
     await this.cidReceivedCallback(deal.cid, deal.params.size);
     ports.postInboundDeals(this.ongoingDeals);
