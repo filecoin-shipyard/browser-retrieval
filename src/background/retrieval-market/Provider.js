@@ -143,6 +143,7 @@ class Provider {
     this.ongoingDeals[dealId] = {
       id: dealId,
       status: dealStatuses.awaitingAcceptance,
+      customStatus: undefined,
       cid,
       params,
       sink,

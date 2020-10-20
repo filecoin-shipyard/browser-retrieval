@@ -22,6 +22,7 @@ function Deals({ className, ...rest }) {
           <TableRow head>
             <TableCell buttons head></TableCell>
             <TableCell head>CID</TableCell>
+            <TableCell head>Status</TableCell>
             <TableCell head>Progress</TableCell>
             <TableCell number head>
               Size

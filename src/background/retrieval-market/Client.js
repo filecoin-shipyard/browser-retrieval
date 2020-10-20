@@ -1,19 +1,39 @@
 import pipe from 'it-pipe';
 import pushable from 'it-pushable';
-import protocols from 'src/shared/protocols';
+import ports from 'src/background/ports';
 import dealStatuses from 'src/shared/dealStatuses';
 import jsonStream from 'src/shared/jsonStream';
-import ports from 'src/background/ports';
+import protocols from 'src/shared/protocols';
 
 class Client {
   static async create(...args) {
     return new Client(...args);
   }
 
+  /**
+   * @typedef {Object} Deal
+   * @property {string} id The deal id
+   * @property {string} status The deal status for the app to handle
+   * @property {string} customStatus A custom status message to display the user
+   * @property {string} cid CID of the deal
+   * @property {string} params Params
+   * @property {string} peerMultiaddr Peer address
+   * @property {string} peerWallet Peer wallet
+   * @property {string} sink Sink
+   * @property {string} sizeReceived Total bytes received
+   * @property {string} sizePaid Total bytes paid
+   * @property {string} importerSink Importer sink
+   * @property {string} importer Importer
+   */
+  /**
+   * Deals dictionary.
+   *
+   * @type {Object.<string, Deal>}
+   */
   ongoingDeals = {};
 
   constructor(node, datastore, lotus, cidReceivedCallback) {
-    ports.postLog("DEBUG: Client.constructor()")
+    ports.postLog('DEBUG: Client.constructor()');
     this.node = node;
     this.datastore = datastore;
     this.lotus = lotus;
@@ -31,7 +51,7 @@ class Client {
    * @param  {string} peerWallet Wallet of the client requesting the file
    */
   async retrieve(cid, dealParams, peerMultiaddr, peerWallet) {
-    ports.postLog("DEBUG: Client.retrieve()")
+    ports.postLog('DEBUG: Client.retrieve()');
     ports.postLog(`DEBUG: dialing peer ${peerMultiaddr}`);
     const { stream } = await this.node.dialProtocol(peerMultiaddr, protocols.filecoinRetrieval);
 
@@ -44,6 +64,7 @@ class Client {
     this.ongoingDeals[dealId] = {
       id: dealId,
       status: dealStatuses.new,
+      customStatus: undefined,
       cid,
       params: dealParams,
       peerMultiaddr,
@@ -59,7 +80,7 @@ class Client {
     ports.postInboundDeals(this.ongoingDeals);
   }
 
-  handleMessage = async source => {
+  handleMessage = async (source) => {
     for await (const message of source) {
       try {
         ports.postLog(`DEBUG: Client.handleMessage(): handling protocol message with status: ${message.status}`);
@@ -73,6 +94,7 @@ class Client {
           case dealStatuses.accepted: {
             ports.postLog('DEBUG: Client.handleMessage(): case dealStatuses.accepted');
             deal.status = dealStatuses.accepted;
+            deal.customStatus = undefined;
             await this.setupPaymentChannel(message);
             break;
           }
@@ -80,6 +102,7 @@ class Client {
           case dealStatuses.fundsNeeded: {
             ports.postLog('DEBUG: Client.handleMessage(): case dealStatuses.fundsNeeded');
             deal.status = dealStatuses.ongoing;
+            deal.customStatus = undefined;
             await this.receiveBlocks(message);
             await this.sendPayment(message);
             break;
@@ -88,6 +111,7 @@ class Client {
           case dealStatuses.fundsNeededLastPayment: {
             ports.postLog('DEBUG: Client.handleMessage(): case dealStatuses.fundsNeededLastPayment');
             deal.status = dealStatuses.finalizing;
+            deal.customStatus = undefined;
             await this.receiveBlocks(message);
             await this.finishImport(message);
             await this.sendLastPayment(message);
@@ -101,7 +125,7 @@ class Client {
           }
 
           default: {
-            ports.postLog('DEBUG: Client.handleMessage(): case default')
+            ports.postLog('DEBUG: Client.handleMessage(): case default');
             ports.postLog(`ERROR: Client.handleMessage(): unknown deal message status received: ${message.status}`);
             deal.sink.end();
             break;
@@ -126,6 +150,7 @@ class Client {
     });
 
     deal.status = dealStatuses.awaitingAcceptance;
+    deal.customStatus = undefined;
   }
 
   async setupPaymentChannel({ dealId }) {
@@ -146,6 +171,7 @@ class Client {
     });
 
     deal.status = dealStatuses.paymentChannelReady;
+    deal.customStatus = undefined;
   }
 
   async receiveBlocks({ dealId, blocks }) {

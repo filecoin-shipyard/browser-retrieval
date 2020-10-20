@@ -1,8 +1,59 @@
-import React from 'react';
 import prettyBytes from 'pretty-bytes';
-import TableRow from 'src/popup/components/TableRow';
-import TableCell from 'src/popup/components/TableCell';
+import React from 'react';
 import ProgressIndicator from 'src/popup/components/ProgressIndicator';
+import TableCell from 'src/popup/components/TableCell';
+import TableRow from 'src/popup/components/TableRow';
+
+import dealStatuses from '../../../../../shared/dealStatuses';
+
+/**
+ * Renders the deal status.
+ *
+ * @param  {string} status
+ */
+const renderStatus = ({ status, customStatus }) => {
+  if (customStatus) {
+    return <>{customStatus}</>;
+  }
+
+  switch (status) {
+    case dealStatuses.new:
+      return <>New</>;
+
+    case dealStatuses.awaitingAcceptance:
+      return <>Waiting for acceptance</>;
+
+    case dealStatuses.accepted:
+      return <>Accepted</>;
+
+    case dealStatuses.paymentChannelReady:
+      return <>Payment channel ready</>;
+
+    case dealStatuses.fundsNeeded:
+      return <>Funds needed</>;
+
+    case dealStatuses.ongoing:
+      return <>Transferring file</>;
+
+    case dealStatuses.paymentSent:
+      return <>Payment sent</>;
+
+    case dealStatuses.fundsNeededLastPayment:
+      return <>Funds needed for last payment</>;
+
+    case dealStatuses.lastPaymentSent:
+      return <>Last payment sent</>;
+
+    case dealStatuses.finalizing:
+      return <>Finalizing</>;
+
+    case dealStatuses.completed:
+      return <>Completed</>;
+
+    default:
+      return <></>;
+  }
+};
 
 function Deal({ deal, inbound, ...rest }) {
   const progress = (inbound ? deal.sizeReceived : deal.sizeSent) / deal.params.size;
@@ -21,6 +72,7 @@ function Deal({ deal, inbound, ...rest }) {
         </svg>
       </TableCell>
       <TableCell className="font-mono">{deal.cid}</TableCell>
+      <TableCell>{renderStatus(deal)}</TableCell>
       <TableCell>
         <ProgressIndicator progress={progress} />
       </TableCell>
