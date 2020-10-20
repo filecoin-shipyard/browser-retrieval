@@ -7,9 +7,15 @@ import TableRow from 'src/popup/components/TableRow';
 import dealStatuses from '../../../../../shared/dealStatuses';
 
 /**
- * @param  {} status
+ * Renders the deal status.
+ *
+ * @param  {string} status
  */
-const renderStatus = (status) => {
+const renderStatus = ({ status, customStatus }) => {
+  if (customStatus) {
+    return <>{customStatus}</>;
+  }
+
   switch (status) {
     case dealStatuses.new:
       return <>New</>;
@@ -66,7 +72,7 @@ function Deal({ deal, inbound, ...rest }) {
         </svg>
       </TableCell>
       <TableCell className="font-mono">{deal.cid}</TableCell>
-      <TableCell>{renderStatus(deal.status)}</TableCell>
+      <TableCell>{renderStatus(deal)}</TableCell>
       <TableCell>
         <ProgressIndicator progress={progress} />
       </TableCell>
