@@ -83,11 +83,16 @@ async function startNode() {
     node = await Node.create(options);
   } catch (error) {
     if (error === 'Error: `Invalid Key Length`') {
-      ports.postLog(`ERROR: start node failed: ${error}`);
+      const emsg = `ERROR: start node failed: ${error}`;
+      ports.postLog(emsg);
       ports.postLog('INFO: fix your lotus config on the Options page');
+      ports.alertError(emsg);
     } else {
       console.error(error);
-      ports.postLog(`ERROR: start node failed: ${error.message}`);
+
+      const emsg = `ERROR: start node failed: ${error.message}`
+      ports.postLog(emsg);
+      ports.alertError(emsg);
     }
   }
 }
