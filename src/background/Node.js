@@ -205,6 +205,10 @@ class Node {
 
   async clearOffers() {
     const options = await getOptions();
+    
+    if (options.offerInfo.cid) {
+      this.queriedCids.delete(options.offerInfo.cid);
+    }
 
     await setOptions({
       ...options,
@@ -306,7 +310,6 @@ class Node {
 
     try {
       await this.client.retrieve(cid, params, multiaddr);  // TODO:  peer wallet!
-      this.queriedCids.delete(cid);
     } catch (error) {
       console.error(error);
       ports.postLog(`ERROR: Node.initiateRetrieval():  failed: ${error.message}`);
