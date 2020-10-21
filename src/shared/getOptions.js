@@ -7,7 +7,7 @@ const defaultValues = {
   knownCids: {},
   wallet: '',
   privateKey: '',
-  lotusEndpoint: 'http://cloud-lotus-1.browser-retrieval.filecoin.io:80/rpc/v0',
+  lotusEndpoint: 'http://3.231.219.184:80/rpc/v0',
   lotusToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIiwiYWRtaW4iXX0.q_xzuJ8QGjrX7Gy6dIYnlWjics8TJdTv2z-FN0fOMWM',
   paymentInterval: 1048576,
   paymentIntervalIncrease: 1048576,
