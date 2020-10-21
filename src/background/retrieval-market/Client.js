@@ -4,7 +4,6 @@ import ports from 'src/background/ports';
 import dealStatuses from 'src/shared/dealStatuses';
 import jsonStream from 'src/shared/jsonStream';
 import protocols from 'src/shared/protocols';
-import ports from 'src/background/ports';
 import inspect from 'browser-util-inspect';
 
 //
