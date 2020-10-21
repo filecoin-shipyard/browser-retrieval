@@ -1,5 +1,6 @@
 import dagCBOR from 'ipld-dag-cbor';
 import * as signer from '@zondax/filecoin-signing-tools';
+import { Buffer } from 'buffer';
 import onOptionsChanged from 'src/shared/onOptionsChanged';
 import getOptions from 'src/shared/getOptions';
 import ports from '../ports';
@@ -177,6 +178,29 @@ class Lotus {
   closePaymentChannel(paymentChannel) {
     // TODO: actually close payment channel
     delete this.paymentChannelsInfo[paymentChannel];
+  }
+
+  decodeSignedVoucher(sv) {
+    const buffer = Buffer.from(sv, 'base64');
+    const decoded = dagCBOR.util.deserialize(buffer);
+
+    if (decoded.length !== 11) {
+      return  'Deserialize Buffer does not have correct length';
+    }
+
+    return {
+      channelAddr: decoded[0].toString('hex'),
+      timeLockMin: decoded[1],
+      timeLockMax: decoded[2],
+      secretPreimage: decoded[3].toString('hex'),
+      extra: decoded[4],
+      lane: decoded[5],
+      nonce: decoded[6],
+      amount: parseInt(decoded[7].toString('hex'), 16),
+      minSettleHeight: decoded[8],
+      merges: decoded[9],
+      signature: decoded[10].toString('hex')
+    }
   }
 }
 
