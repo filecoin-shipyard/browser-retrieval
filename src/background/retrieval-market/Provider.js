@@ -90,6 +90,7 @@ class Provider {
             }
 
             case dealStatuses.paymentSent: {
+              this.setOrVerifyPaymentChannel(message);
               if (!await this.checkPaymentVoucherValid(message)) {
                 throw {"message":`received invalid voucher (${message.paymentVoucher}) on dealId ${message.dealId}`}
               } else {
@@ -100,6 +101,7 @@ class Provider {
             }
 
             case dealStatuses.lastPaymentSent: {
+              this.setOrVerifyPaymentChannel(message);
               if (!await this.checkPaymentVoucherValid(message)) {
                 throw {"message":`received invalid voucher (${message.paymentVoucher}) on dealId ${message.dealId}`}
               } else {
@@ -124,6 +126,18 @@ class Provider {
       }
     });
   };
+
+  setOrVerifyPaymentChannel(message) {
+    // Set payment channel if undefined, else make sure it matches current message
+    const deal = this.ongoingDeals[message.dealId];
+    if (deal.paymentChannel === undefined) {
+      deal.paymentChannel = message.paymentChannel;
+    } else {
+      if (deal.paymentChannel != message.paymentChannel) {
+        throw { "message": `received incorrect payment channel address (message.paymentChannel (${message.paymentChannel}) != deal.paymentChannel (${deal.paymentChannel})) on dealId ${message.dealId}` };
+      }
+    }
+  }
 
   async handleNewDeal({ dealId, cid, clientWalletAddr, params }, sink) {
     ports.postLog(`DEBUG: Provider.handleNewDeal:\n  new deal id=${dealId}\n  cid=${cid}\n  clientWalletAddr=${clientWalletAddr}\n  params=${inspect(params)}`);
@@ -253,7 +267,9 @@ class Provider {
     deal.sink.push({ dealId, status: dealStatuses.completed });
   }
 
-  async closeDeal({ dealId, paymentChannel }) {
+  async closeDeal({ dealId }) {
+    const deal = this.ongoingDeals[dealId];
+    const paymentChannel = deal.paymentChannel;
     ports.postLog(`DEBUG: Provider.closeDeal: dealId=${dealId}, paymentChannel=${paymentChannel}`);
     await this.lotus.settlePaymentChannel(paymentChannel);
     // TODO:  pend an operation to Collect the payment channel
@@ -263,7 +279,6 @@ class Provider {
       this.lotus.collectPaymentChannel(paymentChannel);
     }).bind(this),1000*60*60*12);
     // --------- END TEMP ------------------------------
-    const deal = this.ongoingDeals[dealId];
     deal.sink.end();
 
     delete this.ongoingDeals[dealId];
