@@ -431,23 +431,6 @@ class Lotus {
   	ports.postLog(`DEBUG: Lotus.collectPaymentChannel: response.data.result: ${inspect(waitReadPchStateResponseData.result)}`);
   }
 
-/*
-  async createPaymentVoucher(paymentChannel, lane, amount) {
-    const voucher = {
-      Lane: lane,
-      Amount: amount,
-      Nonce: this.paymentChannelsInfo[paymentChannel].lanesNextNonce[lane]++,
-    };
-
-    // TODO: create voucher cbor as per https://github.com/filecoin-project/specs-actors/blob/master/actors/builtin/paych/cbor_gen.go#L552
-    const voucherCbor = this.cbor(voucher);
-
-    voucher.Signature = signer.transactionSignRaw(voucherCbor, this.privateKey);
-
-    return voucher;
-  }
-*/
-
   async checkPaymentVoucherValid(signedVoucher, expectedAmountAttoFil, fromWalletAddr) {
     ports.postLog(`DEBUG: Lotus.checkPaymentVoucherValid: args = signedVoucher=${signedVoucher},expectedAmountAttoFil=${expectedAmountAttoFil},fromWalletAddr=${fromWalletAddr}`);
     return signer.verifyVoucherSignature(signedVoucher, fromWalletAddr);
@@ -457,77 +440,6 @@ class Lotus {
     // TODO: actually close payment channel
     delete this.paymentChannelsInfo[paymentChannel];
   }
-
-  // -------------------- check if used anywhere, then discard -----------------------------
-  cbor(object) {
-    return dagCBOR.util.serialize(object).toString('hex');
-  }
-
-  serializeParams({ CodeCID, ConstructorParams }) {
-    return this.cbor({
-      CodeCID,
-      ConstructorParams: this.cbor(ConstructorParams),
-    });
-  }
-
-  signMessage(message) {
-    if (message.params) {
-      message.params = this.serializeParams(message.params);
-    }
-
-    return JSON.parse(signer.transactionSignLotus(message, this.privateKey));
-  }
-
-  async post(method, params = []) {
-    console.log(method, params);
-    const response = await fetch(this.lotusEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.lotusToken}` },
-      body: JSON.stringify({ jsonrpc: '2.0', method, params, id: this.id++ }),
-    });
-
-    const { error, result } = await response.json();
-
-    if (error) {
-      throw error;
-    }
-
-    return result;
-  }
-
-  async getNextNonce() {
-    const nonce = await this.post('Filecoin.MpoolGetNonce', [this.wallet]);
-    return nonce + 1;
-  }
-
-  async waitForMessage(messageLink) {
-    // FIXME: use websockets instead of pooling
-    let keepPooling = true;
-
-    setTimeout(() => {
-      keepPooling = false;
-    }, 10 * 1000);
-
-    while (keepPooling) {
-      try {
-        return await this.post('Filecoin.ChainGetParentReceipts', [messageLink]);
-      } catch (error) {
-        if (error.message === 'blockstore: block not found') {
-          // try again in a second
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        } else {
-          throw error;
-        }
-      }
-    }
-  }
-
-  async allocateLane(paymentChannel) {
-    const lane = this.paymentChannelsInfo[paymentChannel].nextLane++;
-    this.paymentChannelsInfo[paymentChannel].lanesNextNonce[lane] = 0;
-  }
-  // -------------------- end discard ----------------------------------------------
-
 }
 
 export default Lotus;
