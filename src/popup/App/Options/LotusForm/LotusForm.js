@@ -5,6 +5,7 @@ import useOptions from 'src/popup/hooks/useOptions';
 import Card from 'src/popup/components/Card';
 import Form from 'src/popup/components/Form';
 import InputField from 'src/popup/components/InputField';
+import InputFieldPassword from 'src/popup/components/InputFieldPassword';
 
 function LotusForm(props) {
   const { handleSubmit, register, setError, errors } = useForm();
@@ -47,7 +48,7 @@ function LotusForm(props) {
             errors={errors}
             defaultValue={options.wallet}
           />
-          <InputField
+          <InputFieldPassword
             ref={register({ required: 'Required' })}
             className="flex-1"
             label="Private key (secp256k1)"
