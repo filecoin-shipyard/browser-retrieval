@@ -180,8 +180,8 @@ class Lotus {
     delete this.paymentChannelsInfo[paymentChannel];
   }
 
-  decodeSignedVoucher(sv) {
-    const buffer = Buffer.from(sv, 'base64');
+  decodeSignedVoucher(signedVoucher) {
+    const buffer = Buffer.from(signedVoucher, 'base64');
     const decoded = dagCBOR.util.deserialize(buffer);
 
     if (decoded.length !== 11) {
