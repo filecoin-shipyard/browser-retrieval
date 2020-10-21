@@ -29,7 +29,8 @@ class Lotus {
     ports.postLog(`DEBUG: Lotus.initialize:  leaving`);
   }
 
-  // for testing filecoin_signer
+  // TODO:  remove once filecoin-signing-tools PR #317 is merged new npm package is published
+  // for testing filecoin_signer only
   async keyRecoverLogMsg() {
     // This is a dummy wallet with no funds. Recovered addr will be f156e3l2vwd5wi5jwdrd6gdg4y7t2yknq6see7xbq
     let privKey = "ciiFbmF7F7mrVs5E/IT8TV63PdFPLrRs9R/Cc3vri2I=";
@@ -181,6 +182,7 @@ class Lotus {
    */
   async createSignedVoucher(pch, amountAttoFil, nonce) {
     try {
+      ports.postLog(`DEBUG: Lotus.createSignedVoucher: args: pch='${pch}', amountAttoFil='${amountAttoFil}', nonce='${nonce}'`);
       let voucher = signer.createVoucher(pch, BigInt(0), BigInt(0), `${amountAttoFil}`, BigInt(0), BigInt(nonce), BigInt(0));
       let signedVoucher = signer.signVoucher(voucher, this.privateKeyBase64);
       ports.postLog(`DEBUG: Lotus.createSignedVoucher: returning signedVoucher = '${inspect(signedVoucher)}'`);
@@ -202,7 +204,7 @@ class Lotus {
     const fromKey = this.privateKeyBase64
     const toAddr = to
 
-    ports.postLog(`DEBUG: Lotus.createPaymentChannel: [from:${fromAddr}, fromKey:${fromKey}, to:${toAddr}, amount:${amountAttoFil}]`);
+    ports.postLog(`DEBUG: Lotus.createPaymentChannel: [from:${fromAddr}, fromKey:*******************, to:${toAddr}, amount:${amountAttoFil}]`);
 
     let nonce = await this.getNonce(fromAddr);
     ports.postLog(`DEBUG: Lotus.createPaymentChannel: nonce=${nonce}`);
@@ -269,7 +271,7 @@ class Lotus {
   async updatePaymentChannel(pch, signedVoucher) {
     const toAddr = this.wallet;
     const toPrivateKeyBase64 = this.privateKeyBase64;
-    ports.postLog(`DEBUG: Lotus.updatePaymentChannel:\n  pch=${pch}\n  toAddr=${toAddr}\n  toPrivateKeyBase64=${toPrivateKeyBase64}\n  signedVoucher=${signedVoucher}`);
+    ports.postLog(`DEBUG: Lotus.updatePaymentChannel:\n  pch=${pch}\n  toAddr=${toAddr}\n  toPrivateKeyBase64=*****************\n  signedVoucher=${signedVoucher}`);
     
     //
     // Generate update PCH message
@@ -328,7 +330,7 @@ class Lotus {
   async settlePaymentChannel(pch) {
     const toAddr = this.wallet;
     const toPrivateKeyBase64 = this.privateKeyBase64;
-    ports.postLog(`DEBUG: Lotus.settlePaymentChannel:\n  pch=${pch}\n  toAddr=${toAddr}\n  toPrivateKeyBase64=${toPrivateKeyBase64}`);
+    ports.postLog(`DEBUG: Lotus.settlePaymentChannel:\n  pch=${pch}\n  toAddr=${toAddr}\n  toPrivateKeyBase64=**************`);
     
     //
     // Generate Settle PCH message
@@ -382,7 +384,7 @@ class Lotus {
   async collectPaymentChannel(pch) {
     const toAddr = this.wallet;
     const toPrivateKeyBase64 = this.privateKeyBase64;
-    ports.postLog(`DEBUG: Lotus.collectPaymentChannel:\n  pch=${pch}\n  toAddr=${toAddr}\n  toPrivateKeyBase64=${toPrivateKeyBase64}`);
+    ports.postLog(`DEBUG: Lotus.collectPaymentChannel:\n  pch=${pch}\n  toAddr=${toAddr}\n  toPrivateKeyBase64=*************`);
     
     //
     // Generate Collect PCH message
