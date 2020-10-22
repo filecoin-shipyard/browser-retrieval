@@ -205,7 +205,7 @@ class Node {
 
   async clearOffers() {
     const options = await getOptions();
-    
+
     if (options.offerInfo.cid) {
       this.queriedCids.delete(options.offerInfo.cid);
     }
@@ -301,7 +301,7 @@ class Node {
       ports.postLog(`DEBUG:  Node._downloadFromPeer: exiting because Node.queriedCids does not contain '${cid}'`);
       return;
     }
-    
+
     ports.postLog(`DEBUG:  Node._downloadFromPeer:  offer=${JSON.stringify(offer)}`);
     ports.postLog(`DEBUG:  Node._downloadFromPeer:\n  CID: ${cid}\n  from: ${offer.address}\n  price: ${offer.price} attoFil`);
 
