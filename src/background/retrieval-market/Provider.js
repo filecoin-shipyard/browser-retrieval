@@ -6,9 +6,8 @@ import dealStatuses from 'src/shared/dealStatuses';
 import getOptions from 'src/shared/getOptions';
 import jsonStream from 'src/shared/jsonStream';
 import onOptionsChanged from 'src/shared/onOptionsChanged';
+import { operationsQueue } from 'src/shared/OperationsQueue';
 import protocols from 'src/shared/protocols';
-
-import { operationsQueue } from '../../shared/OperationsQueue';
 
 class Provider {
   static async create(...args) {
@@ -225,20 +224,6 @@ class Provider {
     ports.postLog(`DEBUG: closing deal ${dealId}`);
     const deal = this.ongoingDeals[dealId];
     deal.sink.end();
-
-    operationsQueue.queue({
-      label: 'label -> operation in 1 min',
-      f: 'testQueue',
-      metadata: deal,
-      invokeAt: DateTime.local().plus({ minutes: 1 }).toString(),
-    });
-
-    operationsQueue.queue({
-      label: 'label -> operation in 2 mins',
-      f: 'testQueue',
-      metadata: deal,
-      invokeAt: DateTime.local().plus({ minutes: 2 }).toString(),
-    });
 
     delete this.ongoingDeals[dealId];
     ports.postOutboundDeals(this.ongoingDeals);
