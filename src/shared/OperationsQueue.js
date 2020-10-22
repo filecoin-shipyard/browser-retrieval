@@ -15,7 +15,7 @@ import { Operations, operations } from './Operations';
  * @property {keyof Operations} f The function to run
  * @property {{[key: string]: any}} metadata Metadata such as deal info
  * @property {Date} invokeAt The time to invoke the function
- * @property {'waiting' | 'running' | 'done'} status The status of the operation
+ * @property {'waiting' | 'running' | 'done' | 'failed'} status The status of the operation
  * @property {number} attempts Number of attempts so far
  * @property {string} output Function output
  */
@@ -44,6 +44,15 @@ class OperationsQueue {
    */
   get listenInterval() {
     return 1000; // 1 sec
+  }
+
+  /**
+   * Number of times it can retry to execute the operation.
+   *
+   * @readonly
+   */
+  get retryLimit() {
+    return 0;
   }
 
   /**
@@ -84,16 +93,12 @@ class OperationsQueue {
   }
 
   /**
-   * @returns {Operation} Next operation in queue
+   * @param {Operation} op Operation to remove.
    */
-  dequeue() {
+  remove(op) {
     const ops = this.operations;
 
-    const next = ops.shift();
-
-    this.operations = ops;
-
-    return next;
+    this.operations = ops.filter((o) => o.id !== op.id);
   }
 
   /**
@@ -156,12 +161,29 @@ class OperationsQueue {
         output: response,
       });
     } catch (err) {
-      this.updateOperation(op, {
-        status: 'waiting',
-        attempts: (op.attempts || 0) + 1,
-        invokeAt: DateTime.local().plus({ minutes: 10 }), // TODO: <<-- retry in,
-        output: `Error: ${errorToJSON(err)}`,
-      });
+      const attempts = (op.attempts || 0) + 1;
+
+      const errorObj = errorToJSON(err);
+
+      ports.postLog(`ERROR: Running scheduled operation\n${JSON.stringify(errorObj, null, 2)}`);
+
+      if (attempts > this.retryLimit) {
+        this.updateOperation(op, {
+          status: 'failed',
+          attempts,
+          invokeAt: undefined,
+          output: `Error: ${errorObj.message}`,
+        });
+      } else {
+        this.updateOperation(op, {
+          status: 'waiting',
+          attempts,
+          invokeAt: DateTime.local().plus({
+            seconds: Math.max(2000, 2 ** attempts * 100),
+          }),
+          output: `Error: ${errorObj.message}`,
+        });
+      }
     }
   }
 }
