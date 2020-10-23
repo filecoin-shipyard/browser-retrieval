@@ -29,6 +29,8 @@ class Provider {
     await this.updateOptions();
     onOptionsChanged(this.handleOptionsChange);
     this.node.handle(protocols.filecoinRetrieval, this.handleProtocol);
+
+    this.pendCollectOperation("f20000000000000000000000");
   }
 
   async updateOptions() {
@@ -225,6 +227,22 @@ class Provider {
 
     delete this.ongoingDeals[dealId];
     ports.postOutboundDeals(this.ongoingDeals);
+  }
+
+  async pendCollectOperation(paymentChannelAddr) {
+    operationsQueue.queue({
+      label: `Collect pymt chan ${paymentChannelAddr}`,
+    
+      // name of the method implemented in shared/Operations
+      // hint: VSCode should show you the available names through its built-in TypeScript support
+      f: 'collectChannel',
+    
+      // object with anything you want to store to pass to the operation later (e.g. `deal`)
+      metadata: {"paymentChannelAddr":paymentChannelAddr},
+    
+      // time when to invoke the function
+      invokeAt: DateTime.local().plus({ minutes: 1 }).toString(),
+    });
   }
 }
 
