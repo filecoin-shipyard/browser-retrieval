@@ -17,6 +17,7 @@ class Lotus {
 
   paymentChannelsInfo = {};
 
+
   async initialize() {
     await this.updateOptions();
     onOptionsChanged(this.handleOptionsChange);
@@ -110,6 +111,10 @@ class Lotus {
   }
 
   async getOrCreatePaymentChannel(to, value) {
+    ports.postLog(`DEBUG: creating Payment Channel [from:${this.wallet}, to:${to}, amount:${value}`);
+
+    return "address"
+
     // TODO: recycle existing channel
 
     const messageLink = await this.post('Filecoin.MpoolPush', [

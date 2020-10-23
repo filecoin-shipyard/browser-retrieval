@@ -19,6 +19,7 @@ import ports from './ports';
 import Client from './retrieval-market/Client';
 import Provider from './retrieval-market/Provider';
 import SocketClient from './socket-client/SocketClient';
+import inspect from 'browser-util-inspect';
 
 class Node {
   static async create(options) {
@@ -34,16 +35,24 @@ class Node {
   connectedPeers = new Set();
   queriedCids = new Set();
 
+  node;
+
+  /**
+   * Retrieval market client
+   */
+  client;
+
   async initialize({ rendezvousIp, rendezvousPort, wallet }) {
     const rendezvousProtocol = /^\d+\.\d+\.\d+\.\d+$/.test(rendezvousIp) ? 'ip4' : 'dns4';
     const rendezvousWsProtocol = `${rendezvousPort}` === '443' ? 'wss' : 'ws';
     const rendezvousAddress = `/${rendezvousProtocol}/${rendezvousIp}/tcp/${rendezvousPort}/${rendezvousWsProtocol}/p2p-webrtc-star`;
 
-    ports.postLog('DEBUG: creating peer id');
+    ports.postLog('DEBUG: Node.initialize(): creating peer id');
     this.peerId = await PeerId.create();
     this.id = this.peerId.toB58String();
+    ports.postLog(`DEBUG: Node.initialize(): our peer id is ${this.id}`);
 
-    ports.postLog('DEBUG: creating libp2p node');
+    ports.postLog('DEBUG: Node.initialize(): creating libp2p node');
     this.node = await Libp2p.create({
       peerId: this.peerId,
       modules: {
@@ -57,10 +66,10 @@ class Node {
       },
     });
 
-    ports.postLog('DEBUG: creating lotus client');
+    ports.postLog('DEBUG: Node.initialize(): creating lotus client');
     this.lotus = await Lotus.create();
 
-    ports.postLog('DEBUG: creating datastore');
+    ports.postLog('DEBUG: Node.initialize(): creating datastore');
     this.datastore = await Datastore.create('/blocks', {
       prefix: 'filecoin-retrieval',
       version: 1,
@@ -69,21 +78,24 @@ class Node {
     ports.postLog('DEBUG: creating retrieval market client');
     this.client = await Client.create(this.node, this.datastore, this.lotus, this.handleCidReceived);
 
-    ports.postLog('DEBUG: creating retrieval market provider');
+    // retrieval-market client
+    this.client = await Client.create(this.node, this.datastore, this.lotus, this.handleCidReceived);
+
+    ports.postLog('DEBUG: Node.initialize(): creating Provider.js (retrieval market provider)');
     this.provider = await Provider.create(this.node, this.datastore, this.lotus);
 
-    ports.postLog('DEBUG: starting libp2p node');
+    ports.postLog('DEBUG: Node.initialize(): starting libp2p node');
     await this.node.start();
 
-    ports.postLog('DEBUG: adding listeners to node');
+    ports.postLog('DEBUG: Node.initialize(): adding listeners to node');
     this.node.connectionManager.on('peer:connect', this.handlePeerConnect);
     this.node.connectionManager.on('peer:disconnect', this.handlePeerDisconnect);
     this.node.pubsub.subscribe(topics.filecoinRetrieval, this.handleMessage);
 
-    ports.postLog('DEBUG: getting node info');
+    ports.postLog('DEBUG: Node.initialize(): getting node info');
     this.getInfo();
 
-    ports.postLog('DEBUG: node created');
+    ports.postLog('DEBUG: Node.initialize(): node created');
   }
 
   async getInfo() {
@@ -117,6 +129,7 @@ class Node {
         break;
 
       case messageTypes.queryResponse:
+        ports.postLog(`INFO: handleMessage > queryResponse`);
         this.handleQueryResponse(message);
         break;
 
@@ -145,6 +158,10 @@ class Node {
   }
 
   async handleQueryResponse({ messageType, cid, multiaddrs, params }) {
+    if (!this.queriedCids.has(cid)) {
+      return;
+    }
+
     const options = await getOptions();
     const offers = options.offerInfo?.offers || [];
 
@@ -156,6 +173,7 @@ class Node {
           multiaddrs.map((address) => ({
             address,
             price: params.size * params.pricePerByte,
+            params,
           })),
         ),
       },
@@ -202,11 +220,16 @@ class Node {
   async clearOffers() {
     const options = await getOptions();
 
+    if (options.offerInfo.cid) {
+      this.queriedCids.delete(options.offerInfo.cid);
+    }
+
     await setOptions({
       ...options,
       offerInfo: {
         cid: undefined,
         offers: [],
+        params: undefined,
       },
     });
   }
@@ -220,6 +243,7 @@ class Node {
       const { automationCode } = await getOptions();
 
       try {
+        // eslint-disable-next-line no-eval
         eval(automationCode);
       } catch (error) {
         ports.postLog(`ERROR: automation loop failed: ${error.message}`);
@@ -236,6 +260,7 @@ class Node {
       const { automationCode } = await getOptions();
       ports.postLog(`INFO: automation code saved`);
 
+      // eslint-disable-next-line no-eval
       eval(automationCode);
       this.lastIntervalId = this.runInLoop();
     } catch (error) {
@@ -258,7 +283,7 @@ class Node {
 
   async uploadFiles(files) {
     try {
-      ports.postLog(`DEBUG: uploading ${files.length} files`);
+      ports.postLog(`DEBUG: Node.uploadFiles(): uploading ${files.length} files`);
       const { knownCids } = await getOptions();
 
       const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
@@ -278,16 +303,38 @@ class Node {
       );
 
       ports.postUploadProgress(0);
-      ports.postLog(`DEBUG: ${files.length} files uploaded`);
+      ports.postLog(`DEBUG: Node.uploadFiles(): ${files.length} files uploaded`);
     } catch (error) {
       console.error(error);
-      ports.postLog(`ERROR: upload failed: ${error.message}`);
+      ports.postLog(`ERROR: Node.uploadFiles(): upload failed: ${error.message}`);
     }
   }
 
-  async downloadFile(cid) {
+  async _downloadFromPeer({ cid, offer }) {
+    ports.postLog(`DEBUG:  Node._downloadFromPeer: starting`);
+
+    if (!this.queriedCids.has(cid)) {
+      ports.postLog(`DEBUG:  Node._downloadFromPeer: exiting because Node.queriedCids does not contain '${cid}'`);
+      return;
+    }
+
+    ports.postLog(`DEBUG:  Node._downloadFromPeer:  offer=${JSON.stringify(offer)}`);
+    ports.postLog(`DEBUG:  Node._downloadFromPeer:\n  CID: ${cid}\n  from: ${offer.address}\n  price: ${offer.price} attoFil`);
+
+    const { params } = offer;
+    const multiaddr = offer.address;
+
     try {
-      ports.postLog(`DEBUG: downloading ${cid}`);
+      await this.client.retrieve(cid, params, multiaddr);  // TODO:  peer wallet!
+    } catch (error) {
+      console.error(error);
+      ports.postLog(`ERROR: Node.initiateRetrieval():  failed: ${error.message}`);
+    }
+  }
+
+  async _downloadLocally({ cid }) {
+    try {
+      ports.postLog(`DEBUG: Node._downloadLocally(): downloading ${cid}`);
       const data = await this.datastore.cat(cid);
       const response = await fetch(`data:application/octet-stream;base64,${data.toString('base64')}`);
       const blob = await response.blob();
@@ -296,7 +343,9 @@ class Node {
 
       function handleDownloadChanged(delta) {
         if (delta.state && delta.state.current === 'complete' && delta.id === downloadId) {
-          ports.postLog(`DEBUG: download completed, revoking object url ${cid}`);
+          ports.postLog(
+            `DEBUG: Node._downloadLocally.handleDownloadChanged():  download completed, revoking object url ${cid}`,
+          );
           URL.revokeObjectURL(url);
           chrome.downloads.onChanged.removeListener(handleDownloadChanged);
         }
@@ -305,19 +354,33 @@ class Node {
       chrome.downloads.onChanged.addListener(handleDownloadChanged);
     } catch (error) {
       console.error(error);
-      ports.postLog(`ERROR: download failed: ${error.message}`);
+      ports.postLog(`ERROR:  Node._downloadLocally():  download failed: ${error.message}`);
+    }
+  }
+
+  async downloadFile({ cid, offer }) {
+    ports.postLog(`DEBUG:  Node.downloadFile:\n  cid:'${cid}'\n  offer=${inspect(offer)}`);
+    try {
+      if (offer) {
+        this._downloadFromPeer({ cid, offer });
+      } else {
+        this._downloadLocally({ cid });
+      }
+    } catch (error) {
+      console.error(error);
+      ports.postLog(`ERROR: Node.downloadFile(): error: ${error.message}`);
     }
   }
 
   async deleteFile(cid) {
     try {
-      ports.postLog(`DEBUG: deleting ${cid}`);
+      ports.postLog(`DEBUG: Node.deleteFile(): deleting ${cid}`);
       const [{ knownCids }] = await Promise.all([getOptions(), this.datastore.delete(cid)]);
       delete knownCids[cid];
       setOptions({ knownCids });
     } catch (error) {
       console.error(error);
-      ports.postLog(`ERROR: delete failed: ${error.message}`);
+      ports.postLog(`ERROR: Node.deleteFile(): delete failed: ${error.message}`);
     }
   }
 

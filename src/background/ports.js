@@ -1,8 +1,9 @@
 /* global chrome */
-
 import channels from 'src/shared/channels';
 
-const debug = process.env.DEBUG === 'true';
+import * as toast from '../shared/toast.js';
+
+const debug = true;
 const portsByChannel = {};
 const lastMessages = {};
 const deals = { inbound: [], outbound: [] };
@@ -10,7 +11,7 @@ const logs = [];
 
 const ports = {
   startListening() {
-    chrome.runtime.onConnect.addListener(port => {
+    chrome.runtime.onConnect.addListener((port) => {
       const channel = port.name;
 
       if (!portsByChannel[channel]) {
@@ -23,7 +24,7 @@ const ports = {
         port.postMessage(lastMessages[channel]);
       }
 
-      port.onDisconnect.addListener(port => {
+      port.onDisconnect.addListener((port) => {
         const channel = port.name;
 
         portsByChannel[channel].delete(port);
@@ -35,7 +36,7 @@ const ports = {
     lastMessages[channel] = message;
 
     if (portsByChannel[channel]) {
-      portsByChannel[channel].forEach(port => port.postMessage(message));
+      portsByChannel[channel].forEach((port) => port.postMessage(message));
     }
   },
 
@@ -62,12 +63,14 @@ const ports = {
   },
 
   mapDeals(deals) {
-    return Object.values(deals).map(({ id, cid, params, sizeReceived, sizeSent }) => ({
+    return Object.values(deals).map(({ id, cid, params, sizeReceived, sizeSent, status, customStatus }) => ({
       id,
       cid,
       params,
       sizeReceived,
       sizeSent,
+      status,
+      customStatus,
     }));
   },
 
@@ -76,6 +79,18 @@ const ports = {
       logs.push(message);
       ports.postMessage(channels.logs, logs);
     }
+  },
+
+  alertError(message) {
+    toast.create({ message, type: 'error' });
+  },
+
+  alertWarning(message) {
+    toast.create({ message, type: 'warning' });
+  },
+
+  alertSuccess(message) {
+    toast.create({ message, type: 'success' });
   },
 
   clearLogs() {

@@ -1,18 +1,19 @@
 /* global chrome */
-
 import React from 'react';
-import useOptions from 'src/popup/hooks/useOptions';
 import Tabs from 'src/popup/components/Tabs';
-import Home from './Home';
-import Options from './Options';
-import Logs from './Logs';
-import Editor from './Editor';
-import Upload from './Upload';
-import ConnectionIndicator from './ConnectionIndicator';
-import PeersIndicator from './PeersIndicator';
+import useOptions from 'src/popup/hooks/useOptions';
+import { ENVIRONMENT_TYPE_FULLSCREEN } from 'src/shared/enums';
+import { getEnvironmentType } from 'src/shared/getEnvironmentType';
 import messageTypes from 'src/shared/messageTypes';
-import {getEnvironmentType} from 'src/shared/getEnvironmentType';
-import {ENVIRONMENT_TYPE_FULLSCREEN} from 'src/shared/enums'
+
+import ConnectionIndicator from './ConnectionIndicator';
+import Editor from './Editor';
+import Home from './Home';
+import Logs from './Logs';
+import Options from './Options';
+import PeersIndicator from './PeersIndicator';
+import Toast from './Toast';
+import Upload from './Upload';
 
 const tabs = [
   {
@@ -50,13 +51,16 @@ function App() {
   }
 
   return (
-    <Tabs className="text-xs text-black" tabs={tabs}>
-      <li className="flex-1 px-4">Filecoin Retrieval</li>
-      <li className="flex mr-8">
-        <ConnectionIndicator />
-        <PeersIndicator />
-      </li>
-    </Tabs>
+    <>
+      <Toast />
+      <Tabs className="text-xs text-black" tabs={tabs}>
+        <li className="flex-1 px-4">Filecoin Retrieval</li>
+        <li className="flex mr-8">
+          <ConnectionIndicator />
+          <PeersIndicator />
+        </li>
+      </Tabs>
+    </>
   );
 }
 

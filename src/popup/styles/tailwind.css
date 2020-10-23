@@ -27,3 +27,27 @@ svg {
 .border-2-blue {
   border: 2px solid blue;
 }
+
+.h-1-25 {
+  height: 1.25rem;
+}
+
+.w-1-25 {
+  width: 1.25rem;
+}
+
+.mr-2 {
+  margin-right: 0.5rem;
+}
+
+.mt-6 {
+  margin-top: 1.25rem;
+}
+
+.ml-2 {
+  margin-left: 0.5rem;
+}
+
+input[type=checkbox]:checked {
+  appearance: auto;
+}
