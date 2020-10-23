@@ -1,12 +1,10 @@
 import pipe from 'it-pipe';
 import pushable from 'it-pushable';
-import { DateTime } from 'luxon';
 import ports from 'src/background/ports';
 import dealStatuses from 'src/shared/dealStatuses';
 import getOptions from 'src/shared/getOptions';
 import jsonStream from 'src/shared/jsonStream';
 import onOptionsChanged from 'src/shared/onOptionsChanged';
-import { operationsQueue } from 'src/shared/OperationsQueue';
 import protocols from 'src/shared/protocols';
 
 class Provider {

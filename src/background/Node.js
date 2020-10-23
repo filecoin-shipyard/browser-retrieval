@@ -229,6 +229,7 @@ class Node {
       const { automationCode } = await getOptions();
 
       try {
+        // eslint-disable-next-line
         eval(automationCode);
       } catch (error) {
         ports.postLog(`ERROR: automation loop failed: ${error.message}`);
@@ -245,6 +246,7 @@ class Node {
       const { automationCode } = await getOptions();
       ports.postLog(`INFO: automation code saved`);
 
+      // eslint-disable-next-line
       eval(automationCode);
       this.lastIntervalId = this.runInLoop();
     } catch (error) {

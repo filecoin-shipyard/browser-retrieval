@@ -54,7 +54,8 @@
   },
   "devDependencies": {
     "cross-env": "^7.0.2",
-    "npm-watch": "^0.7.0"
+    "npm-watch": "^0.7.0",
+    "typescript": "^4.0.3"
   },
   "scripts": {
     "build:popup:css": "cross-env NODE_ENV=production postcss src/popup/styles/tailwind.css -o src/popup/styles/tailwind.generated.css",
@@ -63,6 +64,7 @@
     "build:background": "cross-env NODE_ENV=development webpack",
     "build": "yarn build:popup && yarn build:background",
     "build:debug": "cross-env DEBUG=true yarn build",
+    "lint": "eslint ./src",
     "watch": "npm-watch"
   },
   "watch": {

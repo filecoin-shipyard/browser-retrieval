@@ -1,4 +1,3 @@
-/* global chrome */
 import { DateTime } from 'luxon';
 import React, { useEffect, useState } from 'react';
 import Card from 'src/popup/components/Card';
