@@ -6,7 +6,6 @@ import getOptions from 'src/shared/getOptions';
 import jsonStream from 'src/shared/jsonStream';
 import onOptionsChanged from 'src/shared/onOptionsChanged';
 import protocols from 'src/shared/protocols';
-import ports from 'src/background/ports';
 import inspect from 'browser-util-inspect';
 
 class Provider {

@@ -1,13 +1,14 @@
+/* global BigInt */
 import * as signer from '@zondax/filecoin-signing-tools';  // TODO:  rename to signer to filecoin_signer
 import onOptionsChanged from 'src/shared/onOptionsChanged';
 import getOptions from 'src/shared/getOptions';
 import ports from '../ports';
+import inspect from 'browser-util-inspect';
+import axios from 'axios'
 // Required to workaround `Invalid asm.js: Unexpected token` error:
 const importDagCBOR = () => {
   return require('ipld-dag-cbor');
 }
-import inspect from 'browser-util-inspect';
-import axios from 'axios'
 
 class Lotus {
   static async create() {
