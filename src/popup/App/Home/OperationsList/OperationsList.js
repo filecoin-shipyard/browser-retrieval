@@ -88,7 +88,7 @@ function OperationsList(props) {
 
   return (
     <Card {...props}>
-      <Label className="p-4 pb-2">Operations</Label>
+      <Label className="p-4 pb-2">Pending Operations</Label>
 
       {renderOpsTable(ops)}
     </Card>
