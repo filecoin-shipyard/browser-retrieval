@@ -5,6 +5,7 @@ import ports from 'src/background/ports';
  * Functions to be executed in a certain scheduled time.
  */
 export class Operations {
+  // Example
   async testQueue(lotus, metadata) {
     console.log('lotus', lotus);
     console.log('metadata', metadata);
@@ -13,6 +14,7 @@ export class Operations {
     return 'yo this works';
   }
 
+  // Collect a payment channel after 12-hour wait
   async collectChannel(lotus, metadata) {
     const paymentChannelAddr = metadata.paymentChannelAddr;
     ports.postLog(`DEBUG: LUXON: Opterations.collectChannel: collectChannel on paymentChannelAddr=${paymentChannelAddr}`);
