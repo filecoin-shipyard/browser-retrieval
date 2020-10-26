@@ -301,7 +301,7 @@ class Provider {
       metadata: {"paymentChannelAddr":paymentChannelAddr},
 
       // time when to invoke the function
-      invokeAt: DateTime.local().plus({ hours: 12 }).toString(),
+      invokeAt: DateTime.local().plus({ minutes: (12*60)+1 }).toString(),
     });
   }
 }
