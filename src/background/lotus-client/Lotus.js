@@ -213,7 +213,7 @@ class Lotus {
     //
     // Generate the PCH create message
     //
-    var signedCreateMessage;
+    var signedCreateMessage; // TODO:  does this need to be declared out here?
     try {
       let create_pymtchan = signer.createPymtChanWithFee(fromAddr, toAddr, `${amountAttoFil}`, nonce, "10000000", "16251176117", "140625002"); // gas limit, fee cap, premium
       ports.postLog("DEBUG: Lotus.createPaymentChannel: create_pymtchan="+inspect(create_pymtchan))
@@ -277,12 +277,12 @@ class Lotus {
     //
     // Generate update PCH message
     //
-    var signedUpdateMessage;
+    var signedUpdateMessage;  // TODO:  does this need to be declared out here?
     try {
       let nonce = await this.getNonce(toAddr);
-      let update_paych_message = signer.updatePymtChanWithFee(pch, toAddr, signedVoucher, nonce, "10000000", "16251176117", "140625002") // gas limit, fee cap, premium
-      //ports.postLog(`DEBUG: Lotus.updatePaymentChannel:  update_paych_message=${inspect(update_paych_message)}`);
-      signedUpdateMessage = JSON.parse(signer.transactionSignLotus(update_paych_message, toPrivateKeyBase64));
+      let updatePaychMessage = signer.updatePymtChanWithFee(pch, toAddr, signedVoucher, nonce, "10000000", "16251176117", "140625002") // gas limit, fee cap, premium
+      //ports.postLog(`DEBUG: Lotus.updatePaymentChannel:  updatePaychMessage=${inspect(updatePaychMessage)}`);
+      signedUpdateMessage = JSON.parse(signer.transactionSignLotus(updatePaychMessage, toPrivateKeyBase64));
     } catch (error) {
       ports.postLog(`ERROR: Lotus.updatePaymentChannel: error generating Update message: ${error.message}`);
       return false
@@ -336,11 +336,11 @@ class Lotus {
     //
     // Generate Settle PCH message
     //
-    var signedSettleMessage;
+    var signedSettleMessage;   // TODO:  does this need to be declared out here?
     try {
       let nonce = await this.getNonce(toAddr);
-      let settle_paych_message = signer.settlePymtChanWithFee(pch, toAddr, nonce, "10000000", "16251176117", "140625002") // gas limit, fee cap, premium)
-      signedSettleMessage = JSON.parse(signer.transactionSignLotus(settle_paych_message, toPrivateKeyBase64));
+      let settlePaychMessage = signer.settlePymtChanWithFee(pch, toAddr, nonce, "10000000", "16251176117", "140625002") // gas limit, fee cap, premium)
+      signedSettleMessage = JSON.parse(signer.transactionSignLotus(settlePaychMessage, toPrivateKeyBase64));
     } catch (error) {
       ports.postLog(`ERROR: Lotus.settlePaymentChannel: error generating Settle msg: ${error.message}`);
       return;
@@ -390,11 +390,11 @@ class Lotus {
     //
     // Generate Collect PCH message
     //
-    var signedCollectMessage;
+    var signedCollectMessage;   // TODO:  does this need to be declared out here?
     try {
       let nonce = await this.getNonce(toAddr);
-      let collect_paych_message = signer.collectPymtChanWithFee(pch, toAddr, nonce, "10000000", "16251176117", "140625002") // gas limit, fee cap, premium
-      signedCollectMessage = JSON.parse(signer.transactionSignLotus(collect_paych_message, toPrivateKeyBase64));
+      let collectPaychMessage = signer.collectPymtChanWithFee(pch, toAddr, nonce, "10000000", "16251176117", "140625002") // gas limit, fee cap, premium
+      signedCollectMessage = JSON.parse(signer.transactionSignLotus(collectPaychMessage, toPrivateKeyBase64));
     } catch (error) {
       ports.postLog(`ERROR: Lotus.collectPaymentChannel: error generating Collect msg: ${error.message}`);
       return;
