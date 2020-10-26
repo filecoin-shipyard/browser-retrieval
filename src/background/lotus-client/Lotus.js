@@ -1,9 +1,13 @@
 import * as signer from '@zondax/filecoin-signing-tools';
-import dagCBOR from 'ipld-dag-cbor';
 import getOptions from 'src/shared/getOptions';
 import onOptionsChanged from 'src/shared/onOptionsChanged';
 
 import ports from '../ports';
+
+// Required to workaround `Invalid asm.js: Unexpected token` error
+const importDagCBOR = () => {
+  return require('ipld-dag-cbor');
+}
 
 class Lotus {
   static async create() {
@@ -40,7 +44,9 @@ class Lotus {
     }
   };
 
-  cbor(object) {
+  async cbor(object) {
+    const dagCBOR = importDagCBOR();
+
     return dagCBOR.util.serialize(object).toString('hex');
   }
 
