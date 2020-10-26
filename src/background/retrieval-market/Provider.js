@@ -89,6 +89,8 @@ class Provider {
             }
 
             case dealStatuses.paymentSent: {
+              // TODO: why not to split in two functions to be more clear?
+              // TODO: code duplication with `dealStatuses.lastPaymentSent`
               this.setOrVerifyPaymentChannel(message);
               if (!await this.checkPaymentVoucherValid(message)) {
                 throw {"message":`received invalid voucher (${message.paymentVoucher}) on dealId ${message.dealId}`}
@@ -100,6 +102,8 @@ class Provider {
             }
 
             case dealStatuses.lastPaymentSent: {
+              // TODO: why not to split in two functions to be more clear?
+              // TODO: code duplication with `dealStatuses.paymentSent`
               this.setOrVerifyPaymentChannel(message);
               if (!await this.checkPaymentVoucherValid(message)) {
                 throw {"message":`received invalid voucher (${message.paymentVoucher}) on dealId ${message.dealId}`}
