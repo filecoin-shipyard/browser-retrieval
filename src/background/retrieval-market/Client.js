@@ -173,6 +173,8 @@ class Client {
     const pchAmount = deal.params.size * deal.params.pricePerByte;
     const toAddr = deal.params.wallet
 
+    deal.customStatus = "Creating payment channel";
+
     ports.postLog(`DEBUG: Client.setupPaymentChannel(): PCH creation parameters:\n  pchAmount='${pchAmount}'\n  toAddr='${toAddr}'`);
 
     //await this.lotus.keyRecoverLogMsg();  // testing only
@@ -197,6 +199,7 @@ class Client {
   async receiveBlocks({ dealId, blocks }) {
     ports.postLog(`DEBUG: Client.receiveBlocks(): received ${blocks.length} blocks deal id: ${dealId}`);
     const deal = this.ongoingDeals[dealId];
+    deal.customStatus = "Receiving data";
 
     for (const block of blocks) {
       deal.importerSink.push(block.data);
@@ -223,6 +226,8 @@ class Client {
     ports.postLog(`DEBUG: Client.sendPayment(): sv = '${sv}'`);
 
     const newDealStatus = isLastVoucher ? dealStatuses.lastPaymentSent : dealStatuses.paymentSent;
+
+    deal.customStatus = "Sent signed voucher";
 
     deal.sink.push({
       dealId,
@@ -257,6 +262,7 @@ class Client {
   async closeDeal({ dealId }) {
     ports.postLog(`DEBUG: Client.closeDeal: closing deal ${dealId}`);
     const deal = this.ongoingDeals[dealId];
+    deal.customStatus = "Enqueueing channel collection and disconnecting";
     // TODO:
     // this.lotus.closePaymentChannel(deal.paymentChannel);
     deal.sink.end();

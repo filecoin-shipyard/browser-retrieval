@@ -197,6 +197,7 @@ class Provider {
     ports.postLog('DEBUG: Provider.sendBlocks()');
     ports.postLog(`DEBUG: sending blocks ${dealId}`);
     const deal = this.ongoingDeals[dealId];
+    deal.customStatus = "Sending data";
     const entry = await this.datastore.get(deal.cid);
 
     const blocks = [];
@@ -234,6 +235,7 @@ class Provider {
     ports.postLog(`DEBUG: Provider.checkPaymentVoucherValid: arguments = dealId=${dealId},paymentChannel=${paymentChannel},signedVoucher=${signedVoucher}`);
     
     const deal = this.ongoingDeals[dealId];
+    deal.customStatus = "Verifying payment voucher";
     const clientWalletAddr = deal.clientWalletAddr;
     ports.postLog(`DEBUG: Provider.checkPaymentVoucherValid: clientWalletAddr=${clientWalletAddr}`);
 
@@ -256,6 +258,7 @@ class Provider {
   async submitPaymentVoucher({ dealId, paymentChannel, signedVoucher }) {
     ports.postLog("DEBUG: Provider.submitPaymentVoucher()")
     ports.postLog(`DEBUG: Provider.submitPaymentVoucher: submitting voucher dealId=${dealId},paymentChannel=${paymentChannel},signedVoucher=${signedVoucher}`);
+    deal.customStatus = "Updating payment channel with voucher";
     const isUpdateSuccessful = await this.lotus.updatePaymentChannel(paymentChannel, signedVoucher);
     ports.postLog(`DEBUG: Provider.submitPaymentVoucher: isUpdateSuccessful=${isUpdateSuccessful}`);
     if (!isUpdateSuccessful) {
@@ -274,15 +277,18 @@ class Provider {
     const deal = this.ongoingDeals[dealId];
     const paymentChannel = deal.paymentChannel;
     ports.postLog(`DEBUG: Provider.closeDeal: dealId=${dealId}, paymentChannel=${paymentChannel}`);
+    deal.customStatus = "Settling payment channel";
     await this.lotus.settlePaymentChannel(paymentChannel);
-    // TODO:  pend an operation to Collect the payment channel
+    deal.customStatus = "Enqueueing channel collection (12 hour delay)";
 
+    // TODO:  pend an operation to Collect the payment channel
     // ------------- TEMP ------------------------------
     setTimeout((()=>{
       this.lotus.collectPaymentChannel(paymentChannel);
     }).bind(this),1000*60*60*12);
     // --------- END TEMP ------------------------------
     deal.sink.end();
+
 
     delete this.ongoingDeals[dealId];
     ports.postOutboundDeals(this.ongoingDeals);
