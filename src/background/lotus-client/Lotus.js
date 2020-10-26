@@ -1,10 +1,13 @@
-import dagCBOR from 'ipld-dag-cbor';
 import * as signer from '@zondax/filecoin-signing-tools';
-import onOptionsChanged from 'src/shared/onOptionsChanged';
 import getOptions from 'src/shared/getOptions';
+import onOptionsChanged from 'src/shared/onOptionsChanged';
+
 import ports from '../ports';
-import methods from './methods';
-import codes from './codes';
+
+// Required to workaround `Invalid asm.js: Unexpected token` error
+const importDagCBOR = () => {
+  return require('ipld-dag-cbor');
+}
 
 class Lotus {
   static async create() {
@@ -16,7 +19,6 @@ class Lotus {
   id = 0;
 
   paymentChannelsInfo = {};
-
 
   async initialize() {
     await this.updateOptions();
@@ -31,13 +33,8 @@ class Lotus {
     this.privateKey = signer.keyRecover(privateKey).private_hexstring;
   }
 
-  handleOptionsChange = async changes => {
-    if (
-      changes['lotusEndpoint'] ||
-      changes['lotusToken'] ||
-      changes['wallet'] ||
-      changes['privateKey']
-    ) {
+  handleOptionsChange = async (changes) => {
+    if (changes['lotusEndpoint'] || changes['lotusToken'] || changes['wallet'] || changes['privateKey']) {
       try {
         await this.updateOptions();
       } catch (error) {
@@ -47,7 +44,9 @@ class Lotus {
     }
   };
 
-  cbor(object) {
+  async cbor(object) {
+    const dagCBOR = importDagCBOR();
+
     return dagCBOR.util.serialize(object).toString('hex');
   }
 
@@ -102,7 +101,7 @@ class Lotus {
       } catch (error) {
         if (error.message === 'blockstore: block not found') {
           // try again in a second
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         } else {
           throw error;
         }
@@ -113,41 +112,41 @@ class Lotus {
   async getOrCreatePaymentChannel(to, value) {
     ports.postLog(`DEBUG: creating Payment Channel [from:${this.wallet}, to:${to}, amount:${value}`);
 
-    return "address"
+    return 'address';
 
     // TODO: recycle existing channel
 
-    const messageLink = await this.post('Filecoin.MpoolPush', [
-      this.signMessage({
-        to,
-        from: this.wallet,
-        value: value.toString(),
-        method: methods.init.exec,
-        params: {
-          CodeCID: codes.paymentChannel,
-          ConstructorParams: {
-            From: this.wallet,
-            To: to,
-          },
-        },
-        gaslimit: 1000000,
-        gasprice: '1000',
-        nonce: await this.getNextNonce(),
-      }),
-    ]);
+    // const messageLink = await this.post('Filecoin.MpoolPush', [
+    //   this.signMessage({
+    //     to,
+    //     from: this.wallet,
+    //     value: value.toString(),
+    //     method: methods.init.exec,
+    //     params: {
+    //       CodeCID: codes.paymentChannel,
+    //       ConstructorParams: {
+    //         From: this.wallet,
+    //         To: to,
+    //       },
+    //     },
+    //     gaslimit: 1000000,
+    //     gasprice: '1000',
+    //     nonce: await this.getNextNonce(),
+    //   }),
+    // ]);
 
-    const receipt = await this.waitForMessage(messageLink);
-    console.log(receipt);
+    // const receipt = await this.waitForMessage(messageLink);
+    // console.log(receipt);
 
-    // TODO: get address from receipt
-    const paymentChannel = 'address';
+    // // TODO: get address from receipt
+    // const paymentChannel = 'address';
 
-    this.paymentChannelsInfo[paymentChannel] = {
-      nextLane: 0,
-      lanesNextNonce: {},
-    };
+    // this.paymentChannelsInfo[paymentChannel] = {
+    //   nextLane: 0,
+    //   lanesNextNonce: {},
+    // };
 
-    return paymentChannel;
+    // return paymentChannel;
   }
 
   async allocateLane(paymentChannel) {

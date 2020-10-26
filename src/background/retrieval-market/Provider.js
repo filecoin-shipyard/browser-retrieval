@@ -1,15 +1,15 @@
 import pipe from 'it-pipe';
 import pushable from 'it-pushable';
-import onOptionsChanged from 'src/shared/onOptionsChanged';
-import protocols from 'src/shared/protocols';
+import ports from 'src/background/ports';
 import dealStatuses from 'src/shared/dealStatuses';
 import getOptions from 'src/shared/getOptions';
 import jsonStream from 'src/shared/jsonStream';
-import ports from 'src/background/ports';
+import onOptionsChanged from 'src/shared/onOptionsChanged';
+import protocols from 'src/shared/protocols';
 
 class Provider {
   static async create(...args) {
-    ports.postLog("DEBUG: Provider.create()")
+    ports.postLog('DEBUG: Provider.create()');
     const provider = new Provider(...args);
     await provider.initialize();
     return provider;
@@ -18,27 +18,27 @@ class Provider {
   ongoingDeals = {};
 
   constructor(node, datastore, lotus) {
-    ports.postLog("DEBUG: Provider.constructor()")
+    ports.postLog('DEBUG: Provider.constructor()');
     this.node = node;
     this.datastore = datastore;
     this.lotus = lotus;
   }
 
   async initialize() {
-    ports.postLog("DEBUG: Provider.initialize()")
+    ports.postLog('DEBUG: Provider.initialize()');
     await this.updateOptions();
     onOptionsChanged(this.handleOptionsChange);
     this.node.handle(protocols.filecoinRetrieval, this.handleProtocol);
   }
 
   async updateOptions() {
-    ports.postLog("DEBUG: Provider.updateOptions()")
+    ports.postLog('DEBUG: Provider.updateOptions()');
     const { paymentInterval, paymentIntervalIncrease } = await getOptions();
     this.paymentInterval = paymentInterval;
     this.paymentIntervalIncrease = paymentIntervalIncrease;
   }
 
-  handleOptionsChange = async changes => {
+  handleOptionsChange = async (changes) => {
     if (changes['paymentInterval'] || changes['paymentIntervalIncrease']) {
       try {
         await this.updateOptions();
@@ -71,7 +71,7 @@ class Provider {
   handleProtocol = async ({ stream }) => {
     ports.postLog(`DEBUG: Provider.handleProtocol(): ${protocols.filecoinRetrieval}`);
     const sink = pushable();
-    pipe(sink, jsonStream.stringify, stream, jsonStream.parse, async source => {
+    pipe(sink, jsonStream.stringify, stream, jsonStream.parse, async (source) => {
       for await (const message of source) {
         try {
           ports.postLog(`DEBUG: Provider.handleProtocol():  message ${JSON.stringify(message)}`);
@@ -116,7 +116,7 @@ class Provider {
   };
 
   async handleNewDeal({ dealId, cid, params }, sink) {
-    ports.postLog("DEBUG: Provider.handleNewDeal()")
+    ports.postLog('DEBUG: Provider.handleNewDeal()');
     ports.postLog(`DEBUG: handling new deal ${dealId}`);
     if (this.ongoingDeals[dealId]) {
       throw new Error('A deal already exists for the given id');
@@ -155,7 +155,7 @@ class Provider {
   }
 
   sendDealAccepted({ dealId }) {
-    ports.postLog("DEBUG: Provider.sendDealAccepted()")
+    ports.postLog('DEBUG: Provider.sendDealAccepted()');
     ports.postLog(`DEBUG: sending deal accepted ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
@@ -166,7 +166,7 @@ class Provider {
   }
 
   async sendBlocks({ dealId }) {
-    ports.postLog("DEBUG: Provider.sendBlocks()")
+    ports.postLog('DEBUG: Provider.sendBlocks()');
     ports.postLog(`DEBUG: sending blocks ${dealId}`);
     const deal = this.ongoingDeals[dealId];
     const entry = await this.datastore.get(deal.cid);
@@ -187,9 +187,7 @@ class Provider {
     deal.sink.push({
       dealId,
       status:
-        deal.sizeSent + blocksSize >= deal.params.size
-          ? dealStatuses.fundsNeededLastPayment
-          : dealStatuses.fundsNeeded,
+        deal.sizeSent + blocksSize >= deal.params.size ? dealStatuses.fundsNeededLastPayment : dealStatuses.fundsNeeded,
       blocks,
     });
 
@@ -198,7 +196,7 @@ class Provider {
   }
 
   async checkPaymentVoucherValid({ dealId, paymentChannel, paymentVoucher }) {
-    ports.postLog("DEBUG: Provider.checkPaymentVoucher()")
+    ports.postLog('DEBUG: Provider.checkPaymentVoucher()');
     ports.postLog(`DEBUG: checking voucher ${dealId}`);
     // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
     // await this.lotus.checkPaymentVoucherValid(paymentChannel, paymentVoucher);
@@ -206,24 +204,25 @@ class Provider {
   }
 
   async submitPaymentVoucher({ dealId, paymentChannel, paymentVoucher }) {
-    ports.postLog("DEBUG: Provider.submitPaymentVoucher()")
+    ports.postLog('DEBUG: Provider.submitPaymentVoucher()');
     ports.postLog(`DEBUG: submitting voucher ${dealId}`);
     // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
     // await this.lotus.submitPaymentVoucher(paymentChannel, paymentVoucher);
   }
 
   async sendDealCompleted({ dealId }) {
-    ports.postLog("DEBUG: Provider.sendDealCompleted()")
+    ports.postLog('DEBUG: Provider.sendDealCompleted()');
     ports.postLog(`DEBUG: sending deal completed ${dealId}`);
     const deal = this.ongoingDeals[dealId];
     deal.sink.push({ dealId, status: dealStatuses.completed });
   }
 
   async closeDeal({ dealId }) {
-    ports.postLog("DEBUG: Provider.closeDeal()")
+    ports.postLog('DEBUG: Provider.closeDeal()');
     ports.postLog(`DEBUG: closing deal ${dealId}`);
     const deal = this.ongoingDeals[dealId];
     deal.sink.end();
+
     delete this.ongoingDeals[dealId];
     ports.postOutboundDeals(this.ongoingDeals);
   }
