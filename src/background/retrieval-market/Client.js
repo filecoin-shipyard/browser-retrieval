@@ -6,13 +6,6 @@ import jsonStream from 'src/shared/jsonStream';
 import protocols from 'src/shared/protocols';
 import inspect from 'browser-util-inspect';
 
-//
-// TODO:
-//  - https://github.com/filecoin-shipyard/browser-retrieval/issues/70
-//  - https://github.com/filecoin-shipyard/browser-retrieval/issues/71
-//  - https://github.com/filecoin-shipyard/browser-retrieval/issues/72
-//
-
 class Client {
   static async create(...args) {
     return new Client(...args);
@@ -236,28 +229,6 @@ class Client {
       signedVoucher: sv,
     });
   }
-
-/*
-  async sendLastPayment({ dealId }) {
-    ports.postLog(`DEBUG: Client.sendLastPayment(): sending last payment ${dealId}`);
-    const deal = this.ongoingDeals[dealId];
-
-    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
-    // const amount = (deal.params.size - deal.sizePaid) * deal.params.pricePerByte;
-    // const paymentVoucher = await this.lotus.createPaymentVoucher(
-    //   deal.paymentChannel,
-    //   deal.lane,
-    //   amount,
-    // );
-
-    deal.sink.push({
-      dealId,
-      status: dealStatuses.lastPaymentSent,
-      // paymentChannel: deal.paymentChannel,
-      // paymentVoucher,
-    });
-  }
-*/
 
   async closeDeal({ dealId }) {
     ports.postLog(`DEBUG: Client.closeDeal: closing deal ${dealId}`);
