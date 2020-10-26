@@ -6,6 +6,7 @@ import getOptions from 'src/shared/getOptions';
 import jsonStream from 'src/shared/jsonStream';
 import onOptionsChanged from 'src/shared/onOptionsChanged';
 import protocols from 'src/shared/protocols';
+import operationsQueue from 'src/shared/OperationsQueue'
 
 class Provider {
   static async create(...args) {
