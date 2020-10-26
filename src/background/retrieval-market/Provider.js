@@ -7,6 +7,8 @@ import jsonStream from 'src/shared/jsonStream';
 import onOptionsChanged from 'src/shared/onOptionsChanged';
 import protocols from 'src/shared/protocols';
 import inspect from 'browser-util-inspect';
+import { DateTime } from 'luxon';
+import { operationsQueue } from 'src/shared/OperationsQueue'
 
 class Provider {
   static async create(...args) {
@@ -233,7 +235,7 @@ class Provider {
    */
   async checkPaymentVoucherValid({ dealId, paymentChannel, signedVoucher }) {
     ports.postLog(`DEBUG: Provider.checkPaymentVoucherValid: arguments = dealId=${dealId},paymentChannel=${paymentChannel},signedVoucher=${signedVoucher}`);
-    
+
     const deal = this.ongoingDeals[dealId];
     deal.customStatus = "Verifying payment voucher";
     const clientWalletAddr = deal.clientWalletAddr;
@@ -258,6 +260,7 @@ class Provider {
   async submitPaymentVoucher({ dealId, paymentChannel, signedVoucher }) {
     ports.postLog("DEBUG: Provider.submitPaymentVoucher()")
     ports.postLog(`DEBUG: Provider.submitPaymentVoucher: submitting voucher dealId=${dealId},paymentChannel=${paymentChannel},signedVoucher=${signedVoucher}`);
+    const deal = this.ongoingDeals[dealId];
     deal.customStatus = "Updating payment channel with voucher";
     const isUpdateSuccessful = await this.lotus.updatePaymentChannel(paymentChannel, signedVoucher);
     ports.postLog(`DEBUG: Provider.submitPaymentVoucher: isUpdateSuccessful=${isUpdateSuccessful}`);
@@ -280,18 +283,26 @@ class Provider {
     deal.customStatus = "Settling payment channel";
     await this.lotus.settlePaymentChannel(paymentChannel);
     deal.customStatus = "Enqueueing channel collection (12 hour delay)";
-
-    // TODO:  pend an operation to Collect the payment channel
-    // ------------- TEMP ------------------------------
-    setTimeout((()=>{
-      this.lotus.collectPaymentChannel(paymentChannel);
-    }).bind(this),1000*60*60*12);
-    // --------- END TEMP ------------------------------
-    deal.sink.end();
-
-
+    await this.pendCollectOperation(dealId, paymentChannel);
     delete this.ongoingDeals[dealId];
     ports.postOutboundDeals(this.ongoingDeals);
+  }
+
+  async pendCollectOperation(dealId, paymentChannelAddr) {
+    ports.postLog(`DEBUG: Provider.pendCollectOperation: dealId=${dealId}, paymentChannel=${paymentChannelAddr}`);
+    operationsQueue.queue({
+      label: `Collect channel ${paymentChannelAddr}`,
+
+      // name of the method implemented in shared/Operations
+      // hint: VSCode should show you the available names through its built-in TypeScript support
+      f: 'collectChannel',
+
+      // object with anything you want to store to pass to the operation later (e.g. `deal`)
+      metadata: {"paymentChannelAddr":paymentChannelAddr},
+
+      // time when to invoke the function
+      invokeAt: DateTime.local().plus({ hours: 12 }).toString(),
+    });
   }
 }
 
