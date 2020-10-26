@@ -13,7 +13,7 @@ async function makeBuiltin(string) {
 const codes = {};
 
 async function make() {
-  codes.paymentChannel = await makeBuiltin('fil/1/paymentchannel');
+  codes.paymentChannel = await makeBuiltin('fil/2/paymentchannel');
 }
 
 make().catch(error => {

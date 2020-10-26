@@ -1,18 +1,21 @@
-import * as signer from '@zondax/filecoin-signing-tools';
-import getOptions from 'src/shared/getOptions';
+/* global BigInt */
+import * as signer from '@zondax/filecoin-signing-tools';  // TODO:  rename to signer to filecoin_signer
 import onOptionsChanged from 'src/shared/onOptionsChanged';
-
+import getOptions from 'src/shared/getOptions';
 import ports from '../ports';
-
-// Required to workaround `Invalid asm.js: Unexpected token` error
+import inspect from 'browser-util-inspect';
+import axios from 'axios'
+// Required to workaround `Invalid asm.js: Unexpected token` error:
 const importDagCBOR = () => {
   return require('ipld-dag-cbor');
 }
 
 class Lotus {
   static async create() {
+    ports.postLog(`DEBUG: entering Lotus.create`);
     const lotus = new Lotus();
     await lotus.initialize();
+    ports.postLog(`DEBUG: leaving Lotus.create`);
     return lotus;
   }
 
@@ -21,8 +24,19 @@ class Lotus {
   paymentChannelsInfo = {};
 
   async initialize() {
+    ports.postLog(`DEBUG: Lotus.initialize:  entering`);
     await this.updateOptions();
     onOptionsChanged(this.handleOptionsChange);
+    ports.postLog(`DEBUG: Lotus.initialize:  leaving`);
+  }
+
+  // TODO:  remove once filecoin-signing-tools PR #317 is merged new npm package is published
+  // for testing filecoin_signer only
+  async keyRecoverLogMsg() {
+    // This is a dummy wallet with no funds. Recovered addr will be f156e3l2vwd5wi5jwdrd6gdg4y7t2yknq6see7xbq
+    let privKey = "ciiFbmF7F7mrVs5E/IT8TV63PdFPLrRs9R/Cc3vri2I=";
+    let recoveredPKey = signer.keyRecover(privKey, false);
+    ports.postLog(`DEBUG: Lotus.keyRecover: recovered='${recoveredPKey.address}' (=='...7xbq'?)`);
   }
 
   async updateOptions() {
@@ -30,7 +44,9 @@ class Lotus {
     this.lotusEndpoint = lotusEndpoint;
     this.lotusToken = lotusToken;
     this.wallet = wallet;
-    this.privateKey = signer.keyRecover(privateKey).private_hexstring;
+    this.privateKeyBase64 = privateKey
+    this.privateKey = signer.keyRecover(privateKey).private_hexstring; //TODO:  is this used anywhere?
+    this.headers = { "Authorization": `Bearer ${lotusToken}` }
   }
 
   handleOptionsChange = async (changes) => {
@@ -44,133 +60,381 @@ class Lotus {
     }
   };
 
-  async cbor(object) {
-    const dagCBOR = importDagCBOR();
-
-    return dagCBOR.util.serialize(object).toString('hex');
+  /**
+   * Get the next nonce for an address
+   * @param  {string} addr Wallet address like `f156e3l2vwd5wi5jwdrd6gdg4y7t2yknq6see7xbq`
+   * @return {number} Returns the next nonce, or undefined if an error occurred
+   */
+  async getNonce(addr) {
+    ports.postLog(`DEBUG: entering Lotus.getNonce`);
+    let headers = this.headers
+    ports.postLog(`DEBUG: Lotus.getNonce:\n  addr=${addr}\n  this.headers=${inspect(headers)}\n  this.lotusEndpoint=${this.lotusEndpoint}`);
+    var response;
+    try {
+      response = await axios.post(this.lotusEndpoint, {
+        jsonrpc: "2.0",
+        method: "Filecoin.MpoolGetNonce",
+        id: 1,
+        params: [addr]
+      }, {headers});
+    } catch (error) {
+      ports.postLog(`ERROR: Lotus.getNonce(): axios error: ${error.message}`);
+      return undefined
+    }
+		//ports.postLog("response.data = "+inspect(response.data));
+		let nonce = response.data.result;
+    //ports.postLog(`Nonce (${addr}) = ${nonce}`);
+    ports.postLog(`DEBUG: leaving Lotus.getNonce (ret = ${nonce})`);
+    //ports.postLog(`DEBUG: Lotus.getNonce => ${nonce}`);
+		return nonce;
+  }
+  
+  /**
+   * Push a message into the mpool with Filecoin.MpoolPush
+   * @param  {string} signedMessage A signed message to push into the mpool
+   * @return {string} Returns the CID of the submitted message, or undefined if an error occurred
+   */
+  async mpoolPush(signedMessage) {
+    ports.postLog(`DEBUG: entering Lotus.mpoolPush (signedMessage=${inspect(signedMessage)})`);
+    let headers = this.headers
+    var response;
+    var msgCid;
+    try {
+      response = await axios.post(this.lotusEndpoint, {
+        jsonrpc: "2.0",
+        method: "Filecoin.MpoolPush",
+        id: 1,
+        params: [signedMessage]
+      }, {headers});
+      ports.postLog(`DEBUG: Lotus.mpoolPush: response.data = ${inspect(response.data)}`);
+      msgCid = response.data.result;
+    } catch (error) {
+      ports.postLog(`ERROR: Lotus.mpoolPush(): axios error: ${error.message}`);
+      return undefined
+    }
+    //ports.postLog(`DEBUG: leaving Lotus.mpoolPush => ${inspect(msgCid)}`);
+    ports.postLog(`DEBUG: Lotus.mpoolPush => ${inspect(msgCid)}`);
+		return msgCid;
   }
 
-  serializeParams({ CodeCID, ConstructorParams }) {
-    return this.cbor({
-      CodeCID,
-      ConstructorParams: this.cbor(ConstructorParams),
-    });
+  /**
+   * Wraps Filecoin.StateWaitMsg by taking a msg CID and waiting for its response.data
+   * @param  {string} cid The message CID to wait for
+   * @return {object} Returns the wait response.data member, or undefined if an error occurred
+   */
+  async stateWaitMsg(cid) {
+    //ports.postLog(`DEBUG: entering Lotus.stateWaitMsg(cid='${cid}')`);
+    ports.postLog(`INFO: begining StateWaitMsg. This will take a while...`);
+    let headers = this.headers
+    var response;
+    try {
+      response = await axios.post(this.lotusEndpoint, {
+        jsonrpc: "2.0",
+        method: "Filecoin.StateWaitMsg",
+        id: 1,
+        params: [cid, null]
+      }, { headers });
+    } catch (error) {
+      ports.postLog(`ERROR: Lotus.stateWaitMsg(): axios error: ${error.message}`);
+      return undefined
+    }
+		//ports.postLog(`response.data = ${inspect(response.data)}`);
+    //ports.postLog(`DEBUG: leaving Lotus.stateWaitMsg => ${inspect(msgCid)}`);
+    ports.postLog(`--------------------------------------------------------------------------------------------------`);
+    ports.postLog(`DEBUG: Lotus.stateWaitMsg => ${inspect(response.data)} ; ${inspect(response.data.result)}`);
+    ports.postLog(`--------------------------------------------------------------------------------------------------`);
+    return response.data;
   }
 
-  signMessage(message) {
-    if (message.params) {
-      message.params = this.serializeParams(message.params);
+  /**
+   * Wraps Filecoin.StateReadState by taking a PCH address and waiting for its state to be returned
+   * @param  {string} pch The address of the payment chanel
+   * @return {object} Returns the wait's response.data member, or undefined if an error occurred
+   */
+  async stateReadState(pch) {
+    ports.postLog(`DEBUG: entering Lotus.stateReadState(pch='${pch}')`);
+    ports.postLog(`INFO: begining StateReadState. This will take a while...`);
+    let headers = this.headers
+    var response;
+    try {
+      response = await axios.post(this.lotusEndpoint, {
+        jsonrpc: "2.0",
+        method: "Filecoin.StateReadState",
+        id: 1,
+        params: [pch, null]
+      }, { headers });
+    } catch (error) {
+      ports.postLog(`ERROR: Lotus.stateReadState(): axios error: ${error.message}`);
+      return undefined
+    }
+		//ports.postLog(`response.data = ${inspect(response.data)}`);
+    ports.postLog(`--------------------------------------------------------------------------------------------------`);
+    ports.postLog(`DEBUG: Lotus.stateReadState => ${inspect(response.data)} ; ${inspect(response.data.result)}`);
+    ports.postLog(`--------------------------------------------------------------------------------------------------`);
+    return response.data;
+  }
+
+  /**
+   * Creates a payment voucher for the given amount valid on the given payment channel
+   * @param  {string} pch The address of the payment channel
+   * @param  {number} amountAttoFil Voucher amount in attofil
+   * @param  {number} nonce Integer that should increment for each new sv on a given payment channel
+   * @return {string} Returns the voucher as a string, or undefined if an error occurred
+   */
+  async createSignedVoucher(pch, amountAttoFil, nonce) {
+    try {
+      ports.postLog(`DEBUG: Lotus.createSignedVoucher: args: pch='${pch}', amountAttoFil='${amountAttoFil}', nonce='${nonce}'`);
+      let voucher = signer.createVoucher(pch, BigInt(0), BigInt(0), `${amountAttoFil}`, BigInt(0), BigInt(nonce), BigInt(0));
+      let signedVoucher = signer.signVoucher(voucher, this.privateKeyBase64);
+      ports.postLog(`DEBUG: Lotus.createSignedVoucher: returning signedVoucher = '${inspect(signedVoucher)}'`);
+      return signedVoucher;
+    } catch (error) {
+      ports.postLog(`ERROR: Lotus.createSignedVoucher: error: ${error.message}`);
+      return undefined
+    }
+  }
+
+  /**
+   * Creates a new payment channel using the local Client wallet as the "From", and
+   * the specified "To" address.
+   * @param  {string} to The "To" address on the payment channel
+   * @return {number} Returns the new PCH's robust address, or undefined if an error occurred
+   */
+  async createPaymentChannel(to, amountAttoFil) {
+    const fromAddr = this.wallet
+    const fromKey = this.privateKeyBase64
+    const toAddr = to
+
+    ports.postLog(`DEBUG: Lotus.createPaymentChannel: [from:${fromAddr}, fromKey:*******************, to:${toAddr}, amount:${amountAttoFil}]`);
+
+    let nonce = await this.getNonce(fromAddr);
+    ports.postLog(`DEBUG: Lotus.createPaymentChannel: nonce=${nonce}`);
+
+    //
+    // Generate the PCH create message
+    //
+    var signedCreateMessage; // TODO:  does this need to be declared out here?
+    try {
+      let create_pymtchan = signer.createPymtChanWithFee(fromAddr, toAddr, `${amountAttoFil}`, nonce, "10000000", "16251176117", "140625002"); // gas limit, fee cap, premium
+      ports.postLog("DEBUG: Lotus.createPaymentChannel: create_pymtchan="+inspect(create_pymtchan))
+      // TODO:  use gas esimator:
+      //create_pymtchan = await filRPC.getGasEstimation(create_pymtchan)
+      signedCreateMessage = JSON.parse(signer.transactionSignLotus(create_pymtchan, fromKey));
+      ports.postLog("DEBUG: Lotus.createPaymentChannel: signedCreateMessage="+inspect(signedCreateMessage))
+    } catch (error) {
+      ports.postLog(`ERROR: Lotus.createPaymentChannel: error creating and signing txn: ${error.message}`);
+      return undefined
     }
 
-    return JSON.parse(signer.transactionSignLotus(message, this.privateKey));
-  }
-
-  async post(method, params = []) {
-    console.log(method, params);
-    const response = await fetch(this.lotusEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.lotusToken}` },
-      body: JSON.stringify({ jsonrpc: '2.0', method, params, id: this.id++ }),
-    });
-
-    const { error, result } = await response.json();
-
-    if (error) {
-      throw error;
+    //
+    // MpoolPush the PCH create message
+    //
+    var msgCid = await this.mpoolPush(signedCreateMessage);
+    //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
+    ports.postLog(`msgCid = ${inspect(msgCid)}`);
+    if (msgCid === undefined) {
+      ports.postLog(`ERROR: Lotus.createPaymentChannel: fatal: pch create msgcid undefined`);
+      return undefined
     }
 
-    return result;
-  }
-
-  async getNextNonce() {
-    const nonce = await this.post('Filecoin.MpoolGetNonce', [this.wallet]);
-    return nonce + 1;
-  }
-
-  async waitForMessage(messageLink) {
-    // FIXME: use websockets instead of pooling
-    let keepPooling = true;
-
-    setTimeout(() => {
-      keepPooling = false;
-    }, 10 * 1000);
-
-    while (keepPooling) {
-      try {
-        return await this.post('Filecoin.ChainGetParentReceipts', [messageLink]);
-      } catch (error) {
-        if (error.message === 'blockstore: block not found') {
-          // try again in a second
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        } else {
-          throw error;
-        }
-      }
+    //
+    // Wait for PCH creation message response
+    //
+    const waitCreateResponseData = await this.stateWaitMsg(msgCid);
+    if (waitCreateResponseData===undefined) {
+      ports.postLog(`ERROR: Lotus.createPaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`);
+      return undefined;
     }
-  }
+  	ports.postLog(`DEBUG: Lotus.createPaymentChannel: response.data.result: ${inspect(waitCreateResponseData.result)}`)
+	  const PCH = waitCreateResponseData.result.ReturnDec.IDAddress
+	  const PCHRobust = waitCreateResponseData.result.ReturnDec.RobustAddress
+  	ports.postLog(`DEBUG: Lotus.createPaymentChannel: PCH Addresses = {id address:${PCH},robust:${PCHRobust}}`)
 
-  async getOrCreatePaymentChannel(to, value) {
-    ports.postLog(`DEBUG: creating Payment Channel [from:${this.wallet}, to:${to}, amount:${value}`);
-
-    return 'address';
-
-    // TODO: recycle existing channel
-
-    // const messageLink = await this.post('Filecoin.MpoolPush', [
-    //   this.signMessage({
-    //     to,
-    //     from: this.wallet,
-    //     value: value.toString(),
-    //     method: methods.init.exec,
-    //     params: {
-    //       CodeCID: codes.paymentChannel,
-    //       ConstructorParams: {
-    //         From: this.wallet,
-    //         To: to,
-    //       },
-    //     },
-    //     gaslimit: 1000000,
-    //     gasprice: '1000',
-    //     nonce: await this.getNextNonce(),
-    //   }),
-    // ]);
-
-    // const receipt = await this.waitForMessage(messageLink);
-    // console.log(receipt);
-
-    // // TODO: get address from receipt
-    // const paymentChannel = 'address';
-
-    // this.paymentChannelsInfo[paymentChannel] = {
-    //   nextLane: 0,
-    //   lanesNextNonce: {},
-    // };
-
-    // return paymentChannel;
-  }
-
-  async allocateLane(paymentChannel) {
-    const lane = this.paymentChannelsInfo[paymentChannel].nextLane++;
-    this.paymentChannelsInfo[paymentChannel].lanesNextNonce[lane] = 0;
-  }
-
-  async createPaymentVoucher(paymentChannel, lane, amount) {
-    const voucher = {
-      Lane: lane,
-      Amount: amount,
-      Nonce: this.paymentChannelsInfo[paymentChannel].lanesNextNonce[lane]++,
+    const paymentChannel = PCHRobust;
+    this.paymentChannelsInfo[paymentChannel] = {
+      idAddr: PCH,
+      robustAddr: PCHRobust,
+      nextLane: 0,   // TODO:  remove if not used anywhere
+      lanesNextNonce: {},  // TODO:  remove if not used anywhere
     };
-
-    // TODO: create voucher cbor as per https://github.com/filecoin-project/specs-actors/blob/master/actors/builtin/paych/cbor_gen.go#L552
-    const voucherCbor = this.cbor(voucher);
-
-    voucher.Signature = signer.transactionSignRaw(voucherCbor, this.privateKey);
-
-    return voucher;
+    ports.postLog(`DEBUG: Lotus.createPaymentChannel: leaving => ${paymentChannel}`);
+    return paymentChannel;
   }
 
-  async checkPaymentVoucherValid(paymentChannel, paymentVoucher) {
-    await this.post('Filecoin.PaychVoucherCheckValid', [paymentChannel, paymentVoucher]);
+  /**
+   * Updates a payment channel with a specified signed voucher.  This is called by Provider.
+   * @param  {string} pch The payment channel to update
+   * TODO: DELETE @param  {string} toAddr The "To" address on the payment channel. This will be the signer of this message.
+   * TODO: DELETE @param  {string} toPrivateKeyBase64 The "To" address private key
+   * @param  {string} signedVoucher The voucher to update the channel with
+   * @return {boolean} Returns true if update succeeds
+   */
+  async updatePaymentChannel(pch, signedVoucher) {
+    const toAddr = this.wallet;
+    const toPrivateKeyBase64 = this.privateKeyBase64;
+    ports.postLog(`DEBUG: Lotus.updatePaymentChannel:\n  pch=${pch}\n  toAddr=${toAddr}\n  toPrivateKeyBase64=*****************\n  signedVoucher=${signedVoucher}`);
+    
+    //
+    // Generate update PCH message
+    //
+    var signedUpdateMessage;  // TODO:  does this need to be declared out here?
+    try {
+      let nonce = await this.getNonce(toAddr);
+      let updatePaychMessage = signer.updatePymtChanWithFee(pch, toAddr, signedVoucher, nonce, "10000000", "16251176117", "140625002") // gas limit, fee cap, premium
+      //ports.postLog(`DEBUG: Lotus.updatePaymentChannel:  updatePaychMessage=${inspect(updatePaychMessage)}`);
+      signedUpdateMessage = JSON.parse(signer.transactionSignLotus(updatePaychMessage, toPrivateKeyBase64));
+    } catch (error) {
+      ports.postLog(`ERROR: Lotus.updatePaymentChannel: error generating Update message: ${error.message}`);
+      return false
+    }
+
+    //
+    // Mpoolpush signed message
+    //
+    var msgCid = await this.mpoolPush(signedUpdateMessage);
+    //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
+    ports.postLog(`DEBUG: Lotus.updatePaymentChannel:  msgCid = ${inspect(msgCid)}`);
+    if (msgCid === undefined) {
+      ports.postLog(`ERROR: Lotus.updatePaymentChannel: fatal: pch update msgcid undefined`);
+      return false
+    }
+
+    //
+    // Wait for PCH update response
+    //
+    const waitUpdateResponseData = await this.stateWaitMsg(msgCid);
+    if (waitUpdateResponseData===undefined) {
+      ports.postLog(`ERROR: Lotus.updatePaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`);
+      return false;
+    }
+  	ports.postLog(`DEBUG: Lotus.updatePaymentChannel: response.data.result: ${inspect(waitUpdateResponseData.result)}`);
+
+    //
+    // Wait for new PCH state
+    //
+    const waitReadPchStateResponseData = await this.stateReadState(pch);
+    if (waitReadPchStateResponseData===undefined) {
+      ports.postLog(`ERROR: Lotus.updatePaymentChannel: fatal: Filecoin.StateReadState returned nothing`);
+      return false;
+    }
+  	ports.postLog(`DEBUG: Lotus.updatePaymentChannel: response.data.result: ${inspect(waitReadPchStateResponseData.result)}`);
+
+    // TODO:  once we have a function to extract the value field from a signed voucher, check here
+    // that it matches 
+    return true;
+  }
+
+  /**
+   * Settles a payment channel.  This is called by Provider.
+   * @param  {string} pch The payment channel to settle
+   */
+  async settlePaymentChannel(pch) {
+    const toAddr = this.wallet;
+    const toPrivateKeyBase64 = this.privateKeyBase64;
+    ports.postLog(`DEBUG: Lotus.settlePaymentChannel:\n  pch=${pch}\n  toAddr=${toAddr}\n  toPrivateKeyBase64=**************`);
+    
+    //
+    // Generate Settle PCH message
+    //
+    var signedSettleMessage;   // TODO:  does this need to be declared out here?
+    try {
+      let nonce = await this.getNonce(toAddr);
+      let settlePaychMessage = signer.settlePymtChanWithFee(pch, toAddr, nonce, "10000000", "16251176117", "140625002") // gas limit, fee cap, premium)
+      signedSettleMessage = JSON.parse(signer.transactionSignLotus(settlePaychMessage, toPrivateKeyBase64));
+    } catch (error) {
+      ports.postLog(`ERROR: Lotus.settlePaymentChannel: error generating Settle msg: ${error.message}`);
+      return;
+    }
+
+    //
+    // Mpoolpush signed message
+    //
+    var msgCid = await this.mpoolPush(signedSettleMessage);
+    //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
+    ports.postLog(`DEBUG: Lotus.settlePaymentChannel:  msgCid = ${inspect(msgCid)}`);
+    if (msgCid === undefined) {
+      ports.postLog(`ERROR: Lotus.settlePaymentChannel: fatal: pch Settle msgcid undefined`);
+      return;
+    }
+
+    //
+    // Wait for PCH Settle response
+    //
+    const waitSettleResponseData = await this.stateWaitMsg(msgCid);
+    if (waitSettleResponseData===undefined) {
+      ports.postLog(`ERROR: Lotus.settlePaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`);
+      return;
+    }
+  	ports.postLog(`DEBUG: Lotus.settlePaymentChannel: response.data.result: ${inspect(waitSettleResponseData.result)}`);
+
+    //
+    // Wait for new PCH state
+    //
+    const waitReadPchStateResponseData = await this.stateReadState(pch);
+    if (waitReadPchStateResponseData===undefined) {
+      ports.postLog(`ERROR: Lotus.settlePaymentChannel: fatal: Filecoin.StateReadState returned nothing`);
+      return;
+    }
+  	ports.postLog(`DEBUG: leaving Lotus.settlePaymentChannel => response.data.result: ${inspect(waitReadPchStateResponseData.result)}`);
+  }
+
+  /**
+   * Collects a payment channel.  This is normally called by Provider.
+   * @param  {string} pch The payment channel to settle
+   */
+  async collectPaymentChannel(pch) {
+    const toAddr = this.wallet;
+    const toPrivateKeyBase64 = this.privateKeyBase64;
+    ports.postLog(`DEBUG: Lotus.collectPaymentChannel:\n  pch=${pch}\n  toAddr=${toAddr}\n  toPrivateKeyBase64=*************`);
+    
+    //
+    // Generate Collect PCH message
+    //
+    var signedCollectMessage;   // TODO:  does this need to be declared out here?
+    try {
+      let nonce = await this.getNonce(toAddr);
+      let collectPaychMessage = signer.collectPymtChanWithFee(pch, toAddr, nonce, "10000000", "16251176117", "140625002") // gas limit, fee cap, premium
+      signedCollectMessage = JSON.parse(signer.transactionSignLotus(collectPaychMessage, toPrivateKeyBase64));
+    } catch (error) {
+      ports.postLog(`ERROR: Lotus.collectPaymentChannel: error generating Collect msg: ${error.message}`);
+      return;
+    }
+
+    //
+    // Mpoolpush signed message
+    //
+    var msgCid = await this.mpoolPush(signedCollectMessage);
+    //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
+    ports.postLog(`DEBUG: Lotus.collectPaymentChannel:  msgCid = ${inspect(msgCid)}`);
+    if (msgCid === undefined) {
+      ports.postLog(`ERROR: Lotus.collectPaymentChannel: fatal: pch Collect msgcid undefined`);
+      return;
+    }
+
+    //
+    // Wait for PCH Collect response
+    //
+    const waitCollectResponseData = await this.stateWaitMsg(msgCid);
+    if (waitCollectResponseData===undefined) {
+      ports.postLog(`ERROR: Lotus.collectPaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`);
+      return;
+    }
+  	ports.postLog(`DEBUG: Lotus.collectPaymentChannel: response.data.result: ${inspect(waitCollectResponseData.result)}`);
+
+    //
+    // Wait for new PCH state
+    //
+    const waitReadPchStateResponseData = await this.stateReadState(pch);
+    if (waitReadPchStateResponseData===undefined) {
+      ports.postLog(`ERROR: Lotus.collectPaymentChannel: fatal: Filecoin.StateReadState returned nothing`);
+      return;
+    }
+  	ports.postLog(`DEBUG: Lotus.collectPaymentChannel: response.data.result: ${inspect(waitReadPchStateResponseData.result)}`);
+  }
+
+  async checkPaymentVoucherValid(signedVoucher, expectedAmountAttoFil, fromWalletAddr) {
+    ports.postLog(`DEBUG: Lotus.checkPaymentVoucherValid: args = signedVoucher=${signedVoucher},expectedAmountAttoFil=${expectedAmountAttoFil},fromWalletAddr=${fromWalletAddr}`);
+    return signer.verifyVoucherSignature(signedVoucher, fromWalletAddr);
   }
 
   closePaymentChannel(paymentChannel) {

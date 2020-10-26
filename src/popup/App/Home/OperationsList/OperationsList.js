@@ -5,6 +5,7 @@ import Label from 'src/popup/components/Label';
 import Table from 'src/popup/components/Table';
 import TableCell from 'src/popup/components/TableCell';
 import TableRow from 'src/popup/components/TableRow';
+import IconButton from 'src/popup/components/IconButton';
 import { operationsQueue } from 'src/shared/OperationsQueue';
 
 const renderStatus = ({ status, invokeAt }) => {
@@ -51,14 +52,16 @@ const renderOpsTable = (ops) => {
           })
           .map((op) => (
             <TableRow key={op.id}>
-              <TableCell width="250px">{op.label}</TableCell>
-              <TableCell width="80px" title={op.invokeAt?.toISOString()}>
+              <TableCell width="500px">{op.label}</TableCell>
+              <TableCell width="160px" title={op.invokeAt?.toISOString()}>
                 {renderStatus(op)}
               </TableCell>
               <TableCell>{op.output || '-'}</TableCell>
               {['done', 'failed'].includes(op.status) ? (
                 <TableCell>
-                  <button onClick={() => dismiss(op)}>dismiss</button>
+                  <div className="flex">
+                  <IconButton icon="trash" onClick={() => dismiss(op)} danger /> &nbsp; &nbsp;
+                  </div>
                 </TableCell>
               ) : (
                 <>&nbsp;</>
@@ -85,7 +88,7 @@ function OperationsList(props) {
 
   return (
     <Card {...props}>
-      <Label className="p-4 pb-2">Operations</Label>
+      <Label className="p-4 pb-2">Pending Operations</Label>
 
       {renderOpsTable(ops)}
     </Card>

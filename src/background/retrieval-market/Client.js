@@ -4,6 +4,7 @@ import ports from 'src/background/ports';
 import dealStatuses from 'src/shared/dealStatuses';
 import jsonStream from 'src/shared/jsonStream';
 import protocols from 'src/shared/protocols';
+import inspect from 'browser-util-inspect';
 
 class Client {
   static async create(...args) {
@@ -44,14 +45,15 @@ class Client {
    * Retrieves a file
    * @param  {string} cid CID of the file to retrieve
    * @param  {object} dealParams Deal parameters
-   * @param  {string} dealParams.wallet Deal wallet
+   * @param  {string} dealParams.wallet Server wallet (PCH "To" wallet)
    * @param  {number} dealParams.size File total size
    * @param  {string} dealParams.pricePerByte Price to construct a BigNumber
    * @param  {string} peerMultiaddr Address from where to get the file from
-   * @param  {string} peerWallet Wallet of the client requesting the file
+   * @param  {string} peerWallet Client wallet addr (PCH "From" wallet)
    */
   async retrieve(cid, dealParams, peerMultiaddr, peerWallet) {
     ports.postLog('DEBUG: Client.retrieve()');
+    ports.postLog(`MIKE: retrieve called with\n  cid='${cid}'\n  dealParams='${inspect(dealParams)}'\n  peerMultiaddr=${peerMultiaddr}\n  peerWallet=${peerWallet}`);
     ports.postLog(`DEBUG: dialing peer ${peerMultiaddr}`);
     const { stream } = await this.node.dialProtocol(peerMultiaddr, protocols.filecoinRetrieval);
 
@@ -60,6 +62,8 @@ class Client {
 
     const importerSink = pushable();
 
+    // TODO:  should dealId be random?  Maybe, but check this
+    // TODO:  rand % max int  eliminate Math.floor
     const dealId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
     this.ongoingDeals[dealId] = {
       id: dealId,
@@ -74,6 +78,7 @@ class Client {
       sizePaid: 0,
       importerSink,
       importer: this.datastore.putContent(importerSink),
+      voucherNonce: 1,
     };
 
     await this.sendDealProposal({ dealId });
@@ -83,7 +88,7 @@ class Client {
   handleMessage = async (source) => {
     for await (const message of source) {
       try {
-        ports.postLog(`DEBUG: Client.handleMessage(): handling protocol message with status: ${message.status}`);
+        ports.postLog(`DEBUG: Client.handleMessage(): message: ${inspect(message)}`);
         const deal = this.ongoingDeals[message.dealId];
 
         if (!deal) {
@@ -104,7 +109,7 @@ class Client {
             deal.status = dealStatuses.ongoing;
             deal.customStatus = undefined;
             await this.receiveBlocks(message);
-            await this.sendPayment(message);
+            await this.sendPayment(message, false);
             break;
           }
 
@@ -114,7 +119,7 @@ class Client {
             deal.customStatus = undefined;
             await this.receiveBlocks(message);
             await this.finishImport(message);
-            await this.sendLastPayment(message);
+            await this.sendPayment(message, true);
             break;
           }
 
@@ -146,6 +151,7 @@ class Client {
       dealId,
       status: dealStatuses.awaitingAcceptance,
       cid: deal.cid,
+      clientWalletAddr: this.lotus.wallet,
       params: deal.params,
     });
 
@@ -157,14 +163,21 @@ class Client {
     ports.postLog(`DEBUG: Client.setupPaymentChannel(): setting up payment channel ${dealId}`);
     const deal = this.ongoingDeals[dealId];
 
-    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
-    // deal.paymentChannel = await this.lotus.getOrCreatePaymentChannel(
-    //   deal.params.wallet,
-    //   deal.params.size * deal.params.pricePerByte,
-    // );
-    // deal.lane = await this.lotus.allocateLane(deal.paymentChannel);
+    const pchAmount = deal.params.size * deal.params.pricePerByte;
+    const toAddr = deal.params.wallet
 
-    ports.postLog(`DEBUG: Client.setupPaymentChannel(): sending payment channel ready ${dealId}`);
+    deal.customStatus = "Creating payment channel";
+
+    ports.postLog(`DEBUG: Client.setupPaymentChannel(): PCH creation parameters:\n  pchAmount='${pchAmount}'\n  toAddr='${toAddr}'`);
+
+    //await this.lotus.keyRecoverLogMsg();  // testing only
+    
+    deal.paymentChannel = await this.lotus.createPaymentChannel(toAddr, pchAmount);
+
+    // Not using lanes currently
+    deal.Lane = 0;
+
+    ports.postLog(`DEBUG: Client.setupPaymentChannel(): sending payment channel ready (pchAddr='${deal.paymentChannel}') for dealId='${dealId}'`);
     deal.sink.push({
       dealId,
       status: dealStatuses.paymentChannelReady,
@@ -172,11 +185,14 @@ class Client {
 
     deal.status = dealStatuses.paymentChannelReady;
     deal.customStatus = undefined;
+
+    ports.postLog(`DEBUG: Client.setupPaymentChannel(): done`);
   }
 
   async receiveBlocks({ dealId, blocks }) {
-    ports.postLog(`DEBUG: Client.setupReceieveBlocks(): received ${blocks.length} blocks deal id: ${dealId}`);
+    ports.postLog(`DEBUG: Client.receiveBlocks(): received ${blocks.length} blocks deal id: ${dealId}`);
     const deal = this.ongoingDeals[dealId];
+    deal.customStatus = "Receiving data";
 
     for (const block of blocks) {
       deal.importerSink.push(block.data);
@@ -193,52 +209,36 @@ class Client {
     await deal.importer;
   }
 
-  async sendPayment({ dealId }) {
-    ports.postLog(`DEBUG: Client.sendPayment(): sending payment ${dealId}`);
+  async sendPayment({ dealId }, isLastVoucher) {
+    ports.postLog(`DEBUG: Client.sendPayment(): sending payment ${dealId} (isLastVoucher=${isLastVoucher})`);
     const deal = this.ongoingDeals[dealId];
 
-    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
-    // const amount = (deal.sizeReceived - deal.sizePaid) * deal.params.pricePerByte;
-    // const paymentVoucher = await this.lotus.createPaymentVoucher(
-    //   deal.paymentChannel,
-    //   deal.lane,
-    //   amount,
-    // );
+    const amount = deal.sizeReceived * deal.params.pricePerByte;
+    const nonce = deal.voucherNonce++;
+    const sv = await this.lotus.createSignedVoucher(deal.paymentChannel,amount,nonce);
+    ports.postLog(`DEBUG: Client.sendPayment(): sv = '${sv}'`);
+
+    const newDealStatus = isLastVoucher ? dealStatuses.lastPaymentSent : dealStatuses.paymentSent;
+
+    deal.customStatus = "Sent signed voucher";
 
     deal.sink.push({
       dealId,
-      status: dealStatuses.paymentSent,
-      // paymentChannel: deal.paymentChannel,
-      // paymentVoucher,
-    });
-  }
-
-  async sendLastPayment({ dealId }) {
-    ports.postLog(`DEBUG: Client.sendLastPayment(): sending last payment ${dealId}`);
-    const deal = this.ongoingDeals[dealId];
-
-    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
-    // const amount = (deal.params.size - deal.sizePaid) * deal.params.pricePerByte;
-    // const paymentVoucher = await this.lotus.createPaymentVoucher(
-    //   deal.paymentChannel,
-    //   deal.lane,
-    //   amount,
-    // );
-
-    deal.sink.push({
-      dealId,
-      status: dealStatuses.lastPaymentSent,
-      // paymentChannel: deal.paymentChannel,
-      // paymentVoucher,
+      status: newDealStatus,
+      paymentChannel: deal.paymentChannel,
+      signedVoucher: sv,
     });
   }
 
   async closeDeal({ dealId }) {
     ports.postLog(`DEBUG: Client.closeDeal: closing deal ${dealId}`);
     const deal = this.ongoingDeals[dealId];
-    // TODO: test it after they fix https://github.com/Zondax/filecoin-signing-tools/issues/200
+    deal.customStatus = "Enqueueing channel collection and disconnecting";
+    // TODO:
     // this.lotus.closePaymentChannel(deal.paymentChannel);
     deal.sink.end();
+    // TODO:  pend an operation to call Collect on the channel when cron class is available
+    // TODO:  stopgap solution:  window.setTimeout() to try to ensure channel Collect
     delete this.ongoingDeals[dealId];
     await this.cidReceivedCallback(deal.cid, deal.params.size);
     ports.postInboundDeals(this.ongoingDeals);

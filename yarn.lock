@@ -2237,10 +2237,10 @@
   resolved "https://registry.yarnpkg.com/@xtuc/long/-/long-4.2.2.tgz#d291c6a4e97989b5c61d9acf396ae4fe133a718d"
   integrity sha512-NuHqBY1PB/D8xU6s/thBgOAiAP7HOYDQ32+BFZILJ8ivkUkAHQnWfn6WhL79Owj1qmUnoN/YPhktdIoucipkAQ==
 
-"@zondax/filecoin-signing-tools@^0.10.0":
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/@zondax/filecoin-signing-tools/-/filecoin-signing-tools-0.10.0.tgz#b8b7a87347ba0e4fc4841653bf685a4555fb64d2"
-  integrity sha512-PCP4zdOkYkBs5vkzy0rzkExi/v3qtm2IGLuYKMou/C4u7jFhaV0mGAA40Dbryv5SjIiyuFseGmXtQJUOO2XRWw==
+"@zondax/filecoin-signing-tools@^0.11.0":
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/@zondax/filecoin-signing-tools/-/filecoin-signing-tools-0.11.0.tgz#f49f5b50651955ca107dc61a234fe5baa2d503b3"
+  integrity sha512-ORs17gXO2YF12ZYQrnPWYF/cnoXaA9BHussSqJ3J/xaULsO6Lc7cYlqe/5f52wYlXB+s1IbWjfjsRtivS+rYkQ==
   dependencies:
     base32-decode "^1.0.0"
     base32-encode "^1.1.1"
