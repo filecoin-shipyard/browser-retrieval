@@ -29,13 +29,13 @@ const tabs = [
     component: Logs,
   },
   {
-    label: 'Upload',
+    label: 'Import File',
     component: Upload,
   },
-  {
-    label: 'Automation',
-    component: Editor,
-  },
+//  {
+//    label: 'Automation',
+//    component: Editor,
+//  },
 ];
 
 function App() {
