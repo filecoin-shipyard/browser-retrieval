@@ -8,6 +8,13 @@
     "@babel/plugin-transform-runtime": "^7.12.1",
     "@babel/runtime": "^7.12.5",
     "@zondax/filecoin-signing-tools": "^0.12.0",
+    "@testing-library/jest-dom": "^5.11.4",
+    "@testing-library/react": "^11.1.0",
+    "@testing-library/user-event": "^12.1.10",
+    "@types/jest": "^26.0.15",
+    "@types/node": "^12.0.0",
+    "@types/react": "^16.9.53",
+    "@types/react-dom": "^16.9.8",
     "autoprefixer": "^9.8.4",
     "axios": "^0.21.0",
     "browser-util-inspect": "^0.2.0",
@@ -53,7 +60,9 @@
     "socket.io-client": "^2",
     "tailwindcss": "^1.9.6",
     "wasm-loader": "^1.3.0",
-    "webpack-cli": "^4.2.0"
+    "webpack-cli": "^4.2.0",
+    "typescript": "^4.0.3",
+    "web-vitals": "^0.2.4"
   },
   "devDependencies": {
     "@babel/plugin-proposal-optional-chaining": "^7.12.1",
@@ -63,20 +72,9 @@
     "typescript": "^4.0.5"
   },
   "scripts": {
-    "build:popup:css": "cross-env NODE_ENV=production postcss src/popup/styles/tailwind.css -o src/popup/styles/tailwind.generated.css",
-    "build:popup:js": "cross-env INLINE_RUNTIME_CHUNK=false react-app-rewired build",
-    "build:popup": "yarn build:popup:css && yarn build:popup:js",
-    "build:background": "cross-env NODE_ENV=development webpack",
-    "build": "yarn build:popup && yarn build:background",
-    "build:debug": "cross-env DEBUG=true yarn build",
-    "watch": "npm-watch build",
-    "lint": "eslint ./src",
-    "## LOCAL ##": "",
-    "build:local": "yarn build:popup:local && yarn build:background:local",
-    "build:js:local": "yarn build:popup:js && yarn build:background:local",
-    "build:background:local": "cross-env ENV=local yarn build:background",
-    "build:popup:local": "cross-env ENV=local yarn build:popup",
-    "watch:local": "npm-watch build:js:local"
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test"
   },
   "watch": {
     "build": "src/{popup,background,shared}/**/*.js",
@@ -84,7 +82,10 @@
     "build:js:local": "src/{background,popup,shared}/**/*.js"
   },
   "eslintConfig": {
-    "extends": "react-app"
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
   },
   "browserslist": {
     "production": [
