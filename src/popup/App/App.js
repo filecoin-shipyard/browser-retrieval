@@ -14,6 +14,7 @@ import Options from './Options';
 import PeersIndicator from './PeersIndicator';
 import Toast from './Toast';
 import Upload from './Upload';
+import WalletModal from 'src/popup/components/WalletModal';
 
 const tabs = [
   {
@@ -60,6 +61,7 @@ function App() {
           <PeersIndicator />
         </li>
       </Tabs>
+      {options.showWalletModal && <WalletModal/>}
     </>
   );
 }

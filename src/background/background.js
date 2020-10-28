@@ -1,6 +1,7 @@
 /* global chrome */
 
 import getOptions from '../shared/getOptions.js';
+import setOptions from 'src/shared/setOptions';
 import onOptionsChanged from '../shared/onOptionsChanged.js';
 import messageTypes from '../shared/messageTypes.js';
 import ports from './ports.js';
@@ -78,15 +79,15 @@ onOptionsChanged(async changes => {
 });
 
 async function startNode() {
+  const options = await getOptions();
   try {
-    const options = await getOptions();
     node = await Node.create(options);
   } catch (error) {
     if (error === 'Error: `Invalid Key Length`') {
-      const emsg = `ERROR: start node failed: ${error}`;
-      ports.postLog(emsg);
-      ports.postLog('INFO: fix your lotus config on the Options page');
-      ports.alertError(emsg);
+      await setOptions({
+        ...options,
+        showWalletModal: true,
+      });
     } else {
       console.error(error);
 
