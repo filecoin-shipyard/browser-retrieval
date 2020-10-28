@@ -1,4 +1,5 @@
 /* global BigInt */
+import { Buffer } from 'buffer';
 import * as signer from '@zondax/filecoin-signing-tools';  // TODO:  rename to signer to filecoin_signer
 import onOptionsChanged from 'src/shared/onOptionsChanged';
 import getOptions from 'src/shared/getOptions';
@@ -88,7 +89,7 @@ class Lotus {
     //ports.postLog(`DEBUG: Lotus.getNonce => ${nonce}`);
 		return nonce;
   }
-  
+
   /**
    * Push a message into the mpool with Filecoin.MpoolPush
    * @param  {string} signedMessage A signed message to push into the mpool
@@ -273,7 +274,7 @@ class Lotus {
     const toAddr = this.wallet;
     const toPrivateKeyBase64 = this.privateKeyBase64;
     ports.postLog(`DEBUG: Lotus.updatePaymentChannel:\n  pch=${pch}\n  toAddr=${toAddr}\n  toPrivateKeyBase64=*****************\n  signedVoucher=${signedVoucher}`);
-    
+
     //
     // Generate update PCH message
     //
@@ -320,7 +321,7 @@ class Lotus {
   	ports.postLog(`DEBUG: Lotus.updatePaymentChannel: response.data.result: ${inspect(waitReadPchStateResponseData.result)}`);
 
     // TODO:  once we have a function to extract the value field from a signed voucher, check here
-    // that it matches 
+    // that it matches
     return true;
   }
 
@@ -332,7 +333,7 @@ class Lotus {
     const toAddr = this.wallet;
     const toPrivateKeyBase64 = this.privateKeyBase64;
     ports.postLog(`DEBUG: Lotus.settlePaymentChannel:\n  pch=${pch}\n  toAddr=${toAddr}\n  toPrivateKeyBase64=**************`);
-    
+
     //
     // Generate Settle PCH message
     //
@@ -386,7 +387,7 @@ class Lotus {
     const toAddr = this.wallet;
     const toPrivateKeyBase64 = this.privateKeyBase64;
     ports.postLog(`DEBUG: Lotus.collectPaymentChannel:\n  pch=${pch}\n  toAddr=${toAddr}\n  toPrivateKeyBase64=*************`);
-    
+
     //
     // Generate Collect PCH message
     //
@@ -440,6 +441,29 @@ class Lotus {
   closePaymentChannel(paymentChannel) {
     // TODO: actually close payment channel
     delete this.paymentChannelsInfo[paymentChannel];
+  }
+
+  decodeSignedVoucher(signedVoucher) {
+    const buffer = Buffer.from(signedVoucher, 'base64');
+    const decoded = importDagCBOR.util.deserialize(buffer);
+
+    if (decoded.length !== 11) {
+      return  'Deserialize Buffer does not have correct length';
+    }
+
+    return {
+      channelAddr: decoded[0].toString('hex'),
+      timeLockMin: decoded[1],
+      timeLockMax: decoded[2],
+      secretPreimage: decoded[3].toString('hex'),
+      extra: decoded[4],
+      lane: decoded[5],
+      nonce: decoded[6],
+      amount: parseInt(decoded[7].toString('hex'), 16),
+      minSettleHeight: decoded[8],
+      merges: decoded[9],
+      signature: decoded[10].toString('hex')
+    }
   }
 }
 
