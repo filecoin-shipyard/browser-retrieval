@@ -465,6 +465,61 @@ class Lotus {
       signature: decoded[10].toString('hex')
     }
   }
+
+  async sendFunds(amount, toWallet) {
+    ports.postLog(`DEBUG: lotus.sendFunds(): sending ${amount} to ${toWallet}`);
+
+    //
+    // Get nonce
+    //
+    let nonce = await this.getNonce(this.wallet);
+    nonce = nonce.result;
+    ports.postLog(nonce);
+    ports.postLog(`DEBUG: lotus.sendFunds(): get nonce ${nonce}`);
+
+    //
+    //  Sign transaction
+    //
+    const unsignedMessage = {
+      "to": toWallet,
+      "from": this.wallet,
+      "nonce": nonce,
+      "value": amount,
+      "gasprice": "2500", // TODO: get gas price
+      "gaslimit": 25000, // TODO: get gas limit
+      "method": 4,
+      "params": ""
+    };
+    
+    ports.postLog("DEBUG: lotus.sendFunds(): About to call signer.transactionSignLotus():");
+    signer.transactionSignLotus(unsignedMessage,this.privateKey);
+    ports.postLog("DEBUG: lotus.sendFunds(): Done calling signer.transactionSignLotus()");
+    ports.postLog(`DEBUG: lotus.sendFunds(): unsignedMessage = ${JSON.stringify(unsignedMessage, 0, 4)}`);
+    
+    let signedMessage = signer.transactionSign(unsignedMessage, this.privateKey);
+    ports.postLog(`DEBUG: lotus.sendFunds(): signedMessage = ${JSON.stringify(signedMessage, 0, 4)}`);
+
+    //
+    // Mpoolpush signed message
+    //
+    var msgCid = await this.mpoolPush(signedMessage);
+    //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
+    ports.postLog(`DEBUG: Lotus.sendFunds:  msgCid = ${inspect(msgCid)}`);
+    if (msgCid === undefined) {
+      ports.postLog(`ERROR: Lotus.sendFunds: fatal: pch update msgcid undefined`);
+      return false;
+    }
+
+    //
+    // Wait for PCH update response
+    //
+    const waitUpdateResponseData = await this.stateWaitMsg(msgCid);
+    if (waitUpdateResponseData === undefined) {
+      ports.postLog(`ERROR: Lotus.sendFunds: fatal: Filecoin.StateWaitMsg returned nothing`);
+      return false;
+    }
+    ports.postLog(`DEBUG: Lotus.sendFunds: response.data.result: ${inspect(waitUpdateResponseData.result)}`);
+  }
 }
 
 export default Lotus;
