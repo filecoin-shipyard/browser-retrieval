@@ -31,7 +31,10 @@ const defaultValues = {
       'let price = "5000"; // total price for the CID (Price/byte AttoFIL)\n' +
       'this.updatePrice(cid, price);',
   unsaved: false,
-  unsavedForms: {lotus: false, price: false}
+  unsavedForms: {lotus: false, price: false},
+  showWalletModal: false,
+  walletPlaceholder: 'f156e3l2vwd5wi5jwdrd6gdg4y7t2yknq6see7xbq',
+  privateKeyPlaceholder: 'ciiFbmF7F7mrVs5E/IT8TV63PdFPLrRs9R/Cc3vri2I='
 };
 
 export const optionsKeys = Object.keys(defaultValues);
