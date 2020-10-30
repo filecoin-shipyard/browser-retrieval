@@ -1,7 +1,9 @@
 import socketIO from 'socket.io-client';
+import getOptions from 'src/shared/getOptions.js';
 
 import { messageRequestTypes, messageResponseTypes, messages } from '../../shared/messages';
 import { sha256 } from '../../shared/sha256';
+import ports from '../ports';
 
 export default class SocketClient {
   socket;
@@ -42,18 +44,28 @@ export default class SocketClient {
   }
 
   _handleCidAvailability() {
-    this.socket.on(messageResponseTypes.cidAvailability, (message) => {
+    this.socket.on(messageResponseTypes.cidAvailability, async (message) => {
       console.log(`Got ${messageResponseTypes.cidAvailability} message:`, message);
 
       this.clientToken = message.client_token;
 
       if (!message.available) {
-        // TODO: give up
+        this.socket.disconnect();
+
+        ports.alertError(`CID not available: ${message.cid}`);
 
         return;
       }
 
-      this.socket.emit(messageRequestTypes.fundsConfirmed, messages.createFundsSent({ clientToken: this.clientToken }));
+      // TODO: send funds
+      //
+
+      const options = await getOptions();
+
+      this.socket.emit(
+        messageRequestTypes.fundsConfirmed,
+        messages.createFundsSent({ clientToken: this.clientToken, paymentWallet: options.wallet }),
+      );
     });
   }
 

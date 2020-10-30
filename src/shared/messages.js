@@ -28,11 +28,11 @@ export const messages = {
     };
   },
 
-  createFundsSent({ clientToken }) {
+  createFundsSent({ clientToken, paymentWallet }) {
     return {
       message: messageRequestTypes.fundsConfirmed,
       client_token: clientToken,
-      payment_wallet: 'f1stoztiw5sxeyvezjttq5727wfdkooweskpue5fa',
+      payment_wallet: paymentWallet,
     };
   },
 
