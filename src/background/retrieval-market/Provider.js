@@ -199,7 +199,7 @@ class Provider {
     ports.postLog('DEBUG: Provider.sendBlocks()');
     ports.postLog(`DEBUG: sending blocks ${dealId}`);
     const deal = this.ongoingDeals[dealId];
-    deal.customStatus = "Sending data";
+    this.updateCustomStatus("Sending data", deal);
     const entry = await this.datastore.get(deal.cid);
 
     const blocks = [];
@@ -226,6 +226,11 @@ class Provider {
     ports.postOutboundDeals(this.ongoingDeals);
   }
 
+  updateCustomStatus(str, deal) {
+    deal.customStatus = str;
+    ports.postOutboundDeals(this.ongoingDeals);
+  }
+
   /**
    * Checks the validity of a signed payment voucher, including verifying the signature and the amount.
    * @param  {number} dealId Deal Id to find this deal in this.ongoingDeals[]
@@ -237,7 +242,7 @@ class Provider {
     ports.postLog(`DEBUG: Provider.checkPaymentVoucherValid: arguments = dealId=${dealId},paymentChannel=${paymentChannel},signedVoucher=${signedVoucher}`);
 
     const deal = this.ongoingDeals[dealId];
-    deal.customStatus = "Verifying payment voucher";
+    this.updateCustomStatus("Verifying payment voucher", deal);
     const clientWalletAddr = deal.clientWalletAddr;
     ports.postLog(`DEBUG: Provider.checkPaymentVoucherValid: clientWalletAddr=${clientWalletAddr}`);
 
@@ -261,7 +266,8 @@ class Provider {
     ports.postLog("DEBUG: Provider.submitPaymentVoucher()")
     ports.postLog(`DEBUG: Provider.submitPaymentVoucher: submitting voucher dealId=${dealId},paymentChannel=${paymentChannel},signedVoucher=${signedVoucher}`);
     const deal = this.ongoingDeals[dealId];
-    deal.customStatus = "Updating payment channel with voucher";
+    this.updateCustomStatus("Updating payment channel with voucher", deal);
+    
     const isUpdateSuccessful = await this.lotus.updatePaymentChannel(paymentChannel, signedVoucher);
     ports.postLog(`DEBUG: Provider.submitPaymentVoucher: isUpdateSuccessful=${isUpdateSuccessful}`);
     if (!isUpdateSuccessful) {
@@ -280,9 +286,9 @@ class Provider {
     const deal = this.ongoingDeals[dealId];
     const paymentChannel = deal.paymentChannel;
     ports.postLog(`DEBUG: Provider.closeDeal: dealId=${dealId}, paymentChannel=${paymentChannel}`);
-    deal.customStatus = "Settling payment channel";
+    this.updateCustomStatus("Settling payment channel", deal);
     await this.lotus.settlePaymentChannel(paymentChannel);
-    deal.customStatus = "Enqueueing channel collection (12 hour delay)";
+    this.updateCustomStatus("Enqueueing channel collection", deal);
     await this.pendCollectOperation(dealId, paymentChannel);
     delete this.ongoingDeals[dealId];
     ports.postOutboundDeals(this.ongoingDeals);
