@@ -465,6 +465,95 @@ class Lotus {
       signature: decoded[10].toString('hex')
     }
   }
+
+  /**
+   * Sends funds to a wallet address from this.wallet.
+   * @param   {number} amountAttoFil How many attoFil to send.
+   * @param   {string} toWallet Address of "To" (destination) wallet.
+   * @returns {boolean} True if Send message was mined successfully.
+   */
+  async sendFunds(amountAttoFil, toWallet) {
+    // To test this function, but this block of code Node.query (above first line) and query any CID.
+    // Watch the Log and your test wallet balances before and after.  The amount is 0.01 FIL.
+    // 
+    //        // TEMP - DO NOT MERGE
+    //        ports.postLog(`DEBUG: ----------- Lotus.sendFunds Test -------------- `);
+    //        await this.lotus.sendFunds(10000000000000000,"f1d4jcvewwyiuepgccm4k5ng5lqhobj77eplj33zy");
+    //        ports.postLog(`DEBUG: ----------- Lotus.sendFunds End -------------- `);
+    //        // END - DO NOT MERGE
+    //
+    ports.postLog(`DEBUG: lotus.sendFunds(): sending ${amountAttoFil} to ${toWallet}`);
+
+    try {
+      //
+      // Get nonce
+      //
+      let nonce = await this.getNonce(this.wallet);
+      //nonce = (nonce.result==undefined) ? nonce : nonce.result;
+      ports.postLog(`DEBUG: lotus.sendFunds(): nonce: ${nonce}`);
+
+      //
+      //  Sign transaction
+      //
+      const unsignedMessage = {
+        "To": toWallet,
+        "From": this.wallet,
+        "Nonce": nonce,
+        "Value": `${amountAttoFil}`,
+        "Method": 0,
+        "Params": "",
+        "GasLimit": 10000000,        // TODO: use gas estimator
+        "GasFeeCap": "16251176117",  // TODO: use gas estimator
+        "GasPremium": "140625002",   // TODO: use gas estimator
+      };
+      let unsignedMessageJson = JSON.stringify(unsignedMessage, 0, 4);
+      ports.postLog(`DEBUG: lotus.sendFunds(): unsignedMessageJson = ${unsignedMessageJson}`);
+
+      let signedMessage = JSON.parse(signer.transactionSignLotus(unsignedMessage,this.privateKeyBase64));
+      ports.postLog(`DEBUG: lotus.sendFunds(): signedMessage = ${inspect(signedMessage)}`);
+
+      //
+      // Mpoolpush signed Send message
+      //
+      var msgCid = await this.mpoolPush(signedMessage);
+      //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
+      ports.postLog(`DEBUG: Lotus.sendFunds:  msgCid = ${inspect(msgCid)}`);
+      if (msgCid === undefined) {
+        ports.postLog(`ERROR: Lotus.sendFunds: fatal: send funds MPoolPush response was 'msgCid=${msgCid}'`);
+        return false;
+      }
+
+      //
+      // Wait for Send message to be mined
+      //
+      const waitSendResponse = await this.stateWaitMsg(msgCid);
+      if (waitSendResponse === undefined) {
+        ports.postLog(`ERROR: Lotus.sendFunds: fatal: Filecoin.StateWaitMsg returned undefined`);
+        return false;
+      }
+      ports.postLog(`DEBUG: Lotus.sendFunds: response.data: ${inspect(waitSendResponse)}`);
+
+      //
+      // Verify message receipt
+      //
+      const sendMsgResult = waitSendResponse.result;
+      //ports.postLog(`DEBUG: Lotus.sendFunds: sendMsgResult=${inspect(sendMsgResult)}`);
+      const sendMsgReceipt = sendMsgResult.Receipt;
+      //ports.postLog(`DEBUG: Lotus.sendFunds: sendMsgReceipt=${inspect(sendMsgReceipt)}`);
+      //ports.postLog(`DEBUG: Lotus.sendFunds: receipt components:\n  { ExitCode: '${sendMsgReceipt.ExitCode}', Return: '${sendMsgReceipt.Return}', GasUsed: '${sendMsgReceipt.GasUsed}' }`);
+      if (sendMsgReceipt.ExitCode===0) {
+        ports.postLog(`DEBUG: Lotus.sendFunds: receipt indicates no errors ==> returning true`);
+        return true;
+      } else {
+        ports.postLog(`ERROR: Lotus.sendFunds: failed with ExitCode=${sendMsgReceipt.ExitCode}, Return: '${sendMsgReceipt.Return}' ==> returning false`);
+        return false;
+      }
+
+    } catch (error) {
+      ports.postLog(`ERROR: lotus.sendFunds(): caught exception: ${inspect(error)}`);
+      return false;
+    }
+  }
 }
 
 export default Lotus;
