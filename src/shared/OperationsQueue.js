@@ -126,17 +126,22 @@ class OperationsQueue {
 
   async initializeActionsQueue() {
     ports.postLog('DEBUG: OperationsQueue.initializeActionsQueue()');
-    this.lotus = await Lotus.create();
 
-    while (true) {
-      for (const op of this.operations) {
-        if (op.invokeAt && op.invokeAt <= new Date()) {
-          ports.postLog(`DEBUG: OperationsQueue.runOperation(): ${op.label}`);
-          this.runOperation(op);
+    try {
+      this.lotus = await Lotus.create();
+
+      while (true) {
+        for (const op of this.operations) {
+          if (op.invokeAt && op.invokeAt <= new Date()) {
+            ports.postLog(`DEBUG: OperationsQueue.runOperation(): ${op.label}`);
+            this.runOperation(op);
+          }
         }
-      }
 
-      await new Promise((r) => setTimeout(r, this.listenInterval));
+        await new Promise((r) => setTimeout(r, this.listenInterval));
+      }
+    } catch (err) {
+      ports.postLog('ERROR: Lotus create failed in initializeActionsQueue function');
     }
   }
 
