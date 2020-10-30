@@ -10,6 +10,7 @@ import Input from 'src/popup/components/Input';
 import Label from 'src/popup/components/Label';
 import SubLabel from 'src/popup/components/SubLabel';
 import messageTypes from 'src/shared/messageTypes';
+import './QueryForm.css';
 
 function QueryForm(props) {
   const { handleSubmit, register, errors } = useForm();
@@ -30,15 +31,15 @@ function QueryForm(props) {
 
     return setChecked(!checked);
   }
-
+  
   return (
     <Card {...props}>
       <Form className="flex-col" onSubmit={handleSubmit(onSubmit)}>
         <Label className="mb-2" for="cid">
-          Query CID
+          Query Retrieval Network by CID
         </Label>
-        <SubLabel className="mb-2">
-          Enter a CID to search the network for (try QmVmEHjr6xtNxHDbJ7kXenYMH6C4ZGpjqNnMeAEk9dQcR3)
+        <SubLabel className="mb-2 sublabel-text">
+          (Tip: try QmVmEHjr6xtNxHDbJ7kXenYMH6C4ZGpjqNnMeAEk9dQcR3)
         </SubLabel>
         <div className="flex">
           <Input ref={register({ required: 'Required' })} name="cid" className="flex-1 mr-4" />
