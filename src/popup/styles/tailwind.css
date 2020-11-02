@@ -48,6 +48,10 @@ svg {
   margin-left: 0.5rem;
 }
 
+.error-width {
+  width: 748px;
+}
+
 input[type=checkbox]:checked {
   appearance: auto;
 }
