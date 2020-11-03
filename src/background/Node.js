@@ -37,12 +37,15 @@ class Node {
 
   node;
 
-  /**
-   * Retrieval market client
-   */
+  /** @type {Client} Retrieval market client */
   client;
 
+  /** @type {SocketClient} */
+  socketClient;
+
   async initialize({ rendezvousIp, rendezvousPort, wallet }) {
+    const options = await getOptions();
+
     const rendezvousProtocol = /^\d+\.\d+\.\d+\.\d+$/.test(rendezvousIp) ? 'ip4' : 'dns4';
     const rendezvousWsProtocol = `${rendezvousPort}` === '443' ? 'wss' : 'ws';
     const rendezvousAddress = `/${rendezvousProtocol}/${rendezvousIp}/tcp/${rendezvousPort}/${rendezvousWsProtocol}/p2p-webrtc-star`;
@@ -76,13 +79,18 @@ class Node {
     });
 
     ports.postLog('DEBUG: creating retrieval market client');
-    this.client = await Client.create(this.node, this.datastore, this.lotus, this.handleCidReceived);
-
     // retrieval-market client
     this.client = await Client.create(this.node, this.datastore, this.lotus, this.handleCidReceived);
 
     ports.postLog('DEBUG: Node.initialize(): creating Provider.js (retrieval market provider)');
     this.provider = await Provider.create(this.node, this.datastore, this.lotus);
+
+    ports.postLog(`DEBUG: Node.initialize(): creating SocketClient.js (Socket connection)`)
+    this.socketClient = SocketClient.create(
+      { datastore: this.datastore },
+      options,
+      { handleCidReceived: this.handleCidReceived },
+    );
 
     ports.postLog('DEBUG: Node.initialize(): starting libp2p node');
     await this.node.start();
@@ -202,10 +210,7 @@ class Node {
       if (minerID) {
         // query for CID on a miner
         ports.postLog(`INFO: querying for ${cid} , minerID:  ${minerID}`);
-
-        const options = await getOptions();
-        const socketClient = SocketClient.create(options, { cid, minerID });
-        socketClient.query()
+        this.socketClient.query({ cid, minerID });
       } else {
         // query for CID on other peers
         ports.postLog(`INFO: querying for ${cid}`);
@@ -319,13 +324,15 @@ class Node {
     }
 
     ports.postLog(`DEBUG:  Node._downloadFromPeer:  offer=${JSON.stringify(offer)}`);
-    ports.postLog(`DEBUG:  Node._downloadFromPeer:\n  CID: ${cid}\n  from: ${offer.address}\n  price: ${offer.price} attoFil`);
+    ports.postLog(
+      `DEBUG:  Node._downloadFromPeer:\n  CID: ${cid}\n  from: ${offer.address}\n  price: ${offer.price} attoFil`,
+    );
 
     const { params } = offer;
     const multiaddr = offer.address;
 
     try {
-      await this.client.retrieve(cid, params, multiaddr);  // TODO:  peer wallet!
+      await this.client.retrieve(cid, params, multiaddr); // TODO:  peer wallet!
     } catch (error) {
       console.error(error);
       ports.postLog(`ERROR: Node.initiateRetrieval():  failed: ${error.message}`);

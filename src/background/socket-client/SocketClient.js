@@ -4,8 +4,22 @@ import getOptions from 'src/shared/getOptions.js';
 import { messageRequestTypes, messageResponseTypes, messages } from '../../shared/messages';
 import { sha256 } from '../../shared/sha256';
 import ports from '../ports';
+import pushable from 'it-pushable';
+
+/** @type {SocketClient} */
+let singletonSocketClient;
 
 export default class SocketClient {
+  datastore;
+
+  /**
+   * @type {ReturnType<pushable>} importSink Sink to pass chunks to
+   */
+  importSink;
+
+  /** @type {(cid: string, size: number) => void} */
+  handleCidReceived;
+
   socket;
   cid;
   minerID;
@@ -13,21 +27,39 @@ export default class SocketClient {
 
   maxResendAttempts;
 
-  static create(options, { cid, minerID }) {
+  /**
+   * @param {{ datastore: any }} services Services
+   * @param {ReturnType<getOptions>} options Options
+   * @param {{ handleCidReceived: (cid: string, size: number) => void }} Callbacks
+   */
+  static create({ datastore }, options, { handleCidReceived }) {
+    if (singletonSocketClient) {
+      return singletonSocketClient;
+    }
+
     const client = new SocketClient();
 
-    client.cid = cid;
-    client.minerID = minerID;
+    client.datastore = datastore;
+    client.handleCidReceived = handleCidReceived;
+
     client.maxResendAttempts = 3;
 
     client._connect(options);
     client._addHandlers();
 
+    singletonSocketClient = client;
+
     return client;
   }
 
-  query() {
-    const getQueryCIDMessage = messages.createGetQueryCID({ cid: this.cid, minerID: this.minerID });
+  /**
+   * @param {{ cid: string; minerID: string }} query query params
+   */
+  query({ cid, minerID }) {
+    this.importSink = pushable();
+    this.datastore.putContent(this.importSink, { cidVersion: 1 });
+
+    const getQueryCIDMessage = messages.createGetQueryCID({ cid, minerID });
     this.socket.emit(getQueryCIDMessage.message, getQueryCIDMessage);
   }
 
@@ -77,7 +109,7 @@ export default class SocketClient {
       // TODO: periodically send this message to check on status
       this.socket.emit(
         messageRequestTypes.queryRetrievalStatus,
-        messages.createQueryRetrievalStatus({ cid: this.cid, clientToken: this.clientToken }),
+        messages.createQueryRetrievalStatus({ cid: message.cid, clientToken: this.clientToken }),
       );
     });
 
@@ -94,6 +126,15 @@ export default class SocketClient {
       console.log('got message from server: chunk');
       console.log('message', message);
 
+      // all chunks were received
+      if (message.eof) {
+        this.importSink.end();
+
+        this.handleCidReceived(message.cid, message.full_data_len_bytes);
+
+        return;
+      }
+
       const dataBuffer = Buffer.from(message.chunk_data, 'base64');
       const validSha256 = message.chunk_sha256 === sha256(dataBuffer);
       const validSize = dataBuffer.length === message.chunk_len_bytes;
@@ -107,8 +148,8 @@ export default class SocketClient {
           }),
         );
 
-        // TODO: proccess received data
-        console.log('chunk is valid');
+        // pushed data needs to be an array of bytes
+        this.importSink.push([...dataBuffer]);
       } else {
         if (this.maxResendAttempts > 0) {
           this.maxResendAttempts--;
@@ -124,8 +165,6 @@ export default class SocketClient {
           // give up after N attempts
           this.socket.disconnect();
         }
-
-        console.log('chunk is NOT valid, sending `chunkResend`');
       }
     });
   }

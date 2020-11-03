@@ -8,6 +8,7 @@ import Node from './Node.js';
 
 ports.startListening();
 
+/** @type {Node} */
 let node;
 
 chrome.runtime.onMessage.addListener(({ messageType, msg }, sender, sendResponse) => {

@@ -37,6 +37,9 @@ const defaultValues = {
 
 export const optionsKeys = Object.keys(defaultValues);
 
+/**
+ * @returns {typeof defaultValues} options
+ */
 function getOptions() {
   return new Promise(resolve => {
     chrome.storage.local.get(optionsKeys, result => {

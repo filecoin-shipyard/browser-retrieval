@@ -174,6 +174,11 @@ class Client {
     deal.customStatus = undefined;
   }
 
+  /**
+   * @param {object} info
+   * @param {string} info.dealId
+   * @param {Array<{ type: string; data: Array<number> }>} info.blocks
+   */
   async receiveBlocks({ dealId, blocks }) {
     ports.postLog(`DEBUG: Client.setupReceieveBlocks(): received ${blocks.length} blocks deal id: ${dealId}`);
     const deal = this.ongoingDeals[dealId];
