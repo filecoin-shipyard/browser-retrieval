@@ -63,7 +63,7 @@ class Datastore {
 
   async delete(cid) {
     const { node } = await this.get(cid);
-    const cids = [new CID(cid), ...node.Links.map(({ Hash }) => Hash)];
+    const cids = [new CID(cid), ...(node.Links || []).map(({ Hash }) => Hash)];
     await all(this.ipld.removeMany(cids));
   }
 

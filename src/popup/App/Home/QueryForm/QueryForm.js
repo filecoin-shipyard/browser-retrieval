@@ -31,7 +31,7 @@ function QueryForm(props) {
 
     return setChecked(!checked);
   }
-  
+
   return (
     <Card {...props}>
       <Form className="flex-col" onSubmit={handleSubmit(onSubmit)}>

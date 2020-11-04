@@ -1,22 +1,23 @@
 /* global chrome */
-
-import PeerId from 'peer-id';
 import Libp2p from 'libp2p';
-import Websockets from 'libp2p-websockets';
-import WebrtcStar from 'libp2p-webrtc-star';
+import Gossipsub from 'libp2p-gossipsub';
 import Mplex from 'libp2p-mplex';
 import { NOISE } from 'libp2p-noise';
 import Secio from 'libp2p-secio';
-import Gossipsub from 'libp2p-gossipsub';
-import topics from 'src/shared/topics';
-import messageTypes from 'src/shared/messageTypes';
+import WebrtcStar from 'libp2p-webrtc-star';
+import Websockets from 'libp2p-websockets';
+import PeerId from 'peer-id';
 import getOptions from 'src/shared/getOptions';
+import messageTypes from 'src/shared/messageTypes';
 import setOptions from 'src/shared/setOptions';
-import ports from './ports';
-import Lotus from './lotus-client/Lotus';
+import topics from 'src/shared/topics';
+
 import Datastore from './Datastore';
+import Lotus from './lotus-client/Lotus';
+import ports from './ports';
 import Client from './retrieval-market/Client';
 import Provider from './retrieval-market/Provider';
+import SocketClient from './socket-client/SocketClient';
 import inspect from 'browser-util-inspect';
 
 class Node {
@@ -35,12 +36,15 @@ class Node {
 
   node;
 
-  /**
-   * Retrieval market client
-   */
+  /** @type {Client} Retrieval market client */
   client;
 
+  /** @type {SocketClient} */
+  socketClient;
+
   async initialize({ rendezvousIp, rendezvousPort, wallet }) {
+    const options = await getOptions();
+
     const rendezvousProtocol = /^\d+\.\d+\.\d+\.\d+$/.test(rendezvousIp) ? 'ip4' : 'dns4';
     const rendezvousWsProtocol = `${rendezvousPort}` === '443' ? 'wss' : 'ws';
     const rendezvousAddress = `/${rendezvousProtocol}/${rendezvousIp}/tcp/${rendezvousPort}/${rendezvousWsProtocol}/p2p-webrtc-star`;
@@ -73,13 +77,19 @@ class Node {
       version: 1,
     });
 
-    ports.postLog('DEBUG: Node.initialize(): creating Client.js (retrieval market client)');
-
+    ports.postLog('DEBUG: creating retrieval market client');
     // retrieval-market client
     this.client = await Client.create(this.node, this.datastore, this.lotus, this.handleCidReceived);
 
     ports.postLog('DEBUG: Node.initialize(): creating Provider.js (retrieval market provider)');
     this.provider = await Provider.create(this.node, this.datastore, this.lotus);
+
+    ports.postLog(`DEBUG: Node.initialize(): creating SocketClient.js (Socket connection)`)
+    this.socketClient = SocketClient.create(
+      { datastore: this.datastore },
+      options,
+      { handleCidReceived: this.handleCidReceived },
+    );
 
     ports.postLog('DEBUG: Node.initialize(): starting libp2p node');
     await this.node.start();
@@ -195,8 +205,16 @@ class Node {
 
       const cid = rawCid.trim();
       this.queriedCids.add(cid);
-      ports.postLog(`INFO: querying for ${cid} , minerID:  ${minerID}`);
-      await this.publish({ messageType: messageTypes.query, cid });
+
+      if (minerID) {
+        // query for CID on a miner
+        ports.postLog(`INFO: querying for ${cid} , minerID:  ${minerID}`);
+        this.socketClient.query({ cid, minerID });
+      } else {
+        // query for CID on other peers
+        ports.postLog(`INFO: querying for ${cid}`);
+        await this.publish({ messageType: messageTypes.query, cid });
+      }
     } catch (error) {
       console.error(error);
       ports.postLog(`ERROR: publish to topic failed: ${error.message}`);
@@ -229,7 +247,7 @@ class Node {
       const { automationCode } = await getOptions();
 
       try {
-        // eslint-disable-next-line
+        // eslint-disable-next-line no-eval
         eval(automationCode);
       } catch (error) {
         ports.postLog(`ERROR: automation loop failed: ${error.message}`);
@@ -246,7 +264,7 @@ class Node {
       const { automationCode } = await getOptions();
       ports.postLog(`INFO: automation code saved`);
 
-      // eslint-disable-next-line
+      // eslint-disable-next-line no-eval
       eval(automationCode);
       this.lastIntervalId = this.runInLoop();
     } catch (error) {
@@ -305,13 +323,15 @@ class Node {
     }
 
     ports.postLog(`DEBUG:  Node._downloadFromPeer:  offer=${JSON.stringify(offer)}`);
-    ports.postLog(`DEBUG:  Node._downloadFromPeer:\n  CID: ${cid}\n  from: ${offer.address}\n  price: ${offer.price} attoFil`);
+    ports.postLog(
+      `DEBUG:  Node._downloadFromPeer:\n  CID: ${cid}\n  from: ${offer.address}\n  price: ${offer.price} attoFil`,
+    );
 
     const { params } = offer;
     const multiaddr = offer.address;
 
     try {
-      await this.client.retrieve(cid, params, multiaddr);  // TODO:  peer wallet!
+      await this.client.retrieve(cid, params, multiaddr); // TODO:  peer wallet!
     } catch (error) {
       console.error(error);
       ports.postLog(`ERROR: Node.initiateRetrieval():  failed: ${error.message}`);
@@ -341,6 +361,7 @@ class Node {
     } catch (error) {
       console.error(error);
       ports.postLog(`ERROR:  Node._downloadLocally():  download failed: ${error.message}`);
+      ports.alertError(`Download failed: ${error.message}`);
     }
   }
 
@@ -370,6 +391,10 @@ class Node {
     }
   }
 
+  /**
+   * Sends a message to other peers in the network asking for a CID
+   * @param  {} message Contains `cid` that the node is looking for
+   */
   async publish(message) {
     const string = JSON.stringify(message);
     ports.postLog(`DEBUG: publishing message ${string}`);

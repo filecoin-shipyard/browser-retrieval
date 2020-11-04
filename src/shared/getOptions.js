@@ -7,6 +7,7 @@ const defaultValues = {
   knownCids: {},
   wallet: '',
   privateKey: '',
+  wsEndpoint: process.env.REACT_APP_PROXY_SERVER || 'ws://localhost:3000',
   lotusEndpoint: 'http://3.231.219.184:80/rpc/v0',
   lotusToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIiwiYWRtaW4iXX0.jtLE4n-cWr1lzvFVDj9wupSHqDJgvQFIRP2takFTbAo',
   paymentInterval: 1048576,
@@ -39,6 +40,9 @@ const defaultValues = {
 
 export const optionsKeys = Object.keys(defaultValues);
 
+/**
+ * @returns {typeof defaultValues} options
+ */
 function getOptions() {
   return new Promise(resolve => {
     chrome.storage.local.get(optionsKeys, result => {
