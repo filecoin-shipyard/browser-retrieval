@@ -362,6 +362,7 @@ class Node {
     } catch (error) {
       console.error(error);
       ports.postLog(`ERROR:  Node._downloadLocally():  download failed: ${error.message}`);
+      ports.alertError(`Download failed: ${error.message}`);
     }
   }
 
