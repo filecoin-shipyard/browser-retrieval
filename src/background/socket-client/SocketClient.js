@@ -6,9 +6,28 @@ import { messageRequestTypes, messageResponseTypes, messages } from '../../share
 import { sha256 } from '../../shared/sha256';
 import Datastore from '../Datastore';
 import ports from '../ports';
+// import Lotus from '../lotus-client/Lotus'
 
 /** @type {SocketClient} */
 let singletonSocketClient;
+
+// TODO: TEMP
+// --
+// this.ongoingDeals[dealId] = {
+//   id: dealId,
+//   status: dealStatuses.new,
+//   customStatus: undefined,
+//   cid,
+//   params: dealParams,
+//   peerMultiaddr,
+//   peerWallet,
+//   sink,
+//   sizeReceived: 0,
+//   sizePaid: 0,
+//   importerSink,
+//   importer: this.datastore.putContent(importerSink),
+//   voucherNonce: 1,
+// };
 
 export default class SocketClient {
   /** @type {Datastore} Datastore */
@@ -29,6 +48,25 @@ export default class SocketClient {
 
   maxResendAttempts;
 
+  // /**
+  //  * @type {{
+  //  *   id: dealId,
+  //  *   status: dealStatuses.new,
+  //  *   customStatus: undefined,
+  //  *   cid,
+  //  *   params: dealParams,
+  //  *   peerMultiaddr,
+  //  *   peerWallet,
+  //  *   sink,
+  //  *   sizeReceived: 0,
+  //  *   sizePaid: 0,
+  //  *   importerSink,
+  //  *   importer: this.datastore.putContent(importerSink),
+  //  *   voucherNonce: 1,
+  //  * }} ongoingDeals
+  //  */
+  // ongoingDeals;
+
   /**
    * @param {{ datastore: Datastore }} services Services
    * @param {ReturnType<getOptions>} options Options
@@ -40,6 +78,8 @@ export default class SocketClient {
     }
 
     const client = new SocketClient();
+
+    // client.ongoingDeals.id
 
     if (Datastore) {
       client.datastore = datastore;
@@ -96,6 +136,9 @@ export default class SocketClient {
 
       // TODO: send funds
       //
+      // const lotus = await Lotus.create();
+      // await lotus.keyRecoverLogMsg();
+      // await lotus.sendFunds(message.price_attofil, message.payment_wallet);
 
       const options = await getOptions();
 
