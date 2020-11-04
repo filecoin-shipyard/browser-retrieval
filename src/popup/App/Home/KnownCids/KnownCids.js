@@ -30,7 +30,7 @@ function KnownCids(props) {
 
   return (
     <Card {...props}>
-      <Label className="p-4 pb-2">Known CIDs</Label>
+      <Label className="p-4 pb-2">Your CIDs</Label>
       <Table>
         <tbody>
           {knownCidsIds.sort().map((cid) => (

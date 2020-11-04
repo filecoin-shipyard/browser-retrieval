@@ -8,7 +8,6 @@ import WebrtcStar from 'libp2p-webrtc-star';
 import Websockets from 'libp2p-websockets';
 import PeerId from 'peer-id';
 import getOptions from 'src/shared/getOptions';
-import messages from 'src/shared/messages';
 import messageTypes from 'src/shared/messageTypes';
 import setOptions from 'src/shared/setOptions';
 import topics from 'src/shared/topics';

@@ -4,6 +4,7 @@ import React from 'react';
 import Deals from './Deals';
 import KnownCids from './KnownCids';
 import Offers from './Offers';
+import OperationsList from './OperationsList';
 import QueryForm from './QueryForm';
 
 function Home({ className, ...rest }) {
@@ -13,6 +14,7 @@ function Home({ className, ...rest }) {
       <Offers className="mt-4" />
       <KnownCids className="mt-4" />
       <Deals className="mt-4" />
+      <OperationsList className="mt-4" />
     </div>
   );
 }
