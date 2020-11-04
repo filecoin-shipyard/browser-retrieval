@@ -1,15 +1,17 @@
+import pushable from 'it-pushable';
 import socketIO from 'socket.io-client';
 import getOptions from 'src/shared/getOptions.js';
 
 import { messageRequestTypes, messageResponseTypes, messages } from '../../shared/messages';
 import { sha256 } from '../../shared/sha256';
+import Datastore from '../Datastore';
 import ports from '../ports';
-import pushable from 'it-pushable';
 
 /** @type {SocketClient} */
 let singletonSocketClient;
 
 export default class SocketClient {
+  /** @type {Datastore} Datastore */
   datastore;
 
   /**
@@ -28,7 +30,7 @@ export default class SocketClient {
   maxResendAttempts;
 
   /**
-   * @param {{ datastore: any }} services Services
+   * @param {{ datastore: Datastore }} services Services
    * @param {ReturnType<getOptions>} options Options
    * @param {{ handleCidReceived: (cid: string, size: number) => void }} Callbacks
    */
@@ -39,7 +41,10 @@ export default class SocketClient {
 
     const client = new SocketClient();
 
-    client.datastore = datastore;
+    if (Datastore) {
+      client.datastore = datastore;
+    }
+
     client.handleCidReceived = handleCidReceived;
 
     client.maxResendAttempts = 3;
@@ -57,7 +62,7 @@ export default class SocketClient {
    */
   query({ cid, minerID }) {
     this.importSink = pushable();
-    this.datastore.putContent(this.importSink, { cidVersion: 1 });
+    this.datastore.putContent(this.importSink, { cidVersion: 1, hashAlg: 'blake2b-256' });
 
     const getQueryCIDMessage = messages.createGetQueryCID({ cid, minerID });
     this.socket.emit(getQueryCIDMessage.message, getQueryCIDMessage);
