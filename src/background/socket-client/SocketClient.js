@@ -79,6 +79,28 @@ export default class SocketClient {
     this.socket.emit(getQueryCIDMessage.message, getQueryCIDMessage);
   }
 
+  async buy() {
+      // try {
+      //   ports.postLog(`DEBUG: SocketClient._handleCidAvailability: creating Lotus instance`);
+      //   const lotus = await Lotus.create();
+      //   ports.postLog(
+      //     `DEBUG: SocketClient._handleCidAvailability: sending ${message.price_attofil} attofil to ${message.payment_wallet}`,
+      //   );
+      //   await lotus.sendFunds(message.price_attofil, message.payment_wallet);
+      // } catch (error) {
+      //   ports.postLog(`ERROR: SocketClient._handleCidAvailability: error: ${error.message}`);
+      // }
+
+      const options = await getOptions();
+      console.log(ongoingDeals);
+
+      // TODO: clientToken has to change, need to ID this call
+      this.socket.emit(
+        messageRequestTypes.fundsConfirmed,
+        messages.createFundsSent({ clientToken: this.clientToken, paymentWallet: options.wallet }),
+      );
+  }
+
   // Private:
 
   _initializeSocketIO({ wsEndpoint }) {
@@ -114,27 +136,6 @@ export default class SocketClient {
           size: message.approxSize,
         },
       });
-
-      // // TODO: only when pressing the BUY button
-      // try {
-      //   ports.postLog(`DEBUG: SocketClient._handleCidAvailability: creating Lotus instance`);
-      //   const lotus = await Lotus.create();
-      //   ports.postLog(
-      //     `DEBUG: SocketClient._handleCidAvailability: sending ${message.price_attofil} attofil to ${message.payment_wallet}`,
-      //   );
-      //   await lotus.sendFunds(message.price_attofil, message.payment_wallet);
-      // } catch (error) {
-      //   ports.postLog(`ERROR: SocketClient._handleCidAvailability: error: ${error.message}`);
-      // }
-
-      // const options = await getOptions();
-
-      // // TODO: only when pressing the BUY button
-      // console.log(ongoingDeals);
-      // this.socket.emit(
-      //   messageRequestTypes.fundsConfirmed,
-      //   messages.createFundsSent({ clientToken: this.clientToken, paymentWallet: options.wallet }),
-      // );
     });
   }
 

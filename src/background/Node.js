@@ -337,11 +337,29 @@ class Node {
     const { params } = offer;
     const multiaddr = offer.address;
 
+    const downloadParams = { cid, params, multiaddr };
+    if (/^ws/i.test(multiaddr)) {
+      return this.retrieveFromSocket(downloadParams);
+    }
+
+    return this.retrieveFromPeer(downloadParams);
+  }
+
+  async retrieveFromSocket({ cid, params, multiaddr }) {
+    try {
+      await this.socketClient.buy();
+    } catch (error) {
+      console.error(error);
+      ports.postLog(`ERROR: Node.retrieveFromSocket():  failed: ${error.message}`);
+    }
+  }
+
+  async retrieveFromPeer({ cid, params, multiaddr }) {
     try {
       await this.client.retrieve(cid, params, multiaddr); // TODO:  peer wallet!
     } catch (error) {
       console.error(error);
-      ports.postLog(`ERROR: Node.initiateRetrieval():  failed: ${error.message}`);
+      ports.postLog(`ERROR: Node.retrieveFromPeer():  failed: ${error.message}`);
     }
   }
 
