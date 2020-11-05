@@ -19,7 +19,7 @@ function WalletModal({ className, ...rest }) {
     try {
       key = signer.keyRecover(data.privateKey);
     } catch (e) {
-      setError('privateKey', { type: 'manual', message: "Wallet and private key don't match" });
+      setError('privateKey', { type: 'manual', message: "Private key length is invalid" });
     }
 
     if (key.address === data.wallet || key.address === data.wallet.replace(/^t/, 'f')) {
