@@ -1,33 +1,17 @@
 import pushable from 'it-pushable';
 import socketIO from 'socket.io-client';
 import getOptions from 'src/shared/getOptions.js';
+import { addOffer, clearOffers } from 'src/shared/offers';
 
 import { messageRequestTypes, messageResponseTypes, messages } from '../../shared/messages';
 import { sha256 } from '../../shared/sha256';
 import Datastore from '../Datastore';
 import ports from '../ports';
-import Lotus from '../lotus-client/Lotus'
+import Lotus from '../lotus-client/Lotus';
+import { hasOngoingDeals, ongoingDeals } from 'src/background/ongoingDeals';
 
 /** @type {SocketClient} */
 let singletonSocketClient;
-
-// TODO: TEMP
-// --
-// this.ongoingDeals[dealId] = {
-//   id: dealId,
-//   status: dealStatuses.new,
-//   customStatus: undefined,
-//   cid,
-//   params: dealParams,
-//   peerMultiaddr,
-//   peerWallet,
-//   sink,
-//   sizeReceived: 0,
-//   sizePaid: 0,
-//   importerSink,
-//   importer: this.datastore.putContent(importerSink),
-//   voucherNonce: 1,
-// };
 
 export default class SocketClient {
   /** @type {Datastore} Datastore */
@@ -41,31 +25,12 @@ export default class SocketClient {
   /** @type {(cid: string, size: number) => void} */
   handleCidReceived;
 
+  /** @type {ReturnType<socketIO>} Socket IO */
   socket;
-  cid;
-  minerID;
+
   clientToken;
 
   maxResendAttempts;
-
-  // /**
-  //  * @type {{
-  //  *   id: dealId,
-  //  *   status: dealStatuses.new,
-  //  *   customStatus: undefined,
-  //  *   cid,
-  //  *   params: dealParams,
-  //  *   peerMultiaddr,
-  //  *   peerWallet,
-  //  *   sink,
-  //  *   sizeReceived: 0,
-  //  *   sizePaid: 0,
-  //  *   importerSink,
-  //  *   importer: this.datastore.putContent(importerSink),
-  //  *   voucherNonce: 1,
-  //  * }} ongoingDeals
-  //  */
-  // ongoingDeals;
 
   /**
    * @param {{ datastore: Datastore }} services Services
@@ -79,8 +44,6 @@ export default class SocketClient {
 
     const client = new SocketClient();
 
-    // client.ongoingDeals.id
-
     if (Datastore) {
       client.datastore = datastore;
     }
@@ -89,12 +52,20 @@ export default class SocketClient {
 
     client.maxResendAttempts = 3;
 
-    client._connect(options);
+    client._initializeSocketIO(options);
     client._addHandlers();
 
     singletonSocketClient = client;
 
     return client;
+  }
+
+  connect() {
+    this.socket.open();
+  }
+
+  disconnect() {
+    this.socket.close();
   }
 
   /**
@@ -110,8 +81,8 @@ export default class SocketClient {
 
   // Private:
 
-  _connect({ wsEndpoint }) {
-    this.socket = socketIO(wsEndpoint);
+  _initializeSocketIO({ wsEndpoint }) {
+    this.socket = socketIO(wsEndpoint, { autoConnect: false, transports: ['websocket'] });
   }
 
   _addHandlers() {
@@ -127,28 +98,43 @@ export default class SocketClient {
       this.clientToken = message.client_token;
 
       if (!message.available) {
-        this.socket.disconnect();
+        if (!hasOngoingDeals()) {
+          this.socket.disconnect();
+        }
 
         ports.alertError(`CID not available: ${message.cid}`);
 
         return;
       }
 
-      try {
-        ports.postLog(`DEBUG: SocketClient._handleCidAvailability: creating Lotus instance`);
-        const lotus = await Lotus.create();
-        ports.postLog(`DEBUG: SocketClient._handleCidAvailability: sending ${message.price_attofil} attofil to ${message.payment_wallet}`);
-        await lotus.sendFunds(message.price_attofil, message.payment_wallet);
-      } catch(error) {
-        ports.postLog(`ERROR: SocketClient._handleCidAvailability: error: ${error.message}`);
-      }
+      await addOffer({
+        cid: message.cid,
+        params: {
+          price: message.price_attofil,
+          size: message.approxSize,
+        },
+      });
 
-      const options = await getOptions();
+      // // TODO: only when pressing the BUY button
+      // try {
+      //   ports.postLog(`DEBUG: SocketClient._handleCidAvailability: creating Lotus instance`);
+      //   const lotus = await Lotus.create();
+      //   ports.postLog(
+      //     `DEBUG: SocketClient._handleCidAvailability: sending ${message.price_attofil} attofil to ${message.payment_wallet}`,
+      //   );
+      //   await lotus.sendFunds(message.price_attofil, message.payment_wallet);
+      // } catch (error) {
+      //   ports.postLog(`ERROR: SocketClient._handleCidAvailability: error: ${error.message}`);
+      // }
 
-      this.socket.emit(
-        messageRequestTypes.fundsConfirmed,
-        messages.createFundsSent({ clientToken: this.clientToken, paymentWallet: options.wallet }),
-      );
+      // const options = await getOptions();
+
+      // // TODO: only when pressing the BUY button
+      // console.log(ongoingDeals);
+      // this.socket.emit(
+      //   messageRequestTypes.fundsConfirmed,
+      //   messages.createFundsSent({ clientToken: this.clientToken, paymentWallet: options.wallet }),
+      // );
     });
   }
 

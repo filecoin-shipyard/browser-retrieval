@@ -7,7 +7,7 @@ const hardCodedOptions = {
   rendezvousIp: 'webrtc-star-1.browser-retrieval.filecoin.io',
   rendezvousPort: '443',
   pricesPerByte: { '*': 1000 },
-  wsEndpoint: process.env.REACT_APP_PROXY_SERVER || 'wss://retrievalproxy.browser-retrieval.filecoin.io:443',
+  wsEndpoint: 'ws://localhost:3000' || 'wss://retrievalproxy.browser-retrieval.filecoin.io:443',
   lotusEndpoint: 'http://3.231.219.184:80/rpc/v0',
   lotusToken:
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIiwiYWRtaW4iXX0.jtLE4n-cWr1lzvFVDj9wupSHqDJgvQFIRP2takFTbAo',
@@ -55,7 +55,7 @@ const dynamicOptions = {
 export const optionsKeys = [...Object.keys(hardCodedOptions), ...Object.keys(dynamicOptions)];
 
 /**
- * @returns {typeof defaultValues} options
+ * @returns {typeof hardCodedOptions & typeof dynamicOptions} options
  */
 function getOptions() {
   return new Promise((resolve) => {
