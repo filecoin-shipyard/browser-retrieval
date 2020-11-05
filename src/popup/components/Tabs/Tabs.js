@@ -14,7 +14,7 @@ function Tabs({ className, tabs, children, ...rest }) {
   }
 
   function checkUnsaved(tab) {
-    const aggregated = options.unsavedForms.rendezvous || options.unsavedForms.price || options.unsavedForms.lotus || options.unsavedForms.payment;
+    const aggregated = options.unsavedForms.price || options.unsavedForms.lotus;
 
     if (aggregated && tab.label !== 'Options') {
       setIsOpen(true);

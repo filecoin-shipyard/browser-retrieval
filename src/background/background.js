@@ -81,20 +81,21 @@ onOptionsChanged(async changes => {
 
 async function startNode() {
   const options = await getOptions();
-  try {
-    node = await Node.create(options);
-  } catch (error) {
-    if (error === 'Error: `Invalid Key Length`') {
-      await setOptions({
-        ...options,
-        showWalletModal: true,
-      });
-    } else {
-      console.error(error);
 
-      const emsg = `ERROR: start node failed: ${error.message}`
-      ports.postLog(emsg);
-      ports.alertError(emsg);
+  if (options.wallet !== '' || options.privateKey !== '') {
+    try {
+      node = await Node.create(options);
+    } catch (error) {
+      if (error === 'Error: `Invalid Key Length`') {
+        ports.postLog(`ERROR: start node failed: ${error}`);
+        console.error(error);
+      } else {
+        console.error(error);
+
+        const emsg = `ERROR: start node failed: ${error.message}`
+        ports.postLog(emsg);
+        ports.alertError(emsg);
+      }
     }
   }
 }
@@ -105,4 +106,26 @@ function openExtensionInBrowser() {
   });
 }
 
-startNode();
+async function startPoint() {
+  const options = await getOptions();
+
+  if (options.wallet === '' || options.privateKey === '') {
+    await setOptions({
+      ...options,
+      showWalletModal: true,
+    });
+  } else {
+    if (node) {
+      try {
+        await node.stop();
+      } catch (error) {
+        console.error(error);
+        ports.postLog(`ERROR: stop node failed: ${error.message}`);
+      }
+    }
+
+    await startNode();
+  }
+}
+
+startPoint();

@@ -12,7 +12,14 @@ function LotusForm(props) {
   const [options, setOptions] = useOptions();
 
   function onSubmit(data) {
-    const key = signer.keyRecover(data.privateKey);
+    let key = {address: null};
+
+    try {
+      key = signer.keyRecover(data.privateKey);
+    } catch (e) {
+      setError('privateKey', { type: 'manual', message: "Private key length is invalid" });
+    }
+
     const aggregated = options.unsavedForms.price;
 
     if (key.address === data.wallet || key.address === data.wallet.replace(/^t/, 'f')) {
