@@ -114,6 +114,17 @@ async function startPoint() {
       ...options,
       showWalletModal: true,
     });
+  } else {
+    if (node) {
+      try {
+        await node.stop();
+      } catch (error) {
+        console.error(error);
+        ports.postLog(`ERROR: stop node failed: ${error.message}`);
+      }
+    }
+
+    await startNode();
   }
 }
 
