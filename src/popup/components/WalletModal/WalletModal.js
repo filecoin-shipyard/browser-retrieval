@@ -7,7 +7,6 @@ import useOptions from 'src/popup/hooks/useOptions';
 import Form from 'src/popup/components/Form';
 import Label from 'src/popup/components/Label';
 import InputField from 'src/popup/components/InputField/InputField';
-import InputFieldPassword from 'src/popup/components/InputFieldPassword/inputFieldPassword';
 
 function WalletModal({ className, ...rest }) {
   const { handleSubmit, register, setError, errors } = useForm();
@@ -48,7 +47,7 @@ function WalletModal({ className, ...rest }) {
                   onFocus={(e) => e.target.placeholder = ""}
                   onBlur={(e) => e.target.placeholder = options.walletPlaceholder}
                 />
-                <InputFieldPassword
+                <InputField
                   ref={register({ required: 'Required' })}
                   className="flex-1"
                   label="Private key (secp256k1)"
@@ -58,6 +57,7 @@ function WalletModal({ className, ...rest }) {
                   placeholder={options.privateKeyPlaceholder}
                   onFocus={(e) => e.target.placeholder = ""}
                   onBlur={(e) => e.target.placeholder = options.privateKeyPlaceholder}
+                  type="password"
                   submit
                 />
               </div>
