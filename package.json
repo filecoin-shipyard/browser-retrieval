@@ -54,6 +54,7 @@
   },
   "devDependencies": {
     "cross-env": "^7.0.2",
+    "file-replace-loader": "^1.3.1",
     "npm-watch": "^0.7.0",
     "typescript": "^4.0.3"
   },
@@ -64,12 +65,19 @@
     "build:background": "cross-env NODE_ENV=development webpack",
     "build": "yarn build:popup && yarn build:background",
     "build:debug": "cross-env DEBUG=true yarn build",
+    "watch": "npm-watch build",
     "lint": "eslint ./src",
-    "watch": "npm-watch"
+    "## LOCAL ##": "",
+    "build:local": "yarn build:popup:local && yarn build:background:local",
+    "build:js:local": "yarn build:popup:js && yarn build:background:local",
+    "build:background:local": "cross-env ENV=local yarn build:background",
+    "build:popup:local": "cross-env ENV=local yarn build:popup",
+    "watch:local": "npm-watch build:js:local"
   },
   "watch": {
-    "build:popup:js": "src/{popup,shared}/**/*.js",
-    "build:background": "src/{background,shared}/**/*.js"
+    "build": "src/{popup,background,shared}/**/*.js",
+    "build:local": "src/{popup,background,shared}/**/*.js",
+    "build:js:local": "src/{background,popup,shared}/**/*.js"
   },
   "eslintConfig": {
     "extends": "react-app"
