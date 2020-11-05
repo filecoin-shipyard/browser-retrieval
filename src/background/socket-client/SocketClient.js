@@ -6,7 +6,7 @@ import { messageRequestTypes, messageResponseTypes, messages } from '../../share
 import { sha256 } from '../../shared/sha256';
 import Datastore from '../Datastore';
 import ports from '../ports';
-// import Lotus from '../lotus-client/Lotus'
+import Lotus from '../lotus-client/Lotus'
 
 /** @type {SocketClient} */
 let singletonSocketClient;
@@ -134,11 +134,14 @@ export default class SocketClient {
         return;
       }
 
-      // TODO: send funds
-      //
-      // const lotus = await Lotus.create();
-      // await lotus.keyRecoverLogMsg();
-      // await lotus.sendFunds(message.price_attofil, message.payment_wallet);
+      try {
+        ports.postLog(`DEBUG: SocketClient._handleCidAvailability: creating Lotus instance`);
+        const lotus = await Lotus.create();
+        ports.postLog(`DEBUG: SocketClient._handleCidAvailability: sending ${message.price_attofil} attofil to ${message.payment_wallet}`);
+        await lotus.sendFunds(message.price_attofil, message.payment_wallet);
+      } catch(error) {
+        ports.postLog(`ERROR: SocketClient._handleCidAvailability: error: ${error.message}`);
+      }
 
       const options = await getOptions();
 
