@@ -9,6 +9,8 @@ import last from 'it-last';
 import all from 'it-all';
 import { Buffer } from 'buffer';
 import streamFromFile from '../shared/streamFromFile';
+import ports from './ports.js';
+import inspect from 'browser-util-inspect';
 
 class Datastore {
   static async create(...args) {
@@ -26,15 +28,18 @@ class Datastore {
   }
 
   putFile(file, options) {
+    ports.postLog(`DEBUG: Datastore.putFile:  options=${options}, content=${inspect(file)}`)
     return this.putContent(streamFromFile(file), options);
   }
 
   async putContent(content, options) {
+    ports.postLog(`DEBUG: Datastore.putContent:  options=${inspect(options)}`);
     const entry = await last(
       importer(
         [{ content }],
         {
           put: async (data, { cid }) => {
+            ports.postLog(`DEBUG: Datastore.putContent.put:  cid=${cid}, data=${inspect(data)}`);
             const block = new Block(data, cid);
             return this.blockService.put(block);
           },
@@ -43,6 +48,7 @@ class Datastore {
       ),
     );
 
+    ports.postLog(`DEBUG: Datastore.putContent:  returning {cid:${inspect(entry.cid)}, size:${entry.unixfs ? entry.unixfs.fileSize() : undefined}`);
     return { cid: entry.cid.toString(), size: entry.unixfs.fileSize() };
   }
 
