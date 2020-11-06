@@ -10,6 +10,11 @@ import ports from '../ports';
 import Lotus from '../lotus-client/Lotus';
 import { hasOngoingDeals, ongoingDeals } from 'src/background/ongoingDeals';
 
+const CID = require('cids')
+const multihash = require('multihashes')
+const multicodecLib = require('multicodec')
+const multibaseConstants = require('multibase/src/constants')
+
 /** @type {SocketClient} */
 let singletonSocketClient;
 
@@ -58,6 +63,54 @@ export default class SocketClient {
     return client;
   }
 
+  decodeCID (value) {
+    const cid = new CID(value).toJSON();
+    let decoded = undefined;
+    if (cid.version === 0) {
+      decoded = this.decodeCidV0(value, cid)
+    }
+    if (cid.version === 1) {
+      decoded = this.decodeCidV1(value, cid)
+    }
+    if (decoded === undefined) {
+      throw new Error('Unknown CID version', cid.version, cid)
+    }
+    let rawLeaves = false;
+    return {
+      version: cid.version, 
+      hashAlg: decoded.multihash.name,
+      rawLeaves: decoded.multicodec.name === 'raw',
+      format: decoded.multicodec.name
+    }
+  }
+
+  decodeCidV0 (value, cid) {
+    return {
+      cid,
+      multibase: {
+        name: 'base58btc',
+        code: 'implicit'
+      },
+      multicodec: {
+        name: cid.codec,
+        code: 'implicit'
+      },
+      multihash: multihash.decode(cid.hash)
+    }
+  }
+
+  decodeCidV1 (value, cid) {
+    return {
+      cid,
+      multibase: multibaseConstants.codes[value.substring(0, 1)],
+      multicodec: {
+        name: cid.codec,
+        code: multicodecLib.getNumber(cid.codec)
+      },
+      multihash: multihash.decode(cid.hash)
+    }
+  }
+    
   connect() {
     this.socket.open();
   }
@@ -71,7 +124,9 @@ export default class SocketClient {
    */
   query({ cid, minerID }) {
     this.importSink = pushable();
-    this.datastore.putContent(this.importSink, { cidVersion: 1, hashAlg: 'blake2b-256' });
+    let decoded = this.decodeCID(cid);
+    ports.postLog(`DEBUG: SocketClient.query: cidVersion ${decoded.version} hashAlg ${decoded.hashAlg} rawLeaves ${decoded.rawLeaves} format ${decoded.format}`);
+    this.datastore.putContent(this.importSink, { cidVersion: decoded.version, hashAlg: decoded.hashAlg, rawLeaves: decoded.rawLeaves, format: decoded.format });
 
     const getQueryCIDMessage = messages.createGetQueryCID({ cid, minerID });
     this.socket.emit(getQueryCIDMessage.message, getQueryCIDMessage);
