@@ -1,33 +1,17 @@
 import pushable from 'it-pushable';
 import socketIO from 'socket.io-client';
 import getOptions from 'src/shared/getOptions.js';
+import { addOffer, clearOffers } from 'src/shared/offers';
 
 import { messageRequestTypes, messageResponseTypes, messages } from '../../shared/messages';
 import { sha256 } from '../../shared/sha256';
 import Datastore from '../Datastore';
 import ports from '../ports';
-import Lotus from '../lotus-client/Lotus'
+import Lotus from '../lotus-client/Lotus';
+import { hasOngoingDeals, ongoingDeals } from 'src/background/ongoingDeals';
 
 /** @type {SocketClient} */
 let singletonSocketClient;
-
-// TODO: TEMP
-// --
-// this.ongoingDeals[dealId] = {
-//   id: dealId,
-//   status: dealStatuses.new,
-//   customStatus: undefined,
-//   cid,
-//   params: dealParams,
-//   peerMultiaddr,
-//   peerWallet,
-//   sink,
-//   sizeReceived: 0,
-//   sizePaid: 0,
-//   importerSink,
-//   importer: this.datastore.putContent(importerSink),
-//   voucherNonce: 1,
-// };
 
 export default class SocketClient {
   /** @type {Datastore} Datastore */
@@ -41,31 +25,10 @@ export default class SocketClient {
   /** @type {(cid: string, size: number) => void} */
   handleCidReceived;
 
+  /** @type {ReturnType<socketIO>} Socket IO */
   socket;
-  cid;
-  minerID;
-  clientToken;
 
   maxResendAttempts;
-
-  // /**
-  //  * @type {{
-  //  *   id: dealId,
-  //  *   status: dealStatuses.new,
-  //  *   customStatus: undefined,
-  //  *   cid,
-  //  *   params: dealParams,
-  //  *   peerMultiaddr,
-  //  *   peerWallet,
-  //  *   sink,
-  //  *   sizeReceived: 0,
-  //  *   sizePaid: 0,
-  //  *   importerSink,
-  //  *   importer: this.datastore.putContent(importerSink),
-  //  *   voucherNonce: 1,
-  //  * }} ongoingDeals
-  //  */
-  // ongoingDeals;
 
   /**
    * @param {{ datastore: Datastore }} services Services
@@ -79,8 +42,6 @@ export default class SocketClient {
 
     const client = new SocketClient();
 
-    // client.ongoingDeals.id
-
     if (Datastore) {
       client.datastore = datastore;
     }
@@ -89,12 +50,20 @@ export default class SocketClient {
 
     client.maxResendAttempts = 3;
 
-    client._connect(options);
+    client._initializeSocketIO(options);
     client._addHandlers();
 
     singletonSocketClient = client;
 
     return client;
+  }
+
+  connect() {
+    this.socket.open();
+  }
+
+  disconnect() {
+    this.socket.close();
   }
 
   /**
@@ -108,10 +77,31 @@ export default class SocketClient {
     this.socket.emit(getQueryCIDMessage.message, getQueryCIDMessage);
   }
 
+  async buy({ cid, params, multiaddr }) {
+    try {
+      ports.postLog(`DEBUG: SocketClient._handleCidAvailability: creating Lotus instance`);
+      const lotus = await Lotus.create();
+      ports.postLog(
+        `DEBUG: SocketClient._handleCidAvailability: sending ${params.price} attofil to ${params.paymentWallet}`,
+      );
+      await lotus.sendFunds(params.price, params.paymentWallet);
+    } catch (error) {
+      ports.postLog(`ERROR: SocketClient._handleCidAvailability: error: ${error.message}`);
+    }
+
+    const options = await getOptions();
+    console.log(ongoingDeals);
+
+    this.socket.emit(
+      messageRequestTypes.fundsConfirmed,
+      messages.createFundsSent({ clientToken: params.clientToken, paymentWallet: options.wallet }),
+    );
+  }
+
   // Private:
 
-  _connect({ wsEndpoint }) {
-    this.socket = socketIO(wsEndpoint);
+  _initializeSocketIO({ wsEndpoint }) {
+    this.socket = socketIO(wsEndpoint, { autoConnect: false, transports: ['websocket'] });
   }
 
   _addHandlers() {
@@ -124,31 +114,25 @@ export default class SocketClient {
     this.socket.on(messageResponseTypes.cidAvailability, async (message) => {
       console.log(`Got ${messageResponseTypes.cidAvailability} message:`, message);
 
-      this.clientToken = message.client_token;
-
       if (!message.available) {
-        this.socket.disconnect();
+        if (!hasOngoingDeals()) {
+          this.socket.disconnect();
+        }
 
         ports.alertError(`CID not available: ${message.cid}`);
 
         return;
       }
 
-      try {
-        ports.postLog(`DEBUG: SocketClient._handleCidAvailability: creating Lotus instance`);
-        const lotus = await Lotus.create();
-        ports.postLog(`DEBUG: SocketClient._handleCidAvailability: sending ${message.price_attofil} attofil to ${message.payment_wallet}`);
-        await lotus.sendFunds(message.price_attofil, message.payment_wallet);
-      } catch(error) {
-        ports.postLog(`ERROR: SocketClient._handleCidAvailability: error: ${error.message}`);
-      }
-
-      const options = await getOptions();
-
-      this.socket.emit(
-        messageRequestTypes.fundsConfirmed,
-        messages.createFundsSent({ clientToken: this.clientToken, paymentWallet: options.wallet }),
-      );
+      await addOffer({
+        cid: message.cid,
+        params: {
+          price: message.priceAttofil,
+          size: message.approxSize,
+          clientToken: message.clientToken,
+          paymentWallet: message.paymentWallet,
+        },
+      });
     });
   }
 
@@ -160,7 +144,7 @@ export default class SocketClient {
       // TODO: periodically send this message to check on status
       this.socket.emit(
         messageRequestTypes.queryRetrievalStatus,
-        messages.createQueryRetrievalStatus({ cid: message.cid, clientToken: this.clientToken }),
+        messages.createQueryRetrievalStatus({ cid: message.cid, clientToken: message.clientToken }),
       );
     });
 
@@ -181,21 +165,20 @@ export default class SocketClient {
       if (message.eof) {
         this.importSink.end();
 
-        this.handleCidReceived(message.cid, message.full_data_len_bytes);
+        this.handleCidReceived(message.cid, message.fullDataLenBytes);
 
         return;
       }
 
-      const dataBuffer = Buffer.from(message.chunk_data, 'base64');
-      const validSha256 = message.chunk_sha256 === sha256(dataBuffer);
-      const validSize = dataBuffer.length === message.chunk_len_bytes;
+      const dataBuffer = Buffer.from(message.chunkData, 'base64');
+      const validSha256 = message.chunkSha256 === sha256(dataBuffer);
+      const validSize = dataBuffer.length === message.chunkLenBytes;
 
       if (validSha256 && validSize) {
         this.socket.emit(
           messageRequestTypes.chunkReceived,
           messages.createChunkReceived({
             ...message,
-            clientToken: this.clientToken,
           }),
         );
 
@@ -209,7 +192,6 @@ export default class SocketClient {
             messageRequestTypes.chunkResend,
             messages.createChunkResend({
               ...message,
-              clientToken: this.clientToken,
             }),
           );
         } else {

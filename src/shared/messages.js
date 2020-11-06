@@ -31,8 +31,8 @@ export const messages = {
   createFundsSent({ clientToken, paymentWallet }) {
     return {
       message: messageRequestTypes.fundsConfirmed,
-      client_token: clientToken,
-      payment_wallet: paymentWallet,
+      clientToken,
+      paymentWallet,
     };
   },
 
@@ -40,14 +40,14 @@ export const messages = {
     return {
       message: messageRequestTypes.queryRetrievalStatus,
       cid,
-      client_token: clientToken,
+      clientToken,
     };
   },
 
   createChunkReceived({ cid, id, clientToken }) {
     return {
       message: messageRequestTypes.chunkReceived,
-      client_token: clientToken,
+      clientToken,
       cid,
       id,
     };
@@ -56,7 +56,7 @@ export const messages = {
   createChunkResend({ cid, id, clientToken }) {
     return {
       message: messageRequestTypes.chunkResend,
-      client_token: clientToken,
+      clientToken,
       cid,
       id,
     };

@@ -1,4 +1,5 @@
 /* global chrome */
+import inspect from 'browser-util-inspect';
 import Libp2p from 'libp2p';
 import Gossipsub from 'libp2p-gossipsub';
 import Mplex from 'libp2p-mplex';
@@ -7,8 +8,10 @@ import Secio from 'libp2p-secio';
 import WebrtcStar from 'libp2p-webrtc-star';
 import Websockets from 'libp2p-websockets';
 import PeerId from 'peer-id';
+import { hasOngoingDeals } from 'src/background/ongoingDeals';
 import getOptions from 'src/shared/getOptions';
 import messageTypes from 'src/shared/messageTypes';
+import { clearOffers } from 'src/shared/offers';
 import setOptions from 'src/shared/setOptions';
 import topics from 'src/shared/topics';
 
@@ -18,7 +21,6 @@ import ports from './ports';
 import Client from './retrieval-market/Client';
 import Provider from './retrieval-market/Provider';
 import SocketClient from './socket-client/SocketClient';
-import inspect from 'browser-util-inspect';
 
 class Node {
   static async create(options) {
@@ -84,12 +86,15 @@ class Node {
     ports.postLog('DEBUG: Node.initialize(): creating Provider.js (retrieval market provider)');
     this.provider = await Provider.create(this.node, this.datastore, this.lotus);
 
-    ports.postLog(`DEBUG: Node.initialize(): creating SocketClient.js (Socket connection)`)
-    this.socketClient = SocketClient.create(
-      { datastore: this.datastore },
-      options,
-      { handleCidReceived: this.handleCidReceived },
-    );
+    ports.postLog(`DEBUG: Node.initialize(): creating SocketClient.js (Socket connection)`);
+    this.socketClient = SocketClient.create({ datastore: this.datastore }, options, {
+      handleCidReceived: (...args) => {
+        if (!hasOngoingDeals()) {
+          this.socketClient.disconnect();
+        }
+        return this.handleCidReceived(...args);
+      },
+    });
 
     ports.postLog('DEBUG: Node.initialize(): starting libp2p node');
     await this.node.start();
@@ -209,6 +214,8 @@ class Node {
       if (minerID) {
         // query for CID on a miner
         ports.postLog(`INFO: querying for ${cid} , minerID:  ${minerID}`);
+        clearOffers();
+        this.socketClient.connect();
         this.socketClient.query({ cid, minerID });
       } else {
         // query for CID on other peers
@@ -330,11 +337,29 @@ class Node {
     const { params } = offer;
     const multiaddr = offer.address;
 
+    const downloadParams = { cid, params, multiaddr };
+    if (/^ws/i.test(multiaddr)) {
+      return this.retrieveFromSocket(downloadParams);
+    }
+
+    return this.retrieveFromPeer(downloadParams);
+  }
+
+  async retrieveFromSocket({ cid, params, multiaddr }) {
+    try {
+      await this.socketClient.buy({ cid, params, multiaddr });
+    } catch (error) {
+      console.error(error);
+      ports.postLog(`ERROR: Node.retrieveFromSocket():  failed: ${error.message}`);
+    }
+  }
+
+  async retrieveFromPeer({ cid, params, multiaddr }) {
     try {
       await this.client.retrieve(cid, params, multiaddr); // TODO:  peer wallet!
     } catch (error) {
       console.error(error);
-      ports.postLog(`ERROR: Node.initiateRetrieval():  failed: ${error.message}`);
+      ports.postLog(`ERROR: Node.retrieveFromPeer():  failed: ${error.message}`);
     }
   }
 

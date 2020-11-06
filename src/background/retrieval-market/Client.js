@@ -5,33 +5,12 @@ import dealStatuses from 'src/shared/dealStatuses';
 import jsonStream from 'src/shared/jsonStream';
 import protocols from 'src/shared/protocols';
 import inspect from 'browser-util-inspect';
+import { ongoingDeals } from 'src/background/ongoingDeals';
 
 class Client {
   static async create(...args) {
     return new Client(...args);
   }
-
-  /**
-   * @typedef {Object} Deal
-   * @property {string} id The deal id
-   * @property {string} status The deal status for the app to handle
-   * @property {string} customStatus A custom status message to display the user
-   * @property {string} cid CID of the deal
-   * @property {string} params Params
-   * @property {string} peerMultiaddr Peer address
-   * @property {string} peerWallet Peer wallet
-   * @property {string} sink Sink
-   * @property {string} sizeReceived Total bytes received
-   * @property {string} sizePaid Total bytes paid
-   * @property {string} importerSink Importer sink
-   * @property {string} importer Importer
-   */
-  /**
-   * Deals dictionary.
-   *
-   * @type {Object.<string, Deal>}
-   */
-  ongoingDeals = {};
 
   constructor(node, datastore, lotus, cidReceivedCallback) {
     ports.postLog('DEBUG: Client.constructor()');
@@ -53,7 +32,11 @@ class Client {
    */
   async retrieve(cid, dealParams, peerMultiaddr, peerWallet) {
     ports.postLog('DEBUG: Client.retrieve()');
-    ports.postLog(`MIKE: retrieve called with\n  cid='${cid}'\n  dealParams='${inspect(dealParams)}'\n  peerMultiaddr=${peerMultiaddr}\n  peerWallet=${peerWallet}`);
+    ports.postLog(
+      `MIKE: retrieve called with\n  cid='${cid}'\n  dealParams='${inspect(
+        dealParams,
+      )}'\n  peerMultiaddr=${peerMultiaddr}\n  peerWallet=${peerWallet}`,
+    );
     ports.postLog(`DEBUG: dialing peer ${peerMultiaddr}`);
     const { stream } = await this.node.dialProtocol(peerMultiaddr, protocols.filecoinRetrieval);
 
@@ -65,7 +48,7 @@ class Client {
     // TODO:  should dealId be random?  Maybe, but check this
     // TODO:  rand % max int  eliminate Math.floor
     const dealId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
-    this.ongoingDeals[dealId] = {
+    ongoingDeals[dealId] = {
       id: dealId,
       status: dealStatuses.new,
       customStatus: undefined,
@@ -82,14 +65,14 @@ class Client {
     };
 
     await this.sendDealProposal({ dealId });
-    ports.postInboundDeals(this.ongoingDeals);
+    ports.postInboundDeals(ongoingDeals);
   }
 
   handleMessage = async (source) => {
     for await (const message of source) {
       try {
         ports.postLog(`DEBUG: Client.handleMessage(): message: ${inspect(message)}`);
-        const deal = this.ongoingDeals[message.dealId];
+        const deal = ongoingDeals[message.dealId];
 
         if (!deal) {
           throw new Error(`Deal not found: ${message.dealId}`);
@@ -145,12 +128,12 @@ class Client {
 
   updateCustomStatus(str, deal) {
     deal.customStatus = str;
-    ports.postInboundDeals(this.ongoingDeals);
+    ports.postInboundDeals(ongoingDeals);
   }
 
   sendDealProposal({ dealId }) {
     ports.postLog(`DEBUG: Client.sendDealProposal: sending deal proposal ${dealId}`);
-    const deal = this.ongoingDeals[dealId];
+    const deal = ongoingDeals[dealId];
 
     deal.sink.push({
       dealId,
@@ -166,23 +149,27 @@ class Client {
 
   async setupPaymentChannel({ dealId }) {
     ports.postLog(`DEBUG: Client.setupPaymentChannel(): setting up payment channel ${dealId}`);
-    const deal = this.ongoingDeals[dealId];
+    const deal = ongoingDeals[dealId];
 
     const pchAmount = deal.params.size * deal.params.pricePerByte;
-    const toAddr = deal.params.wallet
+    const toAddr = deal.params.wallet;
 
-    this.updateCustomStatus("Creating payment channel", deal);
+    this.updateCustomStatus('Creating payment channel', deal);
 
-    ports.postLog(`DEBUG: Client.setupPaymentChannel(): PCH creation parameters:\n  pchAmount='${pchAmount}'\n  toAddr='${toAddr}'`);
+    ports.postLog(
+      `DEBUG: Client.setupPaymentChannel(): PCH creation parameters:\n  pchAmount='${pchAmount}'\n  toAddr='${toAddr}'`,
+    );
 
     //await this.lotus.keyRecoverLogMsg();  // testing only
-    
+
     deal.paymentChannel = await this.lotus.createPaymentChannel(toAddr, pchAmount);
 
     // Not using lanes currently
     deal.Lane = 0;
 
-    ports.postLog(`DEBUG: Client.setupPaymentChannel(): sending payment channel ready (pchAddr='${deal.paymentChannel}') for dealId='${dealId}'`);
+    ports.postLog(
+      `DEBUG: Client.setupPaymentChannel(): sending payment channel ready (pchAddr='${deal.paymentChannel}') for dealId='${dealId}'`,
+    );
     deal.sink.push({
       dealId,
       status: dealStatuses.paymentChannelReady,
@@ -201,36 +188,36 @@ class Client {
    */
   async receiveBlocks({ dealId, blocks }) {
     ports.postLog(`DEBUG: Client.receiveBlocks(): received ${blocks.length} blocks deal id: ${dealId}`);
-    const deal = this.ongoingDeals[dealId];
-    this.updateCustomStatus("Receiving data", deal);
+    const deal = ongoingDeals[dealId];
+    this.updateCustomStatus('Receiving data', deal);
 
     for (const block of blocks) {
       deal.importerSink.push(block.data);
       deal.sizeReceived += block.data.length;
     }
 
-    ports.postInboundDeals(this.ongoingDeals);
+    ports.postInboundDeals(ongoingDeals);
   }
 
   async finishImport({ dealId, blocks }) {
     ports.postLog(`DEBUG: Client.finishImport(): finishing import ${dealId}`);
-    const deal = this.ongoingDeals[dealId];
+    const deal = ongoingDeals[dealId];
     deal.importerSink.end();
     await deal.importer;
   }
 
   async sendPayment({ dealId }, isLastVoucher) {
     ports.postLog(`DEBUG: Client.sendPayment(): sending payment ${dealId} (isLastVoucher=${isLastVoucher})`);
-    const deal = this.ongoingDeals[dealId];
+    const deal = ongoingDeals[dealId];
 
     const amount = deal.sizeReceived * deal.params.pricePerByte;
     const nonce = deal.voucherNonce++;
-    const sv = await this.lotus.createSignedVoucher(deal.paymentChannel,amount,nonce);
+    const sv = await this.lotus.createSignedVoucher(deal.paymentChannel, amount, nonce);
     ports.postLog(`DEBUG: Client.sendPayment(): sv = '${sv}'`);
 
     const newDealStatus = isLastVoucher ? dealStatuses.lastPaymentSent : dealStatuses.paymentSent;
 
-    this.updateCustomStatus("Sent signed voucher", deal);
+    this.updateCustomStatus('Sent signed voucher', deal);
 
     deal.sink.push({
       dealId,
@@ -242,16 +229,16 @@ class Client {
 
   async closeDeal({ dealId }) {
     ports.postLog(`DEBUG: Client.closeDeal: closing deal ${dealId}`);
-    const deal = this.ongoingDeals[dealId];
-    this.updateCustomStatus("Enqueueing channel collect operation", deal);
+    const deal = ongoingDeals[dealId];
+    this.updateCustomStatus('Enqueueing channel collect operation', deal);
     // TODO:
     // this.lotus.closePaymentChannel(deal.paymentChannel);
     deal.sink.end();
     // TODO:  pend an operation to call Collect on the channel when cron class is available
     // TODO:  stopgap solution:  window.setTimeout() to try to ensure channel Collect
-    delete this.ongoingDeals[dealId];
+    delete ongoingDeals[dealId];
     await this.cidReceivedCallback(deal.cid, deal.params.size);
-    ports.postInboundDeals(this.ongoingDeals);
+    ports.postInboundDeals(ongoingDeals);
   }
 }
 
