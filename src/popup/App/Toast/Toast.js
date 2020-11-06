@@ -22,7 +22,7 @@ function Toast({ className, ...rest }) {
   return (
     <div className={classNames(className, 'p-4 toast')} {...rest}>
       {messages.map((msg) => (
-        <div key={msg.id} className={classNames(msg.type, 'toast-item')}>
+        <div key={msg.id} className={classNames(msg.type, 'toast-item error-width')}>
           <div>{msg.message}</div>
           <button className="dismiss" onClick={() => dismiss(msg.id)}>
             dismiss
