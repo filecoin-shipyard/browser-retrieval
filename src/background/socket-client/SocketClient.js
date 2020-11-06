@@ -28,8 +28,6 @@ export default class SocketClient {
   /** @type {ReturnType<socketIO>} Socket IO */
   socket;
 
-  clientToken;
-
   maxResendAttempts;
 
   /**
@@ -79,26 +77,25 @@ export default class SocketClient {
     this.socket.emit(getQueryCIDMessage.message, getQueryCIDMessage);
   }
 
-  async buy() {
-      // try {
-      //   ports.postLog(`DEBUG: SocketClient._handleCidAvailability: creating Lotus instance`);
-      //   const lotus = await Lotus.create();
-      //   ports.postLog(
-      //     `DEBUG: SocketClient._handleCidAvailability: sending ${message.price_attofil} attofil to ${message.payment_wallet}`,
-      //   );
-      //   await lotus.sendFunds(message.price_attofil, message.payment_wallet);
-      // } catch (error) {
-      //   ports.postLog(`ERROR: SocketClient._handleCidAvailability: error: ${error.message}`);
-      // }
-
-      const options = await getOptions();
-      console.log(ongoingDeals);
-
-      // TODO: clientToken has to change, need to ID this call
-      this.socket.emit(
-        messageRequestTypes.fundsConfirmed,
-        messages.createFundsSent({ clientToken: this.clientToken, paymentWallet: options.wallet }),
+  async buy({ cid, params, multiaddr }) {
+    try {
+      ports.postLog(`DEBUG: SocketClient._handleCidAvailability: creating Lotus instance`);
+      const lotus = await Lotus.create();
+      ports.postLog(
+        `DEBUG: SocketClient._handleCidAvailability: sending ${params.price} attofil to ${params.paymentWallet}`,
       );
+      await lotus.sendFunds(params.price, params.paymentWallet);
+    } catch (error) {
+      ports.postLog(`ERROR: SocketClient._handleCidAvailability: error: ${error.message}`);
+    }
+
+    const options = await getOptions();
+    console.log(ongoingDeals);
+
+    this.socket.emit(
+      messageRequestTypes.fundsConfirmed,
+      messages.createFundsSent({ clientToken: params.clientToken, paymentWallet: options.wallet }),
+    );
   }
 
   // Private:
@@ -117,8 +114,6 @@ export default class SocketClient {
     this.socket.on(messageResponseTypes.cidAvailability, async (message) => {
       console.log(`Got ${messageResponseTypes.cidAvailability} message:`, message);
 
-      this.clientToken = message.client_token;
-
       if (!message.available) {
         if (!hasOngoingDeals()) {
           this.socket.disconnect();
@@ -132,8 +127,10 @@ export default class SocketClient {
       await addOffer({
         cid: message.cid,
         params: {
-          price: message.price_attofil,
+          price: message.priceAttofil,
           size: message.approxSize,
+          clientToken: message.clientToken,
+          paymentWallet: message.paymentWallet,
         },
       });
     });
@@ -147,7 +144,7 @@ export default class SocketClient {
       // TODO: periodically send this message to check on status
       this.socket.emit(
         messageRequestTypes.queryRetrievalStatus,
-        messages.createQueryRetrievalStatus({ cid: message.cid, clientToken: this.clientToken }),
+        messages.createQueryRetrievalStatus({ cid: message.cid, clientToken: message.clientToken }),
       );
     });
 
@@ -168,21 +165,20 @@ export default class SocketClient {
       if (message.eof) {
         this.importSink.end();
 
-        this.handleCidReceived(message.cid, message.full_data_len_bytes);
+        this.handleCidReceived(message.cid, message.fullDataLenBytes);
 
         return;
       }
 
-      const dataBuffer = Buffer.from(message.chunk_data, 'base64');
-      const validSha256 = message.chunk_sha256 === sha256(dataBuffer);
-      const validSize = dataBuffer.length === message.chunk_len_bytes;
+      const dataBuffer = Buffer.from(message.chunkData, 'base64');
+      const validSha256 = message.chunkSha256 === sha256(dataBuffer);
+      const validSize = dataBuffer.length === message.chunkLenBytes;
 
       if (validSha256 && validSize) {
         this.socket.emit(
           messageRequestTypes.chunkReceived,
           messages.createChunkReceived({
             ...message,
-            clientToken: this.clientToken,
           }),
         );
 
@@ -196,7 +192,6 @@ export default class SocketClient {
             messageRequestTypes.chunkResend,
             messages.createChunkResend({
               ...message,
-              clientToken: this.clientToken,
             }),
           );
         } else {

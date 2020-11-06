@@ -347,7 +347,7 @@ class Node {
 
   async retrieveFromSocket({ cid, params, multiaddr }) {
     try {
-      await this.socketClient.buy();
+      await this.socketClient.buy({ cid, params, multiaddr });
     } catch (error) {
       console.error(error);
       ports.postLog(`ERROR: Node.retrieveFromSocket():  failed: ${error.message}`);
