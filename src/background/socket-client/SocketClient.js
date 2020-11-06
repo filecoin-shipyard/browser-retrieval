@@ -109,6 +109,7 @@ export default class SocketClient {
       },
       multihash: multihash.decode(cid.hash)
     }
+  }
     
   connect() {
     this.socket.open();
