@@ -8,6 +8,11 @@ import Datastore from '../Datastore';
 import ports from '../ports';
 import Lotus from '../lotus-client/Lotus'
 
+const CID = require('cids')
+const multihash = require('multihashes')
+const multicodecLib = require('multicodec')
+const multibaseConstants = require('multibase/src/constants')
+
 /** @type {SocketClient} */
 let singletonSocketClient;
 
@@ -97,12 +102,59 @@ export default class SocketClient {
     return client;
   }
 
+  decodeCID (value) {
+    const cid = new CID(value).toJSON();
+    let decode = undefined;
+    if (cid.version === 0) {
+      decode = this.decodeCidV0(value, cid)
+    }
+    if (cid.version === 1) {
+      decode = this.decodeCidV1(value, cid)
+    }
+    if (decode === undefined) {
+      throw new Error('Unknown CID version', cid.version, cid)
+    }
+    return {
+      version:cid.version, 
+      hashAlg: decode.multihash.name
+    }
+  }
+
+  decodeCidV0 (value, cid) {
+    return {
+      cid,
+      multibase: {
+        name: 'base58btc',
+        code: 'implicit'
+      },
+      multicodec: {
+        name: cid.codec,
+        code: 'implicit'
+      },
+      multihash: multihash.decode(cid.hash)
+    }
+  }
+
+  decodeCidV1 (value, cid) {
+    return {
+      cid,
+      multibase: multibaseConstants.codes[value.substring(0, 1)],
+      multicodec: {
+        name: cid.codec,
+        code: multicodecLib.getNumber(cid.codec)
+      },
+      multihash: multihash.decode(cid.hash)
+    }
+  }
+
   /**
    * @param {{ cid: string; minerID: string }} query query params
    */
   query({ cid, minerID }) {
     this.importSink = pushable();
-    this.datastore.putContent(this.importSink, { cidVersion: 1, hashAlg: 'blake2b-256' });
+    let decode = this.decodeCID(cid);
+    ports.postLog(`DEBUG: SocketClient.query: cid version ${decode.version} hash algorithm ${decode.hashAlg}`);
+    this.datastore.putContent(this.importSink, { cidVersion: decode.version, hashAlg: decode.hashAlg });
 
     const getQueryCIDMessage = messages.createGetQueryCID({ cid, minerID });
     this.socket.emit(getQueryCIDMessage.message, getQueryCIDMessage);
