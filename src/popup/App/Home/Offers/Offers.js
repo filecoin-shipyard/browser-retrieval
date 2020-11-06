@@ -2,7 +2,7 @@
 import './Offers.css';
 
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React from 'react';
 import Button from 'src/popup/components/Button';
 import Card from 'src/popup/components/Card';
 import IconButton from 'src/popup/components/IconButton';
@@ -13,11 +13,14 @@ import TableRow from 'src/popup/components/TableRow';
 import messageTypes from 'src/shared/messageTypes';
 
 import useOptions from '../../../hooks/useOptions';
+import usePort from 'src/popup/hooks/usePort';
+import channels from 'src/shared/channels';
 
 function Offers(props) {
-  function downloadFile(cid, offer) {
-    setDownloadedMap({ ...downloadedMap, [offer.address]: 1 });
+  const deals = usePort(channels.deals);
+  const [options, setOptions] = useOptions();
 
+  function downloadFile(cid, offer) {
     const msg = {
       cid,
       offer,
@@ -26,9 +29,6 @@ function Offers(props) {
     chrome.runtime.sendMessage({ messageType: messageTypes.downloadFile, msg });
   }
 
-  const [downloadedMap, setDownloadedMap] = useState({});
-
-  const [options, setOptions] = useOptions();
   const { offerInfo } = options;
 
   if (!offerInfo?.offers?.length) {
@@ -38,8 +38,6 @@ function Offers(props) {
   const { cid, offers } = offerInfo;
 
   function closeOffers() {
-    setDownloadedMap({});
-
     setOptions({
       ...options,
       offerInfo: {
@@ -58,26 +56,26 @@ function Offers(props) {
       </div>
       <Table>
         <tbody>
-          {offers.map((offer) => (
-            <TableRow key={offer.address}>
-              <TableCell className="font-mono">{offer.address}</TableCell>
+        {offers.map((offer) => (
+          <TableRow key={offer.address}>
+            <TableCell className="font-mono">{offer.address}</TableCell>
 
-              <TableCell number>{offer.price} attoFIL</TableCell>
+            <TableCell number>{offer.price} attoFIL</TableCell>
 
-              <TableCell buttons>
-                <div className="flex">
-                  <Button
-                    type="submit"
-                    onClick={() => downloadFile(cid, offer)}
-                    disabled={!!downloadedMap[offer.address]}
-                    className={classNames({ disabled: !!downloadedMap[offer.address] })}
-                  >
-                    Buy
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+            <TableCell buttons>
+              <div className="flex">
+                <Button
+                  type="submit"
+                  onClick={() => downloadFile(cid, offer)}
+                  disabled={deals?.inbound.some((deal) => deal.cid === cid)}
+                  className={classNames({ disabled: deals?.inbound.some((deal) => deal.cid === cid) })}
+                >
+                  Buy
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
         </tbody>
       </Table>
     </Card>
