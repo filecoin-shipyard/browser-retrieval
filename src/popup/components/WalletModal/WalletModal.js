@@ -6,7 +6,8 @@ import * as signer from '@zondax/filecoin-signing-tools';
 import useOptions from 'src/popup/hooks/useOptions';
 import Form from 'src/popup/components/Form';
 import Label from 'src/popup/components/Label';
-import InputField from 'src/popup/components/InputField/InputField';
+import InputField from 'src/popup/components/InputField';
+import InputFieldPassword from 'src/popup/components/InputFieldPassword';
 
 function WalletModal({ className, ...rest }) {
   const { handleSubmit, register, setError, errors } = useForm();
@@ -47,7 +48,7 @@ function WalletModal({ className, ...rest }) {
                   onFocus={(e) => e.target.placeholder = ""}
                   onBlur={(e) => e.target.placeholder = options.walletPlaceholder}
                 />
-                <InputField
+                <InputFieldPassword
                   ref={register({ required: 'Required' })}
                   className="flex-1"
                   label="Private key (secp256k1)"
@@ -57,7 +58,6 @@ function WalletModal({ className, ...rest }) {
                   placeholder={options.privateKeyPlaceholder}
                   onFocus={(e) => e.target.placeholder = ""}
                   onBlur={(e) => e.target.placeholder = options.privateKeyPlaceholder}
-                  type="password"
                   submit
                 />
               </div>
