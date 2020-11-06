@@ -104,19 +104,22 @@ export default class SocketClient {
 
   decodeCID (value) {
     const cid = new CID(value).toJSON();
-    let decode = undefined;
+    let decoded = undefined;
     if (cid.version === 0) {
-      decode = this.decodeCidV0(value, cid)
+      decoded = this.decodeCidV0(value, cid)
     }
     if (cid.version === 1) {
-      decode = this.decodeCidV1(value, cid)
+      decoded = this.decodeCidV1(value, cid)
     }
-    if (decode === undefined) {
+    if (decoded === undefined) {
       throw new Error('Unknown CID version', cid.version, cid)
     }
+    let rawLeaves = false;
     return {
-      version:cid.version, 
-      hashAlg: decode.multihash.name
+      version: cid.version, 
+      hashAlg: decoded.multihash.name,
+      rawLeaves: decoded.multicodec.name === 'raw',
+      format: decoded.multicodec.name
     }
   }
 
@@ -152,9 +155,9 @@ export default class SocketClient {
    */
   query({ cid, minerID }) {
     this.importSink = pushable();
-    let decode = this.decodeCID(cid);
-    ports.postLog(`DEBUG: SocketClient.query: cid version ${decode.version} hash algorithm ${decode.hashAlg}`);
-    this.datastore.putContent(this.importSink, { cidVersion: decode.version, hashAlg: decode.hashAlg });
+    let decoded = this.decodeCID(cid);
+    ports.postLog(`DEBUG: SocketClient.query: cidVersion ${decoded.version} hashAlg ${decoded.hashAlg} rawLeaves ${decoded.rawLeaves} format ${decoded.format}`);
+    this.datastore.putContent(this.importSink, { cidVersion: decoded.version, hashAlg: decoded.hashAlg, rawLeaves: decoded.rawLeaves, format: decoded.format });
 
     const getQueryCIDMessage = messages.createGetQueryCID({ cid, minerID });
     this.socket.emit(getQueryCIDMessage.message, getQueryCIDMessage);
