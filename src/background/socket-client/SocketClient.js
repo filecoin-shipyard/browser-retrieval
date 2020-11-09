@@ -1,19 +1,18 @@
+import CID from 'cids';
 import pushable from 'it-pushable';
+import multibaseConstants from 'multibase/src/constants';
+import multicodecLib from 'multicodec';
+import multihash from 'multihashes';
 import socketIO from 'socket.io-client';
+import { hasOngoingDeals, ongoingDeals } from 'src/background/ongoingDeals';
 import getOptions from 'src/shared/getOptions.js';
-import { addOffer, clearOffers } from 'src/shared/offers';
+import { addOffer } from 'src/shared/offers';
 
 import { messageRequestTypes, messageResponseTypes, messages } from '../../shared/messages';
 import { sha256 } from '../../shared/sha256';
 import Datastore from '../Datastore';
-import ports from '../ports';
 import Lotus from '../lotus-client/Lotus';
-import { hasOngoingDeals, ongoingDeals } from 'src/background/ongoingDeals';
-
-const CID = require('cids')
-const multihash = require('multihashes')
-const multicodecLib = require('multicodec')
-const multibaseConstants = require('multibase/src/constants')
+import ports from '../ports';
 
 /** @type {SocketClient} */
 let singletonSocketClient;
@@ -63,54 +62,49 @@ export default class SocketClient {
     return client;
   }
 
-  decodeCID (value) {
+  decodeCID(value) {
     const cid = new CID(value).toJSON();
-    let decoded = undefined;
-    if (cid.version === 0) {
-      decoded = this.decodeCidV0(value, cid)
+    const decoded = cid.version === 1 ? this.decodeCidV1(value, cid) : this.decodeCidV0(value, cid);
+
+    if (!decoded) {
+      throw new Error('Unknown CID version', cid.version, cid);
     }
-    if (cid.version === 1) {
-      decoded = this.decodeCidV1(value, cid)
-    }
-    if (decoded === undefined) {
-      throw new Error('Unknown CID version', cid.version, cid)
-    }
-    let rawLeaves = false;
+
     return {
-      version: cid.version, 
+      version: cid.version,
       hashAlg: decoded.multihash.name,
       rawLeaves: decoded.multicodec.name === 'raw',
-      format: decoded.multicodec.name
-    }
+      format: decoded.multicodec.name,
+    };
   }
 
-  decodeCidV0 (value, cid) {
+  decodeCidV0(value, cid) {
     return {
       cid,
       multibase: {
         name: 'base58btc',
-        code: 'implicit'
+        code: 'implicit',
       },
       multicodec: {
         name: cid.codec,
-        code: 'implicit'
+        code: 'implicit',
       },
-      multihash: multihash.decode(cid.hash)
-    }
+      multihash: multihash.decode(cid.hash),
+    };
   }
 
-  decodeCidV1 (value, cid) {
+  decodeCidV1(value, cid) {
     return {
       cid,
       multibase: multibaseConstants.codes[value.substring(0, 1)],
       multicodec: {
         name: cid.codec,
-        code: multicodecLib.getNumber(cid.codec)
+        code: multicodecLib.getNumber(cid.codec),
       },
-      multihash: multihash.decode(cid.hash)
-    }
+      multihash: multihash.decode(cid.hash),
+    };
   }
-    
+
   connect() {
     this.socket.open();
   }
@@ -125,8 +119,15 @@ export default class SocketClient {
   query({ cid, minerID }) {
     this.importSink = pushable();
     let decoded = this.decodeCID(cid);
-    ports.postLog(`DEBUG: SocketClient.query: cidVersion ${decoded.version} hashAlg ${decoded.hashAlg} rawLeaves ${decoded.rawLeaves} format ${decoded.format}`);
-    this.datastore.putContent(this.importSink, { cidVersion: decoded.version, hashAlg: decoded.hashAlg, rawLeaves: decoded.rawLeaves, format: decoded.format });
+    ports.postLog(
+      `DEBUG: SocketClient.query: cidVersion ${decoded.version} hashAlg ${decoded.hashAlg} rawLeaves ${decoded.rawLeaves} format ${decoded.format}`,
+    );
+    this.datastore.putContent(this.importSink, {
+      cidVersion: decoded.version,
+      hashAlg: decoded.hashAlg,
+      rawLeaves: decoded.rawLeaves,
+      format: decoded.format,
+    });
 
     const getQueryCIDMessage = messages.createGetQueryCID({ cid, minerID });
     this.socket.emit(getQueryCIDMessage.message, getQueryCIDMessage);

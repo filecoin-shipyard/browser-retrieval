@@ -211,17 +211,16 @@ class Node {
       const cid = rawCid.trim();
       this.queriedCids.add(cid);
 
+      clearOffers();
+
       if (minerID) {
-        // query for CID on a miner
-        ports.postLog(`INFO: querying for ${cid} , minerID:  ${minerID}`);
-        clearOffers();
+        ports.postLog(`INFO: querying proxy for ${cid} , minerID:  ${minerID}`);
         this.socketClient.connect();
         this.socketClient.query({ cid, minerID });
-      } else {
-        // query for CID on other peers
-        ports.postLog(`INFO: querying for ${cid}`);
-        await this.publish({ messageType: messageTypes.query, cid });
       }
+
+      ports.postLog(`INFO: querying peers for ${cid}`);
+      await this.publish({ messageType: messageTypes.query, cid });
     } catch (error) {
       console.error(error);
       ports.postLog(`ERROR: publish to topic failed: ${error.message}`);
