@@ -12,7 +12,7 @@
     "axios": "^0.20.0",
     "browser-util-inspect": "^0.2.0",
     "buffer": "^5.6.0",
-    "cids": "^0.8.3",
+    "cids": "^1.0.2",
     "classnames": "^2.2.6",
     "interface-datastore": "^1.0.4",
     "ipfs-block-service": "^0.17.1",
@@ -36,6 +36,9 @@
     "lodash": "^4.17.15",
     "luxon": "^1.25.0",
     "multihashing-async": "^1.0.0",
+    "multibase": "^3.0.1",
+    "multicodec": "^2.0.1",
+    "multihashes": "^3.0.1",
     "peer-id": "^0.13.13",
     "postcss-cli": "^7.1.1",
     "pretty-bytes": "^5.3.0",
@@ -54,6 +57,7 @@
   },
   "devDependencies": {
     "cross-env": "^7.0.2",
+    "file-replace-loader": "^1.3.1",
     "npm-watch": "^0.7.0",
     "typescript": "^4.0.3"
   },
@@ -64,12 +68,19 @@
     "build:background": "cross-env NODE_ENV=development webpack",
     "build": "yarn build:popup && yarn build:background",
     "build:debug": "cross-env DEBUG=true yarn build",
+    "watch": "npm-watch build",
     "lint": "eslint ./src",
-    "watch": "npm-watch"
+    "## LOCAL ##": "",
+    "build:local": "yarn build:popup:local && yarn build:background:local",
+    "build:js:local": "yarn build:popup:js && yarn build:background:local",
+    "build:background:local": "cross-env ENV=local yarn build:background",
+    "build:popup:local": "cross-env ENV=local yarn build:popup",
+    "watch:local": "npm-watch build:js:local"
   },
   "watch": {
-    "build:popup:js": "src/{popup,shared}/**/*.js",
-    "build:background": "src/{background,shared}/**/*.js"
+    "build": "src/{popup,background,shared}/**/*.js",
+    "build:local": "src/{popup,background,shared}/**/*.js",
+    "build:js:local": "src/{background,popup,shared}/**/*.js"
   },
   "eslintConfig": {
     "extends": "react-app"

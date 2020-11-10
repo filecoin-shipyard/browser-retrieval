@@ -32,7 +32,7 @@ function Offers(props) {
   const { offerInfo } = options;
 
   if (!offerInfo?.offers?.length) {
-    return null;
+    return null;  
   }
 
   const { cid, offers } = offerInfo;
@@ -56,9 +56,9 @@ function Offers(props) {
       </div>
       <Table>
         <tbody>
-        {offers.map((offer) => (
-          <TableRow key={offer.address}>
-            <TableCell className="font-mono">{offer.address}</TableCell>
+          {offers.map((offer) => (
+            <TableRow key={offer.address}>
+              <TableCell className="font-mono">{/^ws/.test(offer.address) ? 'Proxy Server' : offer.address}</TableCell>
 
             <TableCell number>{offer.price} attoFIL</TableCell>
 
