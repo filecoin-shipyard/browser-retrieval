@@ -13,19 +13,7 @@ function Tabs({ className, tabs, children, ...rest }) {
     setIsOpen(!isOpen);
   }
 
-  function clearOffers() {
-    setOptions({
-      ...options,
-      offerInfo: {
-        cid: undefined,
-        offers: [],
-        params: undefined,
-      },
-    });
-  }
-
   function switchTab(tab) {
-    clearOffers();
     const aggregated = options.unsavedForms.price || options.unsavedForms.lotus;
 
     if (aggregated && tab.label !== 'Options') {
