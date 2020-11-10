@@ -3,6 +3,7 @@ import React from 'react';
 import ProgressIndicator from 'src/popup/components/ProgressIndicator';
 import TableCell from 'src/popup/components/TableCell';
 import TableRow from 'src/popup/components/TableRow';
+import {formatCid} from 'src/shared/helpers';
 
 import dealStatuses from '../../../../../shared/dealStatuses';
 
@@ -71,7 +72,7 @@ function Deal({ deal, inbound, ...rest }) {
           />
         </svg>
       </TableCell>
-      <TableCell className="font-mono">{deal.cid}</TableCell>
+      <TableCell className="font-mono">{formatCid(deal.cid)}</TableCell>
       <TableCell>{renderStatus(deal)}</TableCell>
       <TableCell>
         <ProgressIndicator progress={progress} />
