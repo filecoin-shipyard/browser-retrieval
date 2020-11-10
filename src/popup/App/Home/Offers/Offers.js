@@ -26,10 +26,10 @@ function Offers(props) {
     chrome.runtime.sendMessage({ messageType: messageTypes.downloadFile, msg });
   }
 
-  const [downloadedMap, setDownloadedMap] = useState({});
-
   const [options, setOptions] = useOptions();
   const { offerInfo } = options;
+
+  const [downloadedMap, setDownloadedMap] = useState({ cid: offerInfo.cid });
 
   if (!offerInfo?.offers?.length) {
     return null;
@@ -37,8 +37,16 @@ function Offers(props) {
 
   const { cid, offers } = offerInfo;
 
+  if (downloadedMap.cid !== cid) {
+    setDownloadedMap({
+      cid,
+    });
+  }
+
   function closeOffers() {
-    setDownloadedMap({});
+    setDownloadedMap({
+      cid: offerInfo.cid,
+    });
 
     setOptions({
       ...options,
