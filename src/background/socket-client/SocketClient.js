@@ -5,6 +5,7 @@ import multicodecLib from 'multicodec';
 import multihash from 'multihashes';
 import socketIO from 'socket.io-client';
 import { hasOngoingDeals, ongoingDeals } from 'src/background/ongoingDeals';
+import dealStatuses from 'src/shared/dealStatuses';
 import getOptions from 'src/shared/getOptions.js';
 import { addOffer } from 'src/shared/offers';
 
@@ -20,11 +21,6 @@ let singletonSocketClient;
 export default class SocketClient {
   /** @type {Datastore} Datastore */
   datastore;
-
-  /**
-   * @type {ReturnType<pushable>} importSink Sink to pass chunks to
-   */
-  importSink;
 
   /** @type {(cid: string, size: number) => void} */
   handleCidReceived;
@@ -117,36 +113,27 @@ export default class SocketClient {
    * @param {{ cid: string; minerID: string }} query query params
    */
   query({ cid, minerID }) {
-    this.importSink = pushable();
-    let decoded = this.decodeCID(cid);
-    ports.postLog(
-      `DEBUG: SocketClient.query: cidVersion ${decoded.version} hashAlg ${decoded.hashAlg} rawLeaves ${decoded.rawLeaves} format ${decoded.format}`,
-    );
-    this.datastore.putContent(this.importSink, {
-      cidVersion: decoded.version,
-      hashAlg: decoded.hashAlg,
-      rawLeaves: decoded.rawLeaves,
-      format: decoded.format,
-    });
-
     const getQueryCIDMessage = messages.createGetQueryCID({ cid, minerID });
     this.socket.emit(getQueryCIDMessage.message, getQueryCIDMessage);
   }
 
   async buy({ cid, params, multiaddr }) {
     try {
-      ports.postLog(`DEBUG: SocketClient._handleCidAvailability: creating Lotus instance`);
-      const lotus = await Lotus.create();
+      const decoded = this.decodeCID(cid);
       ports.postLog(
-        `DEBUG: SocketClient._handleCidAvailability: sending ${params.price} attofil to ${params.paymentWallet}`,
+        `DEBUG: SocketClient.buy: cidVersion ${decoded.version} hashAlg ${decoded.hashAlg} rawLeaves ${decoded.rawLeaves} format ${decoded.format}`,
       );
-      await lotus.sendFunds(params.price, params.paymentWallet);
+
+      this._createOngoingDeal({ cid, params, multiaddr, decoded });
+
+      await this._sendFunds(params);
+
+      this._setOngoingDealProps(params.clientToken, { status: dealStatuses.awaitingAcceptance });
     } catch (error) {
       ports.postLog(`ERROR: SocketClient._handleCidAvailability: error: ${error.message}`);
     }
 
     const options = await getOptions();
-    console.log(ongoingDeals);
 
     this.socket.emit(
       messageRequestTypes.fundsConfirmed,
@@ -213,15 +200,24 @@ export default class SocketClient {
   }
 
   _handleChunk() {
-    this.socket.on(messageResponseTypes.chunk, (message) => {
+    this.socket.on(messageResponseTypes.chunk, async (message) => {
       console.log('got message from server: chunk');
       console.log('message', message);
 
+      const deal = ongoingDeals[message.clientToken];
+
       // all chunks were received
       if (message.eof) {
-        this.importSink.end();
+        this._setOngoingDealProps(message.clientToken, {
+          sizeReceived: deal.params.size,
+          status: dealStatuses.finalizing,
+        });
+
+        deal.importerSink.end();
 
         this.handleCidReceived(message.cid, message.fullDataLenBytes);
+
+        await this._closeDeal({ dealId: ongoingDeals[message.clientToken].id });
 
         return;
       }
@@ -239,7 +235,15 @@ export default class SocketClient {
         );
 
         // pushed data needs to be an array of bytes
-        this.importSink.push([...dataBuffer]);
+        deal.importerSink.push([...dataBuffer]);
+
+        deal.status = dealStatuses.ongoing;
+        deal.sizeReceived += message.chunkLenBytes;
+
+        this._setOngoingDealProps(message.clientToken, {
+          sizeReceived: deal.sizeReceived + message.chunkLenBytes,
+          status: dealStatuses.ongoing,
+        });
       } else {
         if (this.maxResendAttempts > 0) {
           this.maxResendAttempts--;
@@ -256,5 +260,65 @@ export default class SocketClient {
         }
       }
     });
+  }
+
+  _createOngoingDeal({ cid, params, multiaddr, decoded }) {
+    const importerSink = pushable();
+
+    const dealId = params.clientToken;
+
+    ongoingDeals[dealId] = {
+      id: dealId,
+      status: dealStatuses.new,
+      customStatus: undefined,
+      cid,
+      params,
+      peerMultiaddr: multiaddr,
+      peerWallet: params.paymentWallet,
+      sink: pushable(),
+      sizeReceived: 0,
+      sizePaid: 0,
+      importerSink,
+      importer: this.datastore.putContent(importerSink, {
+        cidVersion: decoded.version,
+        hashAlg: decoded.hashAlg,
+        rawLeaves: decoded.rawLeaves,
+        format: decoded.format,
+      }),
+      voucherNonce: 1,
+    };
+    ports.postInboundDeals(ongoingDeals);
+  }
+
+  _setOngoingDealProps(clientToken, props) {
+    ongoingDeals[clientToken] = {
+      ...ongoingDeals[clientToken],
+      ...props,
+    };
+    ports.postInboundDeals(ongoingDeals);
+  }
+
+  async _sendFunds(params) {
+    ports.postLog(`DEBUG: SocketClient._handleCidAvailability: creating Lotus instance`);
+    const lotus = await Lotus.create();
+    ports.postLog(
+      `DEBUG: SocketClient._handleCidAvailability: sending ${params.price} attofil to ${params.paymentWallet}`,
+    );
+    await lotus.sendFunds(params.price, params.paymentWallet);
+  }
+
+  async _closeDeal({ dealId }) {
+    ports.postLog(`DEBUG: SocketClient.closeDeal: closing deal ${dealId}`);
+    const deal = ongoingDeals[dealId];
+
+    this._setOngoingDealProps(dealId, {
+      customStatus: 'Done',
+    });
+
+    deal.sink.end();
+
+    delete ongoingDeals[dealId];
+    await this.handleCidReceived(deal.cid, deal.params.size);
+    ports.postInboundDeals(ongoingDeals);
   }
 }

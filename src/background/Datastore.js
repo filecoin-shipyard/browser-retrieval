@@ -49,7 +49,7 @@ class Datastore {
     );
 
     ports.postLog(`DEBUG: Datastore.putContent:  returning {cid:${inspect(entry.cid)}, size:${entry.unixfs ? entry.unixfs.fileSize() : undefined}`);
-    return { cid: entry.cid.toString(), size: entry.unixfs.fileSize() };
+    return { cid: entry.cid.toString(), size: entry.unixfs ? entry.unixfs.fileSize() : undefined };
   }
 
   async get(cid) {
