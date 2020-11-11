@@ -11,14 +11,13 @@ import Input from 'src/popup/components/Input';
 import Label from 'src/popup/components/Label';
 import SubLabel from 'src/popup/components/SubLabel';
 import messageTypes from 'src/shared/messageTypes';
-import useOptions from 'src/popup/hooks/useOptions';
+import {clearOffers} from 'src/shared/offers';
 
 import './QueryForm.css';
 
 function QueryForm(props) {
   const { handleSubmit, register, errors } = useForm();
   const [checked, setChecked] = useState(false);
-  const [options, setOptions] = useOptions();
   const [cid, setCid] = useState();
 
   function onSubmit({ cid, minerID }) {
@@ -29,17 +28,6 @@ function QueryForm(props) {
       minerID,
     };
     chrome.runtime.sendMessage({ messageType: messageTypes.query, msg });
-  }
-
-  function clearOffers() {
-    setOptions({
-      ...options,
-      offerInfo: {
-        cid: undefined,
-        offers: [],
-        params: undefined,
-      },
-    });
   }
 
   if (!cid) {
