@@ -124,9 +124,8 @@ export default class SocketClient {
     );
 
     if (decoded.format !== 'raw') {
-      ports.alertError(`CIDs >2MB not yet supported. Format not supported: ${decoded.format}`)
-
-      return
+      ports.alertError(`CIDs >2MB not yet supported`);
+      return;
     }
 
     this.datastore.putContent(this.importSink, {
