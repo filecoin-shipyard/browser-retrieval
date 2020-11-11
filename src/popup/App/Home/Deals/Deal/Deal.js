@@ -3,7 +3,7 @@ import React from 'react';
 import ProgressIndicator from 'src/popup/components/ProgressIndicator';
 import TableCell from 'src/popup/components/TableCell';
 import TableRow from 'src/popup/components/TableRow';
-import {formatCid} from 'src/shared/helpers';
+import {formatCid} from 'src/shared/formatCid';
 
 import dealStatuses from '../../../../../shared/dealStatuses';
 
