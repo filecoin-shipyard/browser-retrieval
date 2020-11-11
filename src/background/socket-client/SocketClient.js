@@ -122,6 +122,13 @@ export default class SocketClient {
     ports.postLog(
       `DEBUG: SocketClient.query: cidVersion ${decoded.version} hashAlg ${decoded.hashAlg} rawLeaves ${decoded.rawLeaves} format ${decoded.format}`,
     );
+
+    if (decoded.format !== 'raw') {
+      ports.alertError(`CIDs >2MB not yet supported. Format not supported: ${decoded.format}`)
+
+      return
+    }
+
     this.datastore.putContent(this.importSink, {
       cidVersion: decoded.version,
       hashAlg: decoded.hashAlg,
