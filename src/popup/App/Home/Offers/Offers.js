@@ -32,7 +32,7 @@ function Offers(props) {
   const { offerInfo } = options;
 
   if (!offerInfo?.offers?.length) {
-    return null;  
+    return null;
   }
 
   const { cid, offers } = offerInfo;
@@ -50,7 +50,7 @@ function Offers(props) {
 
   return (
     <Card {...props}>
-      <div class="flex">
+      <div className="flex">
         <Label className="p-4 pb-2 flex-1">Offers for CID {cid}</Label>
         <IconButton icon="close" onClick={() => closeOffers(cid)} danger className="Offer-close" />
       </div>
