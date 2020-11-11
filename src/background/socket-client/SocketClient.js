@@ -113,6 +113,24 @@ export default class SocketClient {
    * @param {{ cid: string; minerID: string }} query query params
    */
   query({ cid, minerID }) {
+    this.importSink = pushable();
+    let decoded = this.decodeCID(cid);
+    ports.postLog(
+      `DEBUG: SocketClient.query: cidVersion ${decoded.version} hashAlg ${decoded.hashAlg} rawLeaves ${decoded.rawLeaves} format ${decoded.format}`,
+    );
+
+    if (decoded.format !== 'raw') {
+      ports.alertError(`CIDs >2MB not yet supported`);
+      return;
+    }
+
+    this.datastore.putContent(this.importSink, {
+      cidVersion: decoded.version,
+      hashAlg: decoded.hashAlg,
+      rawLeaves: decoded.rawLeaves,
+      format: decoded.format,
+    });
+
     const getQueryCIDMessage = messages.createGetQueryCID({ cid, minerID });
     this.socket.emit(getQueryCIDMessage.message, getQueryCIDMessage);
   }

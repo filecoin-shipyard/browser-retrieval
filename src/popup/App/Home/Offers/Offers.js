@@ -26,10 +26,10 @@ function Offers(props) {
     chrome.runtime.sendMessage({ messageType: messageTypes.downloadFile, msg });
   }
 
-  const [downloadedMap, setDownloadedMap] = useState({});
-
   const [options, setOptions] = useOptions();
   const { offerInfo } = options;
+
+  const [downloadedMap, setDownloadedMap] = useState({ cid: offerInfo.cid });
 
   if (!offerInfo?.offers?.length) {
     return null;
@@ -37,8 +37,16 @@ function Offers(props) {
 
   const { cid, offers } = offerInfo;
 
+  if (downloadedMap.cid !== cid) {
+    setDownloadedMap({
+      cid,
+    });
+  }
+
   function closeOffers() {
-    setDownloadedMap({});
+    setDownloadedMap({
+      cid: offerInfo.cid,
+    });
 
     setOptions({
       ...options,
@@ -60,7 +68,7 @@ function Offers(props) {
         <tbody>
           {offers.map((offer) => (
             <TableRow key={offer.address}>
-              <TableCell className="font-mono">{/^ws/.test(offer.address) ? 'Proxy Server' : offer.address}</TableCell>
+              <TableCell className="font-mono">{/^ws/.test(offer.address) ? 'Storage Miner Network' : offer.address}</TableCell>
 
               <TableCell number>{offer.price} attoFIL</TableCell>
 
