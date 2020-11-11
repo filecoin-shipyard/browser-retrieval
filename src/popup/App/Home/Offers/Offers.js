@@ -68,7 +68,7 @@ function Offers(props) {
         <tbody>
           {offers.map((offer) => (
             <TableRow key={offer.address}>
-              <TableCell className="font-mono">{/^ws/.test(offer.address) ? 'Proxy Server' : offer.address}</TableCell>
+              <TableCell className="font-mono">{/^ws/.test(offer.address) ? 'Storage Miner Network' : offer.address}</TableCell>
 
               <TableCell number>{offer.price} attoFIL</TableCell>
 
