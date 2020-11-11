@@ -1,11 +1,8 @@
-import CID from 'cids';
 import pushable from 'it-pushable';
-import multibaseConstants from 'multibase/src/constants';
-import multicodecLib from 'multicodec';
-import multihash from 'multihashes';
 import socketIO from 'socket.io-client';
 import { hasOngoingDeals, ongoingDeals } from 'src/background/ongoingDeals';
 import dealStatuses from 'src/shared/dealStatuses';
+import { decodeCID } from 'src/shared/decodeCID';
 import getOptions from 'src/shared/getOptions.js';
 import { addOffer } from 'src/shared/offers';
 
@@ -58,49 +55,6 @@ export default class SocketClient {
     return client;
   }
 
-  decodeCID(value) {
-    const cid = new CID(value).toJSON();
-    const decoded = cid.version === 1 ? this.decodeCidV1(value, cid) : this.decodeCidV0(value, cid);
-
-    if (!decoded) {
-      throw new Error('Unknown CID version', cid.version, cid);
-    }
-
-    return {
-      version: cid.version,
-      hashAlg: decoded.multihash.name,
-      rawLeaves: decoded.multicodec.name === 'raw',
-      format: decoded.multicodec.name,
-    };
-  }
-
-  decodeCidV0(value, cid) {
-    return {
-      cid,
-      multibase: {
-        name: 'base58btc',
-        code: 'implicit',
-      },
-      multicodec: {
-        name: cid.codec,
-        code: 'implicit',
-      },
-      multihash: multihash.decode(cid.hash),
-    };
-  }
-
-  decodeCidV1(value, cid) {
-    return {
-      cid,
-      multibase: multibaseConstants.codes[value.substring(0, 1)],
-      multicodec: {
-        name: cid.codec,
-        code: multicodecLib.getNumber(cid.codec),
-      },
-      multihash: multihash.decode(cid.hash),
-    };
-  }
-
   connect() {
     this.socket.open();
   }
@@ -114,13 +68,15 @@ export default class SocketClient {
    */
   query({ cid, minerID }) {
     this.importSink = pushable();
-    let decoded = this.decodeCID(cid);
+    let decoded = decodeCID(cid);
     ports.postLog(
       `DEBUG: SocketClient.query: cidVersion ${decoded.version} hashAlg ${decoded.hashAlg} rawLeaves ${decoded.rawLeaves} format ${decoded.format}`,
     );
 
     if (decoded.format !== 'raw') {
-      ports.alertError(`CIDs >2MB not yet supported`);
+      // Client Query is handling the messaging
+      // Node.handleQueryResponse()
+      // ports.alertError(`CIDs >2MB not yet supported`);
       return;
     }
 
@@ -137,7 +93,7 @@ export default class SocketClient {
 
   async buy({ cid, params, multiaddr }) {
     try {
-      const decoded = this.decodeCID(cid);
+      const decoded = decodeCID(cid);
       ports.postLog(
         `DEBUG: SocketClient.buy: cidVersion ${decoded.version} hashAlg ${decoded.hashAlg} rawLeaves ${decoded.rawLeaves} format ${decoded.format}`,
       );

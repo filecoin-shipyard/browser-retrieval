@@ -9,6 +9,7 @@ import WebrtcStar from 'libp2p-webrtc-star';
 import Websockets from 'libp2p-websockets';
 import PeerId from 'peer-id';
 import { hasOngoingDeals } from 'src/background/ongoingDeals';
+import { decodeCID } from 'src/shared/decodeCID';
 import getOptions from 'src/shared/getOptions';
 import messageTypes from 'src/shared/messageTypes';
 import { clearOffers } from 'src/shared/offers';
@@ -171,6 +172,14 @@ class Node {
 
   async handleQueryResponse({ messageType, cid, multiaddrs, params }) {
     if (!this.queriedCids.has(cid)) {
+      return;
+    }
+
+    const decoded = decodeCID(cid);
+
+    if (decoded.format !== 'raw') {
+      ports.alertError(`CIDs >2MB not yet supported`);
+      ports.postLog(`DEBUG: CIDs >2MB not yet supported. Format not supported: ${decoded.format}`);
       return;
     }
 
