@@ -262,6 +262,8 @@ export default class SocketClient {
       voucherNonce: 1,
     };
     ports.postInboundDeals(ongoingDeals);
+
+    return ongoingDeals[dealId];
   }
 
   _setOngoingDealProps(clientToken, props) {
