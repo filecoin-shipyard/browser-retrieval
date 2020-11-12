@@ -176,8 +176,9 @@ class Node {
     }
 
     const decoded = decodeCID(cid);
+    ports.postLog(`DEBUG: handleQueryResponse: decoded cid = ${inspect(decoded)}`);
 
-    if (decoded.format !== 'raw') {
+    if ((decoded.format !== 'raw') && (decoded.version === 1)) {
       ports.alertError(`CIDs >2MB not yet supported`);
       ports.postLog(`DEBUG: CIDs >2MB not yet supported. Format not supported: ${decoded.format}`);
       return;
