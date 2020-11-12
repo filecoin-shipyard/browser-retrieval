@@ -4,7 +4,7 @@ The Filecoin Browser Retrieval Market is a browser-based p2p network that functi
 
 Users seeking content can use this tool to retrieve files from a marketplace of competing providers of Filecoin content. Retrieval miners who seek to earn income can use this tool to buy content from miners on the Filecoin storage network and then re-sell it here on the Retrieval Market.
 
-This tool is currently alpha software. It can perform the functions described above, albeit with some limitations.  Get in touch if you'd like to [get involved](#contributing) with continuing to develop it.
+**This tool is currently alpha software.** It can perform the functions described above, albeit with some limitations.  Get in touch if you'd like to [get involved](#contributing) with continuing to develop it.
 
 - [Install](#install)
 - [Add it to your browser](#add-it-to-your-browser)
