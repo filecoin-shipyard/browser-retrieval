@@ -1,8 +1,10 @@
-# filecoin-retrieval-browser-extension
+# Filecoin Browser-based Retrieval Market
 
-The Filecoin Rerieval Browser Extension is a browser-based p2p network for performing retrievals from the Filecoin network. End users will be able to use this tool to retrieve files from a marketplace of competing proviers of data. Retrieval miners will be able to use this tool to generate income by providing files for retrieval.
+The Filecoin Browser Retrieval Market is a browser-based p2p network that functions like a CDN for content original retrieved from the Filecoin storage network.
 
-The tool is currently unfinished, but we hope to launch it in Q3 of 2020.  Get in touch if you'd like to [get involved](#contributing).
+Users seeking content can use this tool to retrieve files from a marketplace of competing providers of Filecoin content. Retrieval miners who seek to earn income can use this tool to buy content from miners on the Filecoin storage network and then re-sell it here on the Retrieval Market.
+
+This tool is currently alpha software, but it can perform the functions described above.  Get in touch if you'd like to [get involved](#contributing).
 
 - [Install](#install)
 - [Add it to your browser](#add-it-to-your-browser)
@@ -11,15 +13,15 @@ The tool is currently unfinished, but we hope to launch it in Q3 of 2020.  Get i
 - [Contributing](#contributing)
 - [License](#license)
 
-## Install
+## Build
+
+You'll need [yarn](https://classic.yarnpkg.com/en/) installed.
+
+git clone this repo, and then
 
 ```
+git checkout 0.1.0   # or latest tagged release
 yarn
-```
-
-then
-
-```
 yarn build
 ```
 
@@ -48,33 +50,13 @@ yarn build
 
 ## Development Status
 
-| **Payment Channels (PCH)**                      |  Status            |
-| ----------------------------------------------- | :----------------: |
-| Basic browser extension ([js-libp2p](https://github.com/libp2p/js-libp2p)) | :white_check_mark: |
-| Peer to peer networking                         | :white_check_mark: |
-| CID discovery by gossipsub (request+response)   | :white_check_mark: |
-| Local CID inventory, retrieval deal status      | :white_check_mark: |
-| Data transfer with [js-ipfs-unixfs](https://github.com/ipfs/js-ipfs-unixfs) chunking       | :white_check_mark: |
-| Hooks for vouchers on each block                | :white_check_mark: |
-| Can create on chain payment channels + vouchers | :x:                |
-| Voucher handling logic                          | :x:                |
-| Retrieval from stoage miners                    | :x:                |
+Caveat: This is alpha-stage software. There are bugs and **you can lose money**. Do not test with a wallet containing > 0.5 FIL.
 
-## The Network
-
-This extension forms a [js-libp2p](https://github.com/libp2p/js-libp2p) peer-to-peer network of nodes who use gossipsub to announce content (CIDs) they are seeking, as well as responding to other other peer's requests with offers to provide that content.
-
-<p align="center">
-  <img width="863" height="480" src="https://github.com/agencyenterprise/filecoin-retrieval-browser-extension/blob/master/network-diagram.png">
-</p>
-
-Since all stored data originates on Filecoin miners, a network component called the **Cloud Lotus** (yellow) provides an interface between the browser retrieval network (green) and the [Lotus](https://github.com/filecoin-project/lotus) storage miners (blue). Retrieval miners can choose to purchase content from storage miners for resale on the browser retrieval network. Retrieval miners compete with one another to make data available for purchase to end users of the retrieval network browser extension.
-
-The [cid_oracle](https://github.com/mgoelzer/cid_oracle) is a public server that provides mappings between Piece CIDs, Payload CIDs and miner addresses that are visible on chain.  This helps retrieval miners locate content to make available for purchase.
+Our roadmap is best visualized by installing [Zenhub](https://www.zenhub.com/) and then viewing the project's [Zenhub board](https://github.com/filecoin-shipyard/browser-retrieval/blob/master/README.md#zenhub).
 
 ## Contributing
 
-Contributions are welcome!  Start by checking the [issues](/issues), or propose a better way to implement this crate.
+The project is very welcoming to new contributors.  If you're looking for something to work on, pick up an [issue](/issue) or propose a new feature you would like to add.
 
 ## License
 
