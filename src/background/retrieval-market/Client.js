@@ -121,7 +121,7 @@ class Client {
         }
       } catch (error) {
         console.error(error);
-        ports.postLog(`ERROR: Client.handleMessage(): handle deal message failed: ${error.message}`);
+        ports.postLog(`ERROR: Client.handleMessage(): handle deal message failed: ${error.message}\nMessage status: ${message.status}`);
       }
     }
   };
@@ -193,7 +193,7 @@ class Client {
 
     for (const block of blocks) {
       deal.importerSink.push(block.data);
-      deal.sizeReceived += block.data.length;
+      deal.sizeReceived += block.data ? block.data.length : 0;
     }
 
     ports.postInboundDeals(ongoingDeals);
