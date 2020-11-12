@@ -146,7 +146,7 @@ class Provider {
 
   async handleNewDeal({ dealId, cid, clientWalletAddr, params }, sink) {
     ports.postLog(`DEBUG: Provider.handleNewDeal:\n  new deal id=${dealId}\n  cid=${cid}\n  clientWalletAddr=${clientWalletAddr}\n  params=${inspect(params)}`);
-    
+
     if (this.ongoingDeals[dealId]) {
       throw new Error('A deal already exists for the given id');
     }
@@ -204,7 +204,14 @@ class Provider {
 
     const blocks = [];
     let blocksSize = 0;
+    let hadBytes = false
     for await (const block of entry.content({ offset: deal.sizeSent })) {
+      hadBytes = block && block.length;
+
+      if (!hadBytes) {
+        break;
+      }
+
       blocks.push(block);
       blocksSize += block.length;
 
@@ -218,7 +225,7 @@ class Provider {
     deal.sink.push({
       dealId,
       status:
-        deal.sizeSent + blocksSize >= deal.params.size ? dealStatuses.fundsNeededLastPayment : dealStatuses.fundsNeeded,
+        (deal.sizeSent + blocksSize >= deal.params.size) || !hadBytes ? dealStatuses.fundsNeededLastPayment : dealStatuses.fundsNeeded,
       blocks,
     });
 
@@ -267,7 +274,7 @@ class Provider {
     ports.postLog(`DEBUG: Provider.submitPaymentVoucher: submitting voucher dealId=${dealId},paymentChannel=${paymentChannel},signedVoucher=${signedVoucher}`);
     const deal = this.ongoingDeals[dealId];
     this.updateCustomStatus("Updating payment channel with voucher", deal);
-    
+
     const isUpdateSuccessful = await this.lotus.updatePaymentChannel(paymentChannel, signedVoucher);
     ports.postLog(`DEBUG: Provider.submitPaymentVoucher: isUpdateSuccessful=${isUpdateSuccessful}`);
     if (!isUpdateSuccessful) {
