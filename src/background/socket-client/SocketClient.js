@@ -183,7 +183,6 @@ export default class SocketClient {
       // all chunks were received
       if (message.eof) {
         this._setOngoingDealProps(message.clientToken, {
-          sizeReceived: deal.params.size,
           status: dealStatuses.finalizing,
         });
 
@@ -210,9 +209,6 @@ export default class SocketClient {
 
         // pushed data needs to be an array of bytes
         deal.importerSink.push([...dataBuffer]);
-
-        deal.status = dealStatuses.ongoing;
-        deal.sizeReceived += message.chunkLenBytes;
 
         this._setOngoingDealProps(message.clientToken, {
           sizeReceived: deal.sizeReceived + message.chunkLenBytes,
@@ -292,7 +288,7 @@ export default class SocketClient {
     deal.sink.end();
 
     delete ongoingDeals[dealId];
-    await this.handleCidReceived(deal.cid, deal.params.size);
+    await this.handleCidReceived(deal.cid, deal.sizeReceived);
     ports.postInboundDeals(ongoingDeals);
   }
 }

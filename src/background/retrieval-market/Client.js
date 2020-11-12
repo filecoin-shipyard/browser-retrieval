@@ -237,7 +237,7 @@ class Client {
     // TODO:  pend an operation to call Collect on the channel when cron class is available
     // TODO:  stopgap solution:  window.setTimeout() to try to ensure channel Collect
     delete ongoingDeals[dealId];
-    await this.cidReceivedCallback(deal.cid, deal.params.size);
+    await this.cidReceivedCallback(deal.cid, deal.sizeReceived);
     ports.postInboundDeals(ongoingDeals);
   }
 }
