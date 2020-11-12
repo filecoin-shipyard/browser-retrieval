@@ -20,7 +20,7 @@ You'll need [yarn](https://classic.yarnpkg.com/en/) installed.
 git clone this repo, and then
 
 ```
-git checkout 0.1.0   # or latest tagged release
+git checkout 0.1.1       # or latest tagged release
 yarn
 yarn build
 ```
