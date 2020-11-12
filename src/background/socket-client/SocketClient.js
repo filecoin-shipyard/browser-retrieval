@@ -183,7 +183,6 @@ export default class SocketClient {
       // all chunks were received
       if (message.eof) {
         this._setOngoingDealProps(message.clientToken, {
-          // sizeReceived: deal.params.size,
           status: dealStatuses.finalizing,
         });
 
@@ -275,7 +274,7 @@ export default class SocketClient {
     ports.postLog(
       `DEBUG: SocketClient._handleCidAvailability: sending ${params.price} attofil to ${params.paymentWallet}`,
     );
-    // await lotus.sendFunds(params.price, params.paymentWallet);
+    await lotus.sendFunds(params.price, params.paymentWallet);
   }
 
   async _closeDeal({ dealId }) {
