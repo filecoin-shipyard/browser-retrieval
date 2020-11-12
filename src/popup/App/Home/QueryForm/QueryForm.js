@@ -39,7 +39,7 @@ function QueryForm(props) {
           Query Retrieval Network by CID
         </Label>
         <SubLabel className="mb-2 sublabel-text">
-          (Tip: try QmVmEHjr6xtNxHDbJ7kXenYMH6C4ZGpjqNnMeAEk9dQcR3)
+          (Tip: try bafk2bzacebhlhbcnhmvover42qq5bx773c522skieho6nhtbz7d2ow3f4sw24 on miner f019243)
         </SubLabel>
         <div className="flex">
           <Input ref={register({ required: 'Required' })} name="cid" className="flex-1 mr-4" />
