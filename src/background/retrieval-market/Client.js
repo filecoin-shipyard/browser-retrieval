@@ -121,7 +121,7 @@ class Client {
         }
       } catch (error) {
         console.error(error);
-        ports.postLog(`ERROR: Client.handleMessage(): handle deal message failed: ${error.message}`);
+        ports.postLog(`ERROR: Client.handleMessage(): handle deal message failed: ${error.message}\nMessage status: ${message.status}`);
       }
     }
   };
@@ -193,7 +193,7 @@ class Client {
 
     for (const block of blocks) {
       deal.importerSink.push(block.data);
-      deal.sizeReceived += block.data.length;
+      deal.sizeReceived += block.data ? block.data.length : 0;
     }
 
     ports.postInboundDeals(ongoingDeals);
@@ -237,7 +237,7 @@ class Client {
     // TODO:  pend an operation to call Collect on the channel when cron class is available
     // TODO:  stopgap solution:  window.setTimeout() to try to ensure channel Collect
     delete ongoingDeals[dealId];
-    await this.cidReceivedCallback(deal.cid, deal.params.size);
+    await this.cidReceivedCallback(deal.cid, deal.sizeReceived);
     ports.postInboundDeals(ongoingDeals);
   }
 }
