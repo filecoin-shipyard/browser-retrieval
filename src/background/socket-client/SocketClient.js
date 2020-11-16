@@ -67,25 +67,16 @@ export default class SocketClient {
    * @param {{ cid: string; minerID: string }} query query params
    */
   query({ cid, minerID }) {
-    this.importSink = pushable();
-    let decoded = decodeCID(cid);
-    ports.postLog(
-      `DEBUG: SocketClient.query: cidVersion ${decoded.version} hashAlg ${decoded.hashAlg} rawLeaves ${decoded.rawLeaves} format ${decoded.format}`,
-    );
+    const decoded = decodeCID(cid);
 
     if (decoded.format !== 'raw') {
       // Client Query is handling the messaging
       // Node.handleQueryResponse()
       // ports.alertError(`CIDs >2MB not yet supported`);
+      console.log('Not supported format', decoded.format);
+
       return;
     }
-
-    this.datastore.putContent(this.importSink, {
-      cidVersion: decoded.version,
-      hashAlg: decoded.hashAlg,
-      rawLeaves: decoded.rawLeaves,
-      format: decoded.format,
-    });
 
     const getQueryCIDMessage = messages.createGetQueryCID({ cid, minerID });
     this.socket.emit(getQueryCIDMessage.message, getQueryCIDMessage);
@@ -93,12 +84,11 @@ export default class SocketClient {
 
   async buy({ cid, params, multiaddr }) {
     try {
-      const decoded = decodeCID(cid);
-      ports.postLog(
-        `DEBUG: SocketClient.buy: cidVersion ${decoded.version} hashAlg ${decoded.hashAlg} rawLeaves ${decoded.rawLeaves} format ${decoded.format}`,
-      );
+      const deal = this._createOngoingDeal({ cid, params, multiaddr });
 
-      this._createOngoingDeal({ cid, params, multiaddr, decoded });
+      if (!deal) {
+        return;
+      }
 
       await this._sendFunds(params);
 
@@ -232,7 +222,22 @@ export default class SocketClient {
     });
   }
 
-  _createOngoingDeal({ cid, params, multiaddr, decoded }) {
+  _createOngoingDeal({ cid, params, multiaddr }) {
+    const decoded = decodeCID(cid);
+
+    ports.postLog(
+      `DEBUG: SocketClient.query: cidVersion ${decoded.version} hashAlg ${decoded.hashAlg} rawLeaves ${decoded.rawLeaves} format ${decoded.format}`,
+    );
+
+    const importOptions = {
+      cidVersion: decoded.version,
+      hashAlg: decoded.hashAlg,
+      rawLeaves: decoded.rawLeaves,
+      format: decoded.format,
+    };
+
+    console.log('importOptions', importOptions);
+
     const importerSink = pushable();
 
     const dealId = params.clientToken;
@@ -249,15 +254,12 @@ export default class SocketClient {
       sizeReceived: 0,
       sizePaid: 0,
       importerSink,
-      importer: this.datastore.putContent(importerSink, {
-        cidVersion: decoded.version,
-        hashAlg: decoded.hashAlg,
-        rawLeaves: decoded.rawLeaves,
-        format: decoded.format,
-      }),
+      importer: this.datastore.putContent(importerSink, importOptions),
       voucherNonce: 1,
     };
     ports.postInboundDeals(ongoingDeals);
+
+    return ongoingDeals[dealId];
   }
 
   _setOngoingDealProps(clientToken, props) {

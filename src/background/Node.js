@@ -151,13 +151,14 @@ class Node {
     }
   };
 
-  async handleQuery({ cid }) {
+  async handleQuery({ cid, peerId }) {
     try {
       const params = await this.provider.getDealParams(cid);
 
       if (params) {
         ports.postLog(`INFO: someone queried for a CID I have: ${cid}`);
         await this.publish({
+          peerId,
           messageType: messageTypes.queryResponse,
           cid,
           multiaddrs: this.multiaddrs,
@@ -170,14 +171,15 @@ class Node {
     }
   }
 
-  async handleQueryResponse({ messageType, cid, multiaddrs, params }) {
-    if (!this.queriedCids.has(cid)) {
+  async handleQueryResponse({ messageType, cid, multiaddrs, params, peerId }) {
+    if (!peerId || this.id !== peerId || !this.queriedCids.has(cid)) {
+      // message not for this peer
       return;
     }
 
     const decoded = decodeCID(cid);
 
-    if (decoded.format !== 'raw') {
+    if (decoded.format !== 'raw' && decoded.version >= 1) {
       ports.alertError(`CIDs >2MB not yet supported`);
       ports.postLog(`DEBUG: CIDs >2MB not yet supported. Format not supported: ${decoded.format}`);
       return;
@@ -229,7 +231,7 @@ class Node {
       }
 
       ports.postLog(`INFO: querying peers for ${cid}`);
-      await this.publish({ messageType: messageTypes.query, cid });
+      await this.publish({ messageType: messageTypes.query, cid, peerId: this.id });
     } catch (error) {
       console.error(error);
       ports.postLog(`ERROR: publish to topic failed: ${error.message}`);
