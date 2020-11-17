@@ -177,14 +177,6 @@ class Node {
       return;
     }
 
-    const decoded = decodeCID(cid);
-
-    if (decoded.format !== 'raw' && decoded.version >= 1) {
-      ports.alertError(`CIDs >2MB not yet supported`);
-      ports.postLog(`DEBUG: CIDs >2MB not yet supported. Format not supported: ${decoded.format}`);
-      return;
-    }
-
     const options = await getOptions();
     const offers = options.offerInfo?.offers || [];
 
