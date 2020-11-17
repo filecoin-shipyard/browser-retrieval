@@ -1,6 +1,7 @@
 /* global chrome */
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
+
 import Button from 'src/popup/components/Button';
 import Card from 'src/popup/components/Card';
 import Checkbox from 'src/popup/components/Checkbox';
@@ -10,18 +11,27 @@ import Input from 'src/popup/components/Input';
 import Label from 'src/popup/components/Label';
 import SubLabel from 'src/popup/components/SubLabel';
 import messageTypes from 'src/shared/messageTypes';
+import {clearOffers} from 'src/shared/offers';
+
 import './QueryForm.css';
 
 function QueryForm(props) {
   const { handleSubmit, register, errors } = useForm();
   const [checked, setChecked] = useState(false);
+  const [cid, setCid] = useState();
 
   function onSubmit({ cid, minerID }) {
+    setCid(cid);
+
     const msg = {
       cid,
       minerID,
     };
     chrome.runtime.sendMessage({ messageType: messageTypes.query, msg });
+  }
+
+  if (!cid) {
+    clearOffers();
   }
 
   function onCheck() {

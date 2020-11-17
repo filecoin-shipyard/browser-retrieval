@@ -2,7 +2,7 @@
 import './Offers.css';
 
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React from 'react';
 import Button from 'src/popup/components/Button';
 import Card from 'src/popup/components/Card';
 import IconButton from 'src/popup/components/IconButton';
@@ -13,11 +13,14 @@ import TableRow from 'src/popup/components/TableRow';
 import messageTypes from 'src/shared/messageTypes';
 
 import useOptions from '../../../hooks/useOptions';
+import usePort from 'src/popup/hooks/usePort';
+import channels from 'src/shared/channels';
 
 function Offers(props) {
-  function downloadFile(cid, offer) {
-    setDownloadedMap({ ...downloadedMap, [offer.address]: 1 });
+  const deals = usePort(channels.deals);
+  const [options, setOptions] = useOptions();
 
+  function downloadFile(cid, offer) {
     const msg = {
       cid,
       offer,
@@ -26,10 +29,7 @@ function Offers(props) {
     chrome.runtime.sendMessage({ messageType: messageTypes.downloadFile, msg });
   }
 
-  const [options, setOptions] = useOptions();
   const { offerInfo } = options;
-
-  const [downloadedMap, setDownloadedMap] = useState({ cid: offerInfo.cid });
 
   if (!offerInfo?.offers?.length) {
     return null;
@@ -37,17 +37,7 @@ function Offers(props) {
 
   const { cid, offers } = offerInfo;
 
-  if (downloadedMap.cid !== cid) {
-    setDownloadedMap({
-      cid,
-    });
-  }
-
   function closeOffers() {
-    setDownloadedMap({
-      cid: offerInfo.cid,
-    });
-
     setOptions({
       ...options,
       offerInfo: {
@@ -60,7 +50,7 @@ function Offers(props) {
 
   return (
     <Card {...props}>
-      <div class="flex">
+      <div className="flex">
         <Label className="p-4 pb-2 flex-1">Offers for CID {cid}</Label>
         <IconButton icon="close" onClick={() => closeOffers(cid)} danger className="Offer-close" />
       </div>
@@ -70,22 +60,22 @@ function Offers(props) {
             <TableRow key={offer.address}>
               <TableCell className="font-mono">{/^ws/.test(offer.address) ? 'Storage Miner Network' : offer.address}</TableCell>
 
-              <TableCell number>{offer.price} attoFIL</TableCell>
+            <TableCell number>{offer.price} attoFIL</TableCell>
 
-              <TableCell buttons>
-                <div className="flex">
-                  <Button
-                    type="submit"
-                    onClick={() => downloadFile(cid, offer)}
-                    disabled={!!downloadedMap[offer.address]}
-                    className={classNames({ disabled: !!downloadedMap[offer.address] })}
-                  >
-                    Buy
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+            <TableCell buttons>
+              <div className="flex">
+                <Button
+                  type="submit"
+                  onClick={() => downloadFile(cid, offer)}
+                  disabled={deals?.inbound.some((deal) => deal.cid === cid)}
+                  className={classNames({ disabled: deals?.inbound.some((deal) => deal.cid === cid) })}
+                >
+                  Buy
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
         </tbody>
       </Table>
     </Card>
