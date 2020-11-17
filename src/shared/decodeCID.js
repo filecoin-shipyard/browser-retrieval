@@ -14,7 +14,7 @@ export const decodeCID = (value) => {
   return {
     version: cid.version,
     hashAlg: decoded.multihash.name,
-    rawLeaves: decoded.multicodec.name === 'raw',
+    rawLeaves: true,
     format: decoded.multicodec.name,
   };
 };

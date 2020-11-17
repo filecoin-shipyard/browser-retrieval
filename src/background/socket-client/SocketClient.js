@@ -67,17 +67,6 @@ export default class SocketClient {
    * @param {{ cid: string; minerID: string }} query query params
    */
   query({ cid, minerID }) {
-    const decoded = decodeCID(cid);
-
-    if (decoded.format !== 'raw') {
-      // Client Query is handling the messaging
-      // Node.handleQueryResponse()
-      // ports.alertError(`CIDs >2MB not yet supported`);
-      console.log('Not supported format', decoded.format);
-
-      return;
-    }
-
     const getQueryCIDMessage = messages.createGetQueryCID({ cid, minerID });
     this.socket.emit(getQueryCIDMessage.message, getQueryCIDMessage);
   }
@@ -232,11 +221,10 @@ export default class SocketClient {
     const importOptions = {
       cidVersion: decoded.version,
       hashAlg: decoded.hashAlg,
-      rawLeaves: decoded.rawLeaves,
-      format: decoded.format,
+      rawLeaves: true,
+      maxChunkSize: 1048576,
+      maxChildrenPerNode: 1024,
     };
-
-    console.log('importOptions', importOptions);
 
     const importerSink = pushable();
 
