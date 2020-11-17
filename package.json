@@ -57,9 +57,14 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-optional-chaining": "^7.12.1",
+    "@types/jest": "^26.0.15",
+    "@types/puppeteer": "^5.4.0",
     "cross-env": "^7.0.2",
+    "dotenv": "^8.2.0",
     "file-replace-loader": "^1.3.1",
+    "jest": "^26.6.3",
     "npm-watch": "^0.7.0",
+    "puppeteer": "^5.5.0",
     "typescript": "^4.0.5"
   },
   "scripts": {
@@ -71,6 +76,7 @@
     "build:debug": "cross-env DEBUG=true yarn build",
     "watch": "npm-watch build",
     "lint": "eslint ./src",
+    "test": "jest",
     "## LOCAL ##": "",
     "build:local": "yarn build:popup:local && yarn build:background:local",
     "build:js:local": "yarn build:popup:js && yarn build:background:local",
