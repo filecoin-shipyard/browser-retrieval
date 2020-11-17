@@ -6,8 +6,8 @@ import * as signer from '@zondax/filecoin-signing-tools';
 import useOptions from 'src/popup/hooks/useOptions';
 import Form from 'src/popup/components/Form';
 import Label from 'src/popup/components/Label';
-import InputField from 'src/popup/components/InputField/InputField';
-import InputFieldPassword from 'src/popup/components/InputFieldPassword/inputFieldPassword';
+import InputField from 'src/popup/components/InputField';
+import InputFieldPassword from 'src/popup/components/InputFieldPassword';
 
 function WalletModal({ className, ...rest }) {
   const { handleSubmit, register, setError, errors } = useForm();

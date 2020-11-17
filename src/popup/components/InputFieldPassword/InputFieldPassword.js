@@ -5,7 +5,7 @@ import Input from 'src/popup/components/Input';
 import Button from 'src/popup/components/Button';
 import Error from 'src/popup/components/Error';
 
-function InputFieldPassword({ className, label, name, submit, errors, ...rest }, ref) {
+function InputField({ className, label, name, submit, errors, ...rest }, ref) {
   return (
     <div className={classNames(className, 'flex flex-col')}>
       <Label className="mb-2" for={name}>
@@ -24,4 +24,4 @@ function InputFieldPassword({ className, label, name, submit, errors, ...rest },
   );
 }
 
-export default React.forwardRef(InputFieldPassword);
+export default React.forwardRef(InputField);
