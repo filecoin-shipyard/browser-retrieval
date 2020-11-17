@@ -39,7 +39,8 @@ class Datastore {
         [{ content }],
         {
           put: async (data, { cid }) => {
-            ports.postLog(`DEBUG: Datastore.putContent.put:  cid=${cid}, data=${inspect(data)}`);
+            // ports.postLog(`DEBUG: Datastore.putContent.put:  cid=${cid}, data=${inspect(data)}`);
+            ports.postLog(`DEBUG: Datastore.putContent.put writing CID: ${cid}`)
             const block = new Block(data, cid);
             return this.blockService.put(block);
           },

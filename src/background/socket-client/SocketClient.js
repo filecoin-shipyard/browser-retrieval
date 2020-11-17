@@ -232,11 +232,10 @@ export default class SocketClient {
     const importOptions = {
       cidVersion: decoded.version,
       hashAlg: decoded.hashAlg,
-      rawLeaves: decoded.rawLeaves,
-      format: decoded.format,
+      rawLeaves: true,
+      maxChunkSize: 1048576,
+      maxChildrenPerNode: 1024,
     };
-
-    console.log('importOptions', importOptions);
 
     const importerSink = pushable();
 
