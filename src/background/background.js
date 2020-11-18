@@ -1,4 +1,5 @@
 /* global chrome */
+/* global browser */
 
 import getOptions from '../shared/getOptions.js';
 import setOptions from 'src/shared/setOptions';
@@ -61,7 +62,9 @@ chrome.runtime.onMessage.addListener(({ messageType, msg }, sender, sendResponse
 });
 
 onOptionsChanged(async changes => {
-  if (changes.wallet?.oldValue !== changes.wallet?.newValue) {
+  const browser = getBrowser();
+
+  if ((browser !== 'Firefox' && !node) || changes.wallet?.oldValue !== changes.wallet?.newValue) {
     ports.postLog('INFO: restarting');
 
     if (node) {
@@ -123,6 +126,18 @@ async function startPoint() {
     }
 
     await startNode();
+  }
+}
+
+function getBrowser() {
+  if (typeof chrome !== "undefined") {
+    if (typeof browser !== "undefined") {
+      return "Firefox";
+    } else {
+      return "Chrome";
+    }
+  } else {
+    return "Edge";
   }
 }
 

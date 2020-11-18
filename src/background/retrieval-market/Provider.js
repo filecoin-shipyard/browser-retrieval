@@ -35,14 +35,15 @@ class Provider {
   }
 
   async updateOptions() {
-    // ports.postLog('DEBUG: Provider.updateOptions()');
+    ports.postLog('DEBUG: Provider.updateOptions()');
     const { paymentInterval, paymentIntervalIncrease } = await getOptions();
     this.paymentInterval = paymentInterval;
     this.paymentIntervalIncrease = paymentIntervalIncrease;
   }
 
   handleOptionsChange = async (changes) => {
-    if (changes['paymentInterval'] || changes['paymentIntervalIncrease']) {
+    if (changes.paymentInterval?.oldValue !== changes.paymentInterval?.newValue ||
+      changes.paymentIntervalIncrease?.oldValue !== changes.paymentIntervalIncrease?.newValue) {
       try {
         await this.updateOptions();
       } catch (error) {
