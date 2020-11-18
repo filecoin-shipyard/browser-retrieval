@@ -42,7 +42,8 @@ class Provider {
   }
 
   handleOptionsChange = async (changes) => {
-    if (changes['paymentInterval'] || changes['paymentIntervalIncrease']) {
+    if (changes.paymentInterval?.oldValue !== changes.paymentInterval?.newValue ||
+      changes.paymentIntervalIncrease?.oldValue !== changes.paymentIntervalIncrease?.newValue) {
       try {
         await this.updateOptions();
       } catch (error) {
