@@ -111,15 +111,14 @@ class Lotus {
         params: [addr]
       }, {headers});
     } catch (error) {
-      ports.postLog(`ERROR: Lotus.getNonce(): axios error: ${error.message}`);
+      ports.postLog(`ERROR: Lotus.getBalance(): axios error: ${error.message}`);
       return undefined
     }
 
     const balance = response.data.result;
-    //ports.postLog(`Nonce (${addr}) = ${nonce}`);
     ports.postLog(`DEBUG: leaving Lotus.getBalance (balance = ${balance})`);
-    //ports.postLog(`DEBUG: Lotus.getNonce => ${nonce}`);
-		return balance;
+
+    return balance;
   }
 
   /**
