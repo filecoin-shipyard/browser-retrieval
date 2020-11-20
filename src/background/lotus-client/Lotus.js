@@ -5,7 +5,8 @@ import onOptionsChanged from 'src/shared/onOptionsChanged';
 import getOptions from 'src/shared/getOptions';
 import ports from '../ports';
 import inspect from 'browser-util-inspect';
-import axios from 'axios'
+import axios from 'axios';
+import BigNumber from 'bignumber.js';
 // Required to workaround `Invalid asm.js: Unexpected token` error:
 const importDagCBOR = () => {
   return require('ipld-dag-cbor');
@@ -21,6 +22,8 @@ class Lotus {
   }
 
   id = 0;
+
+  GasFeeCap = 16251176117;
 
   paymentChannelsInfo = {};
 
@@ -88,6 +91,35 @@ class Lotus {
     ports.postLog(`DEBUG: leaving Lotus.getNonce (ret = ${nonce})`);
     //ports.postLog(`DEBUG: Lotus.getNonce => ${nonce}`);
 		return nonce;
+  }
+
+  /**
+   * Get balance for an address
+   * @param  {string} addr Wallet address like `f156e3l2vwd5wi5jwdrd6gdg4y7t2yknq6see7xbq`
+   * @return {number} Returns the balance, or undefined if an error occurred
+   */
+  async getBalance(addr) {
+    ports.postLog(`DEBUG: entering Lotus.getBalance`);
+    let headers = this.headers
+    ports.postLog(`DEBUG: Lotus.getBalance:\n  addr=${addr}\n  this.headers=${inspect(headers)}\n  this.lotusEndpoint=${this.lotusEndpoint}`);
+    let response;
+    try {
+      response = await axios.post(this.lotusEndpoint, {
+        jsonrpc: "2.0",
+        method: "Filecoin.WalletBalance",
+        id: 1,
+        params: [addr]
+      }, {headers});
+    } catch (error) {
+      ports.postLog(`ERROR: Lotus.getNonce(): axios error: ${error.message}`);
+      return undefined
+    }
+
+    const balance = response.data.result;
+    //ports.postLog(`Nonce (${addr}) = ${nonce}`);
+    ports.postLog(`DEBUG: leaving Lotus.getBalance (balance = ${balance})`);
+    //ports.postLog(`DEBUG: Lotus.getNonce => ${nonce}`);
+		return balance;
   }
 
   /**
@@ -468,6 +500,20 @@ class Lotus {
 
   /**
    * Sends funds to a wallet address from this.wallet.
+   * @returns {boolean} True if current wallet balance is greater than minimum required to query Storage Miner.
+   */
+  async hasMinBalance() {
+    let balance = await this.getBalance(this.wallet);
+    let tenBN = new BigNumber(10);
+    let balanceBN = new BigNumber(balance).dividedBy(tenBN.pow(balance.toString().length));
+    let minimum = new BigNumber(this.GasFeeCap).dividedBy(tenBN.pow(this.GasFeeCap.toString().length));
+
+    ports.postLog(`DEBUG: lotus.hasMinBalance(): balanceBN ${balanceBN} minimum: ${minimum} compare: ${balanceBN.comparedTo(minimum) === 1}`);
+    return balanceBN.comparedTo(minimum) === 1;
+  }
+
+  /**
+   * Sends funds to a wallet address from this.wallet.
    * @param   {number} amountAttoFil How many attoFil to send.
    * @param   {string} toWallet Address of "To" (destination) wallet.
    * @returns {boolean} True if Send message was mined successfully.
@@ -475,7 +521,7 @@ class Lotus {
   async sendFunds(amountAttoFil, toWallet) {
     // To test this function, but this block of code Node.query (above first line) and query any CID.
     // Watch the Log and your test wallet balances before and after.  The amount is 0.01 FIL.
-    // 
+    //
     //        // TEMP - DO NOT MERGE
     //        ports.postLog(`DEBUG: ----------- Lotus.sendFunds Test -------------- `);
     //        await this.lotus.sendFunds(10000000000000000,"f1d4jcvewwyiuepgccm4k5ng5lqhobj77eplj33zy");
@@ -503,7 +549,7 @@ class Lotus {
         "Method": 0,
         "Params": "",
         "GasLimit": 10000000,        // TODO: use gas estimator
-        "GasFeeCap": "16251176117",  // TODO: use gas estimator
+        "GasFeeCap": this.GasFeeCap.toString(),  // TODO: use gas estimator
         "GasPremium": "140625002",   // TODO: use gas estimator
       };
       let unsignedMessageJson = JSON.stringify(unsignedMessage, 0, 4);

@@ -340,7 +340,13 @@ class Node {
     const multiaddr = offer.address;
 
     const downloadParams = { cid, params, multiaddr };
+    const hasMinBalance = await this.lotus.hasMinBalance();
+
     if (/^ws/i.test(multiaddr)) {
+      if (!hasMinBalance) {
+        return ports.alertError('ERROR: not enough funds to execute transaction');
+      }
+
       return this.retrieveFromSocket(downloadParams);
     }
 
