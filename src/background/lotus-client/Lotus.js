@@ -267,7 +267,7 @@ class Lotus {
         nonce, 
         gasEstimation.GasLimit, 
         gasEstimation.GasFeeCap, 
-        gasEstimation.GasPremium); // gas limit, fee cap, premium
+        gasEstimation.GasPremium);
       ports.postLog("DEBUG: Lotus.createPaymentChannel: create_pymtchan="+inspect(create_pymtchan));
       signedCreateMessage = JSON.parse(signer.transactionSignLotus(create_pymtchan, fromKey));
       ports.postLog("DEBUG: Lotus.createPaymentChannel: signedCreateMessage="+inspect(signedCreateMessage));
@@ -342,7 +342,7 @@ class Lotus {
         nonce, 
         gasEstimation.GasLimit, 
         gasEstimation.GasFeeCap, 
-        gasEstimation.GasPremium) // gas limit, fee cap, premium
+        gasEstimation.GasPremium);
       //ports.postLog(`DEBUG: Lotus.updatePaymentChannel:  updatePaychMessage=${inspect(updatePaychMessage)}`);
       signedUpdateMessage = JSON.parse(signer.transactionSignLotus(updatePaychMessage, toPrivateKeyBase64));
     } catch (error) {
@@ -414,7 +414,7 @@ class Lotus {
         nonce, 
         gasEstimation.GasLimit, 
         gasEstimation.GasFeeCap , 
-        gasEstimation.GasPremium); // gas limit, fee cap, premium)
+        gasEstimation.GasPremium);
       settlePaychMessage = await this.getGasEstimation(settlePaychMessage);
       signedSettleMessage = JSON.parse(signer.transactionSignLotus(settlePaychMessage, toPrivateKeyBase64));
     } catch (error) {
@@ -481,7 +481,7 @@ class Lotus {
         nonce, 
         gasEstimation.GasLimit, 
         gasEstimation.GasFeeCap , 
-        gasEstimation.GasPremium) // gas limit, fee cap, premium
+        gasEstimation.GasPremium);
       signedCollectMessage = JSON.parse(signer.transactionSignLotus(collectPaychMessage, toPrivateKeyBase64));
     } catch (error) {
       ports.postLog(`ERROR: Lotus.collectPaymentChannel: error generating Collect msg: ${error.message}`);
