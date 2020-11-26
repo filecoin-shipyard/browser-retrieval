@@ -68,6 +68,8 @@ describe('when extension page opens', () => {
   it('queries with a CID and MINER', async () => {
     const [browserInfo] = browsersInfo;
 
+    await browserInfo.page.waitForTimeout(3000);
+
       await browserInfo.page.evaluate(
         ({cid, miner}) => {
           try {
@@ -89,7 +91,7 @@ describe('when extension page opens', () => {
         {cid: env.cid, miner: env.miner},
       );
 
-      await browserInfo.page.waitForTimeout(4000);
+      await browserInfo.page.waitForTimeout(1000);
 
       const storedValues = await browserInfo.page.evaluate(() => {
         return new Promise((resolve) => {
@@ -122,7 +124,7 @@ describe('when extension page opens', () => {
       {file: env.uploadFilePath}
     )
 
-    await browserInfo.page.waitForTimeout(5000);
+    await browserInfo.page.waitForTimeout(1000);
 
     const storedValues = await browserInfo.page.evaluate(() => {
       return new Promise((resolve) => {
