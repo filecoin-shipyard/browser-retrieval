@@ -48,7 +48,7 @@ describe('when extension page opens', () => {
         { lotusConfig: env.lotus, index: i },
       );
 
-      await browserInfo.page.waitForTimeout(500);
+      await browserInfo.page.waitForTimeout(1000);
 
       const storedValues = await browserInfo.page.evaluate(() => {
         return new Promise((resolve) => {
@@ -68,12 +68,38 @@ describe('when extension page opens', () => {
   it('queries with a CID and MINER', async () => {
     const [browserInfo] = browsersInfo;
 
-    await browserInfo.page.evaluate(() => {
-      const x = ''// bafk2bzacebhlhbcnhmvover42qq5bx773c522skieho6nhtbz7d2ow3f4sw24
-    })
+      await browserInfo.page.evaluate(
+        () => {
+          try {
+            const cid = document.querySelector('.query-form [name="cid"]');
+            const checkButton = document.querySelector('.query-form [name="minerCheckbox"]');
+            checkButton.click();
+            const minerID = document.querySelector('.query-form [name="minerID"]');
 
-    await browserInfo.page.waitForTimeout(5000);
 
-    expect(browserInfo).toBeTruthy();
+            const submitButton = document.querySelector('.query-form [type="submit"]');
+
+            cid.value = 'bafk2bzacebhlhbcnhmvover42qq5bx773c522skieho6nhtbz7d2ow3f4sw24';
+            minerID.value = 'f019243';
+
+
+            submitButton.click();
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      );
+
+      await browserInfo.page.waitForTimeout(4000);
+
+      const storedValues = await browserInfo.page.evaluate(() => {
+        return new Promise((resolve) => {
+          chrome.storage.local.get(null, (result) => {
+            resolve(result);
+          });
+        });
+      });
+
+      expect(storedValues.offerInfo.cid).toEqual('bafk2bzacebhlhbcnhmvover42qq5bx773c522skieho6nhtbz7d2ow3f4sw24');
   });
 });
