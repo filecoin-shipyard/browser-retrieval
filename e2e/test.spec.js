@@ -76,12 +76,10 @@ describe('when extension page opens', () => {
             checkButton.click();
             const minerInput = document.querySelector('.query-form [name="minerID"]');
 
-
             const submitButton = document.querySelector('.query-form [type="submit"]');
 
             cidInput.value = cid;
             minerInput.value = miner;
-
 
             submitButton.click();
           } catch (err) {
@@ -103,4 +101,37 @@ describe('when extension page opens', () => {
 
       expect(storedValues.offerInfo.cid).toEqual(env.cid);
   });
+
+  it('import a file', async () => {
+    const [browserInfo] = browsersInfo;
+
+    await browserInfo.page.waitForTimeout(5000);
+
+    await browserInfo.page.evaluate(
+      (file) => {
+      try {
+        const uploadTab = document.querySelector('.tabs-list [name="upload"]');
+        uploadTab.click();
+
+        const fileInput = document.querySelector('.upload-tab [type="file"]');
+        fileInput.uploadFile(file);
+      } catch (err) {
+        console.error(err);
+      }
+    },
+      {file: env.uploadFilePath}
+    )
+
+    await browserInfo.page.waitForTimeout(5000);
+
+    const storedValues = await browserInfo.page.evaluate(() => {
+      return new Promise((resolve) => {
+        chrome.storage.local.get(null, (result) => {
+          resolve(result);
+        });
+      });
+    });
+
+    expect(browserInfo).toBeTruthy();
+  })
 });

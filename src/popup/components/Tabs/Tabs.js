@@ -26,7 +26,7 @@ function Tabs({ className, tabs, children, ...rest }) {
 
   return (
     <div
-      className={classNames(className, 'flex flex-col w-full h-full bg-foreground overflow-hidden')}
+      className={classNames(className, 'flex flex-col w-full h-full bg-foreground overflow-hidden tabs-list')}
       {...rest}
     >
       <ul className="flex items-center border-b border-border bg-white text-sm font-bold">
@@ -44,6 +44,7 @@ function Tabs({ className, tabs, children, ...rest }) {
                     : 'border-transparent text-darkgray hover:text-black',
                 )}
                 onClick={() => switchTab(tab)}
+                name={tab.name}
                 type="button"
               >
                 {tab.label}

@@ -11,6 +11,7 @@ const config = {
     },
     cid: process.env.CID,
     miner: process.env.MINER,
+    uploadFilePath: process.env.UPLOAD_FILE_PATH
   },
 };
 

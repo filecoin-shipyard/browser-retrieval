@@ -20,18 +20,22 @@ const tabs = [
   {
     label: 'Home',
     component: Home,
+    name: 'home'
   },
   {
     label: 'Options',
     component: Options,
+    name: 'options'
   },
   {
     label: 'Logs',
     component: Logs,
+    name: 'logs'
   },
   {
     label: 'Import File',
     component: Upload,
+    name: 'upload'
   },
 //  {
 //    label: 'Automation',
