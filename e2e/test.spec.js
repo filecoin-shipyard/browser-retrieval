@@ -69,25 +69,26 @@ describe('when extension page opens', () => {
     const [browserInfo] = browsersInfo;
 
       await browserInfo.page.evaluate(
-        () => {
+        ({cid, miner}) => {
           try {
-            const cid = document.querySelector('.query-form [name="cid"]');
+            const cidInput = document.querySelector('.query-form [name="cid"]');
             const checkButton = document.querySelector('.query-form [name="minerCheckbox"]');
             checkButton.click();
-            const minerID = document.querySelector('.query-form [name="minerID"]');
+            const minerInput = document.querySelector('.query-form [name="minerID"]');
 
 
             const submitButton = document.querySelector('.query-form [type="submit"]');
 
-            cid.value = 'bafk2bzacebhlhbcnhmvover42qq5bx773c522skieho6nhtbz7d2ow3f4sw24';
-            minerID.value = 'f019243';
+            cidInput.value = cid;
+            minerInput.value = miner;
 
 
             submitButton.click();
           } catch (err) {
             console.error(err);
           }
-        }
+        },
+        {cid: env.cid, miner: env.miner},
       );
 
       await browserInfo.page.waitForTimeout(4000);
@@ -100,6 +101,6 @@ describe('when extension page opens', () => {
         });
       });
 
-      expect(storedValues.offerInfo.cid).toEqual('bafk2bzacebhlhbcnhmvover42qq5bx773c522skieho6nhtbz7d2ow3f4sw24');
+      expect(storedValues.offerInfo.cid).toEqual(env.cid);
   });
 });
