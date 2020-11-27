@@ -9,6 +9,7 @@ import protocols from 'src/shared/protocols';
 import inspect from 'browser-util-inspect';
 import { DateTime } from 'luxon';
 import { operationsQueue } from 'src/shared/OperationsQueue'
+import { BigNumber } from 'bignumber.js';
 
 class Provider {
   static async create(...args) {
@@ -254,9 +255,18 @@ class Provider {
     const clientWalletAddr = deal.clientWalletAddr;
     ports.postLog(`DEBUG: Provider.checkPaymentVoucherValid: clientWalletAddr=${clientWalletAddr}`);
 
-    const expectedAmountAttoFil = deal.sizeSent * deal.params.pricePerByte;
+    const expectedAmountAttoFil = new BigNumber(deal.sizeSent).multipliedBy(deal.params.pricePerByte);
     ports.postLog(`DEBUG: Provider.checkPaymentVoucherValid: expectedAmountAttoFil = ${expectedAmountAttoFil}\n  = [(${deal.sizeSent} bytes sent) * (${deal.params.pricePerByte} pricePerByte)]`);
 
+    // validate if the amount of the signed voucher is matching the expected amount
+    const svDecodedVoucher = await this.lotus.decodeSignedVoucher(signedVoucher);
+    const svAmount = new BigNumber(svDecodedVoucher.amount);
+    if (!svAmount.isEqualTo(expectedAmountAttoFil)) {
+      ports.alertError(`Voucher validation failed: the expected amount ${expectedAmountAttoFil} doesn't match the voucher amount ${svAmount}`);
+      return false;
+    }
+
+    // check if the signed voucher is valid
     const svValid = await this.lotus.checkPaymentVoucherValid(signedVoucher, expectedAmountAttoFil, clientWalletAddr);
     ports.postLog(`DEBUG: Provider.checkPaymentVoucherValid: ${signedVoucher} => ${svValid}`);
     return svValid;

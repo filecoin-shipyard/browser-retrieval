@@ -459,7 +459,7 @@ class Lotus {
       extra: decoded[4],
       lane: decoded[5],
       nonce: decoded[6],
-      amount: parseInt(decoded[7].toString('hex'), 16),
+      amount: decoded[7].toString(),
       minSettleHeight: decoded[8],
       merges: decoded[9],
       signature: decoded[10].toString('hex')
