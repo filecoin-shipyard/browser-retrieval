@@ -1,17 +1,24 @@
-import { storage } from "../storage"
+import { env } from 'shared/env'
+import { storage } from 'shared/storage'
 
-const defaultValues = {
-  rendezvousIp: 'webrtc-star-1.browser-retrieval.filecoin.io',
-  rendezvousPort: '443',
-  pricesPerByte: { '*': 1000 },
+/**
+ * Options that cannot be overwritten in Chrome's storage
+ */
+const hardCodedOptions = {
+  ...env,
+}
+
+/**
+ * Settings that are supposed to be overwritten in Chrome's storage
+ */
+const dynamicOptions = {
   knownCids: {},
+
   wallet: '',
   privateKey: '',
-  lotusEndpoint: 'http://3.231.219.184:80/rpc/v0',
-  lotusToken:
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIiwiYWRtaW4iXX0.q_xzuJ8QGjrX7Gy6dIYnlWjics8TJdTv2z-FN0fOMWM',
-  paymentInterval: 1048576,
-  paymentIntervalIncrease: 1048576,
+
+  pricesPerByte: { '*': 1000 },
+
   offerInfo: {
     cid: undefined,
     offers: [],
@@ -31,14 +38,15 @@ const defaultValues = {
     "// Here's how to change the price of a CID your node is offering\n" +
     'let price = "5000"; // total price for the CID (Price/byte AttoFIL)\n' +
     'this.updatePrice(cid, price);',
+
   unsaved: false,
   unsavedForms: { lotus: false, price: false },
 }
 
-export const optionsKeys = Object.keys(defaultValues)
+export const optionsKeys = [...Object.keys(hardCodedOptions), ...Object.keys(dynamicOptions)]
 
-export const getOptions = () => {
+export function getOptions() {
   const settings = storage.get()
 
-  return { ...defaultValues, ...settings }
+  return { ...dynamicOptions, ...settings, ...hardCodedOptions }
 }

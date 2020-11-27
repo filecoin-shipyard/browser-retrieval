@@ -1,8 +1,11 @@
+import { configure } from 'mobx'
 import React from 'react'
 import ReactDOM from 'react-dom'
 
-import App from './App'
+import { App } from './App'
 import reportWebVitals from './reportWebVitals'
+
+configure({ useProxies: 'ifavailable' })
 
 ReactDOM.render(
   <React.StrictMode>

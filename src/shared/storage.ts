@@ -13,7 +13,8 @@ class Storage extends EventTarget {
     const keys = Object.keys(localStorage)
 
     return keys.reduce((a, key) => {
-      a[key] = JSON.parse(localStorage.getItem(key))
+      const val = localStorage.getItem(key)
+      a[key] = this.parse(val)
 
       return a
     }, {} as Record<string, Record<string, unknown>>)
@@ -21,10 +22,23 @@ class Storage extends EventTarget {
 
   set(data: Record<string, unknown>) {
     for (const key of Object.keys(data)) {
-      localStorage[key] = data[key]
+      localStorage[key] = this._isObject(data[key]) ? JSON.stringify(data[key]) : data[key]
     }
 
+    // TODO: @brunolm migrate
     this.dispatchEvent(new Event(this.eventName))
+  }
+
+  parse(val) {
+    try {
+      return JSON.parse(val)
+    } catch (err) {
+      return val
+    }
+  }
+
+  _isObject(val) {
+    return typeof val === 'object' && val !== null
   }
 }
 

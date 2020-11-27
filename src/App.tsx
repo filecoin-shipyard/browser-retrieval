@@ -1,21 +1,58 @@
-import React from 'react'
+import './styles/tailwind.css'
 
-import logo from './logo.svg'
+import { ConnectionIndicator } from 'App/ConnectionIndicator'
+import { Home } from 'App/Home'
+import { Logs } from 'App/Logs'
+import { Options } from 'App/Options'
+import { PeersIndicator } from 'App/PeersIndicator'
+import { Toast } from 'App/Toast'
+import { Upload } from 'App/Upload'
+import { Tabs } from 'components/Tabs'
+import { WalletModal } from 'components/WalletModal'
+import React, { useEffect } from 'react'
+import { appStore } from 'shared/store/appStore'
 
-function App() {
+const tabs = [
+  {
+    label: 'Home',
+    component: Home,
+  },
+  {
+    label: 'Options',
+    component: Options,
+  },
+  {
+    label: 'Logs',
+    component: Logs,
+  },
+  {
+    label: 'Import File',
+    component: Upload,
+  },
+  // {
+  //   label: 'Automation',
+  //   component: Editor,
+  // },
+]
+
+export function App() {
+  useEffect(() => {
+    if (!appStore.connected) {
+      appStore.connect()
+    }
+  })
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a className="App-link" href="https://reactjs.org" target="_blank" rel="noopener noreferrer">
-          Learn React
-        </a>
-      </header>
-    </div>
+    <>
+      <Toast />
+      <Tabs className="text-xs text-black" tabs={tabs}>
+        <li className="flex-1 px-4">Filecoin Retrieval</li>
+        <li className="flex mr-8">
+          <ConnectionIndicator />
+          <PeersIndicator />
+        </li>
+      </Tabs>
+      <WalletModal />
+    </>
   )
 }
-
-export default App
