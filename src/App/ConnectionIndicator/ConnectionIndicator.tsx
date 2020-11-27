@@ -1,8 +1,9 @@
 import { StatusIndicator } from 'components/StatusIndicator'
-import { appStore } from 'shared/store/appStore'
+import { observer } from 'mobx-react-lite'
 import React from 'react'
+import { appStore } from 'shared/store/appStore'
 
-export function ConnectionIndicator(props: any) {
+export const ConnectionIndicator = observer((props: any) => {
   if (!appStore.node) {
     return null
   }
@@ -25,4 +26,4 @@ export function ConnectionIndicator(props: any) {
       {...props}
     />
   )
-}
+})

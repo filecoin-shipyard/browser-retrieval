@@ -4,7 +4,7 @@ import { Badge } from 'components/Badge'
 import { Label } from 'components/Label'
 import { Pre } from 'components/Pre'
 
-export function StatusIndicator({ className, icon, badge, label, description, ...rest }) {
+export function StatusIndicator({ className, icon, badge, label, description, ...rest }: any) {
   const [isOpen, setIsOpen] = useState(false)
 
   function toggleIsOpen() {

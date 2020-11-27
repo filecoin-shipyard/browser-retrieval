@@ -1,17 +1,16 @@
 import { StatusIndicator } from 'components/StatusIndicator'
-import { appStore } from 'shared/store/appStore'
+import { observer } from 'mobx-react-lite'
 import React from 'react'
+import { appStore } from 'shared/store/appStore'
 
-export function PeersIndicator(props) {
-
-
+export const PeersIndicator = observer((props) => {
   if (!appStore.node) {
     return null
   }
 
-  const { connectedPeers } = appStore.node
+  const { connectedPeers } = appStore
 
-  const peers = Array.from(connectedPeers)
+  const peers = connectedPeers
 
   return (
     <StatusIndicator
@@ -26,4 +25,4 @@ export function PeersIndicator(props) {
       {...props}
     />
   )
-}
+})
