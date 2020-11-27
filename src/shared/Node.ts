@@ -28,15 +28,11 @@ export class Node {
     if (!nodeInstance) {
       nodeInstance = new Node()
 
-
-
       await nodeInstance.initialize()
     }
 
     return nodeInstance
   }
-
-
 
   //
   lotus: Lotus
@@ -218,21 +214,15 @@ export class Node {
     }
 
     const { offersStore } = appStore
-    const offers = offersStore.offerInfo?.offers || []
 
-    // TODO: @brunolm implement ADD OFFER TO STORE
-    // offersStore.set({
-    //   offerInfo: {
-    //     cid,
-    //     offers: offers.concat(
-    //       multiaddrs.map((address) => ({
-    //         address,
-    //         price: params.size * params.pricePerByte,
-    //         params,
-    //       })),
-    //     ),
-    //   },
-    // })
+    offersStore.add(
+      cid,
+      multiaddrs.map((address) => ({
+        address,
+        price: params.size * params.pricePerByte,
+        params,
+      })),
+    )
   }
 
   handleCidReceived = async (cid, size) => {
@@ -278,14 +268,7 @@ export class Node {
       this.queriedCids.delete(offersStore.offerInfo.cid)
     }
 
-    // TODO: @brunolm clear offers
-    // offersStore.setOptions({
-    //   offerInfo: {
-    //     cid: undefined,
-    //     offers: [],
-    //     params: undefined,
-    //   },
-    // })
+    offersStore.clear()
   }
 
   runInLoop(stop = false) {
@@ -377,9 +360,7 @@ export class Node {
     appStore.logsStore.logDebug(`Node._downloadFromPeer: starting`)
 
     if (!this.queriedCids.has(cid)) {
-      appStore.logsStore.logDebug(
-        `Node._downloadFromPeer: exiting because Node.queriedCids does not contain '${cid}'`,
-      )
+      appStore.logsStore.logDebug(`Node._downloadFromPeer: exiting because Node.queriedCids does not contain '${cid}'`)
       return
     }
 

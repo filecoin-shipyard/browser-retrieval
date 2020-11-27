@@ -8,10 +8,11 @@ import { Label } from 'components/Label'
 import { Table } from 'components/Table'
 import { TableCell } from 'components/TableCell'
 import { TableRow } from 'components/TableRow'
-import { appStore } from 'shared/store/appStore'
+import { observer } from 'mobx-react-lite'
 import React from 'react'
+import { appStore } from 'shared/store/appStore'
 
-export function Offers(props) {
+export const Offers = observer<any>((props) => {
   const { dealsStore, offersStore } = appStore
 
   function downloadFile(cid, offer) {
@@ -34,16 +35,7 @@ export function Offers(props) {
   const { cid, offers } = offerInfo
 
   function closeOffers() {
-    // TODO: @brunolm implement
-
-    // setOptions({
-    //   ...options,
-    //   offerInfo: {
-    //     cid: undefined,
-    //     offers: [],
-    //     params: undefined,
-    //   },
-    // })
+    appStore.offersStore.clear()
   }
 
   return (
@@ -80,4 +72,4 @@ export function Offers(props) {
       </Table>
     </Card>
   )
-}
+})

@@ -11,4 +11,22 @@ export class OffersStore {
   constructor(private rootStore: AppStore) {
     makeAutoObservable(this)
   }
+
+  clear() {
+    this.offerInfo = {
+      cid: undefined,
+      offers: [],
+      params: undefined,
+    }
+  }
+
+  add(cid: any, arg1: any) {
+    const offers = this.offerInfo?.offers || []
+
+    this.offerInfo = {
+      ...this.offerInfo,
+      cid,
+      offers: offers.concat(arg1),
+    }
+  }
 }

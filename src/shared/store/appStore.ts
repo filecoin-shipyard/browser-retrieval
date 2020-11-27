@@ -60,8 +60,6 @@ export class AppStore {
   }
 
   query({ cid, minerID }) {
-    // TODO: @brunolm implement
-    console.trace('query')
     this.node.query(cid, minerID)
   }
 
