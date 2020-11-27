@@ -48,7 +48,7 @@ describe('when extension page opens', () => {
         { lotusConfig: env.lotus, index: i },
       );
 
-      await browserInfo.page.waitForTimeout(1000);
+      await browserInfo.page.waitForTimeout(500);
 
       const storedValues = await browserInfo.page.evaluate(() => {
         return new Promise((resolve) => {
@@ -91,7 +91,7 @@ describe('when extension page opens', () => {
         {cid: env.cid, miner: env.miner},
       );
 
-      await browserInfo.page.waitForTimeout(1000);
+      await browserInfo.page.waitForTimeout(500);
 
       const storedValues = await browserInfo.page.evaluate(() => {
         return new Promise((resolve) => {
@@ -112,9 +112,6 @@ describe('when extension page opens', () => {
     await browserInfo.page.evaluate(
       (file) => {
       try {
-        const uploadTab = document.querySelector('.tabs-list [name="upload"]');
-        uploadTab.click();
-
         const fileInput = document.querySelector('.upload-tab [type="file"]');
         fileInput.uploadFile(file);
       } catch (err) {
@@ -135,5 +132,9 @@ describe('when extension page opens', () => {
     });
 
     expect(browserInfo).toBeTruthy();
+    // expect(storedValues.knownCids).toEqual({
+    //   "QmSvuhdF4uM3cwXcHd8XrpbdHVPNkhQZiXk91nLb5ihoRp": {
+    //     "size": 3776
+    //   }});
   })
 });

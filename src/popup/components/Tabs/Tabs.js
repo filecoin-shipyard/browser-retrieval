@@ -26,7 +26,7 @@ function Tabs({ className, tabs, children, ...rest }) {
 
   return (
     <div
-      className={classNames(className, 'flex flex-col w-full h-full bg-foreground overflow-hidden tabs-list')}
+      className={classNames(className, 'flex flex-col w-full h-full bg-foreground overflow-hidden')}
       {...rest}
     >
       <ul className="flex items-center border-b border-border bg-white text-sm font-bold">
