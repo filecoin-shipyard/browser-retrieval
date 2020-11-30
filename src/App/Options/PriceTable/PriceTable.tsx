@@ -3,16 +3,16 @@ import { IconButton } from 'components/IconButton'
 import { Table } from 'components/Table'
 import { TableCell } from 'components/TableCell'
 import { TableRow } from 'components/TableRow'
+import { entries } from 'mobx'
+import { observer } from 'mobx-react-lite'
 import React from 'react'
 import { appStore } from 'shared/store/appStore'
 
-export function PriceTable(props) {
+export const PriceTable = observer((props) => {
   const { optionsStore } = appStore
 
   function removePrice(cid) {
-    // TODO: @brunolm implement
-    // const { [cid]: price, ...pricesPerByte } = optionsStore.pricesPerByte
-    // setOptions({ pricesPerByte })
+    optionsStore.removePrice(cid)
   }
 
   return (
@@ -28,7 +28,7 @@ export function PriceTable(props) {
           </TableRow>
         </thead>
         <tbody>
-          {Object.entries(optionsStore.pricesPerByte)
+          {(entries(optionsStore.pricesPerByte) as any)
             .sort(([a]: any, [b]: any) => {
               if (a === '*') {
                 return -1
@@ -55,4 +55,4 @@ export function PriceTable(props) {
       </Table>
     </Card>
   )
-}
+})

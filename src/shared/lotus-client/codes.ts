@@ -1,6 +1,8 @@
 import { Buffer } from 'buffer'
-import multihash from 'multihashing-async'
 import CID from 'cids'
+import multihash from 'multihashing-async'
+
+import { appStore } from '../store/appStore'
 
 async function makeBuiltin(string) {
   const buffer = Buffer.from(string)
@@ -18,8 +20,7 @@ async function make() {
   } catch (error) {
     console.error(error)
 
-    // TODO: @brunolm migrate
-    // ports.postLog(`ERROR: make lotus client codes failed: ${error.message}`)
+    appStore.logsStore.logError(`make lotus client codes failed: ${error.message}`)
   }
 }
 

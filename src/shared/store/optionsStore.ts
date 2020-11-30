@@ -4,6 +4,7 @@ import { stringify } from '../stringify'
 import { AppStore } from './appStore'
 
 export class OptionsStore {
+
   private readonly localStorageKey = `_${this.constructor.name}`
 
   knownCids = {}
@@ -62,6 +63,12 @@ export class OptionsStore {
 
   removeKnownCid(cid: string) {
     remove(this.knownCids, cid)
+
+    this._save()
+  }
+
+  removePrice(cid: any) {
+    remove(this.pricesPerByte, cid)
 
     this._save()
   }

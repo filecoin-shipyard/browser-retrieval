@@ -10,8 +10,6 @@ export class UploadStore {
   }
 
   upload(files) {
-    // TODO: @brunolm implement
-    console.log('upload files', files, typeof files)
     this.rootStore.node.uploadFiles(files)
   }
 

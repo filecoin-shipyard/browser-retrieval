@@ -2,9 +2,9 @@ import { Card } from 'components/Card'
 import { Form } from 'components/Form'
 import { InputField } from 'components/InputField'
 import { InputFieldPassword } from 'components/InputFieldPassword'
-import { appStore } from 'shared/store/appStore'
 import React from 'react'
 import { useForm } from 'react-hook-form'
+import { appStore } from 'shared/store/appStore'
 
 export function LotusForm(props) {
   const { handleSubmit, register, setError, errors } = useForm()
@@ -23,28 +23,26 @@ export function LotusForm(props) {
     const aggregated = optionsStore.unsavedForms.price
 
     if (key.address === data.wallet || key.address === data.wallet.replace(/^t/, 'f')) {
-      // TODO: @brunolm implement
-      // setOptions({
-      //   ...data,
-      //   unsavedForms: {
-      //     ...options.unsavedForms,
-      //     lotus: false,
-      //   },
-      //   unsaved: aggregated,
-      // })
+      optionsStore.set({
+        ...data,
+        unsavedForms: {
+          ...optionsStore.unsavedForms,
+          lotus: false,
+        },
+        unsaved: aggregated,
+      })
     } else {
       setError('privateKey', { type: 'manual', message: `Wallet and private key don't match` })
     }
   }
 
   function handleChange() {
-    // TODO: @brunolm implement
-    // setOptions({
-    //   unsavedForms: {
-    //     ...options.unsavedForms,
-    //     lotus: true,
-    //   },
-    // })
+    optionsStore.set({
+      unsavedForms: {
+        ...optionsStore.unsavedForms,
+        lotus: true,
+      },
+    })
   }
 
   return (

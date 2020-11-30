@@ -1,5 +1,7 @@
 import { DateTime } from 'luxon'
 
+import { appStore } from 'shared/store/appStore'
+
 /**
  * Functions to be executed in a certain scheduled time.
  */
@@ -16,8 +18,9 @@ export class Operations {
   // Collect a payment channel after 12-hour wait
   async collectChannel(lotus, metadata) {
     const paymentChannelAddr = metadata.paymentChannelAddr
-    // TODO: @brunolm migrate
-    // ports.postLog(`DEBUG: LUXON: Opterations.collectChannel: collectChannel on paymentChannelAddr=${paymentChannelAddr}`);
+    appStore.logsStore.logDebug(
+      `LUXON: Opterations.collectChannel: collectChannel on paymentChannelAddr=${paymentChannelAddr}`,
+    )
     await lotus.collectPaymentChannel(paymentChannelAddr)
 
     return 'Channel collected'

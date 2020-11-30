@@ -1,3 +1,4 @@
+import inspect from 'browser-util-inspect'
 import { Buffer } from 'buffer'
 import CID from 'cids'
 import BlockService from 'ipfs-block-service'
@@ -9,6 +10,7 @@ import Block from 'ipld-block'
 import all from 'it-all'
 import last from 'it-last'
 
+import { appStore } from './store/appStore'
 import { streamFromFile } from './streamFromFile'
 
 let datastoreInstance: Datastore
@@ -36,23 +38,19 @@ export class Datastore {
   }
 
   putFile(file, options) {
-    // TODO: @brunolm migrate
-    // ports.postLog(`DEBUG: Datastore.putFile:  options=${options}, content=${inspect(file)}`)
+    appStore.logsStore.logDebug(`Datastore.putFile:  options=${options}, content=${inspect(file)}`)
     return this.putContent(streamFromFile(file), options)
   }
 
   async putContent(content, options?) {
-    // TODO: @brunolm migrate
-    // ports.postLog(`DEBUG: Datastore.putContent:  options=${inspect(options)}`);
+    appStore.logsStore.logDebug(`Datastore.putContent:  options=${inspect(options)}`)
     const entry: any = await last(
       importer(
         [{ content }],
         {
           put: async (data, { cid }) => {
-            // TODO: @brunolm migrate
-            // // ports.postLog(`DEBUG: Datastore.putContent.put:  cid=${cid}, data=${inspect(data)}`);
-            // TODO: @brunolm migrate
-            // ports.postLog(`DEBUG: Datastore.putContent.put writing CID: ${cid}`)
+            appStore.logsStore.logDebug(`Datastore.putContent.put:  cid=${cid}, data=${inspect(data)}`)
+            appStore.logsStore.logDebug(`Datastore.putContent.put writing CID: ${cid}`)
             const block = new Block(data, cid)
             return this.blockService.put(block)
           },
@@ -61,8 +59,11 @@ export class Datastore {
       ),
     )
 
-    // TODO: @brunolm migrate
-    // ports.postLog(`DEBUG: Datastore.putContent:  returning {cid:${inspect(entry.cid)}, size:${entry.unixfs ? entry.unixfs.fileSize() : undefined}`);
+    appStore.logsStore.logDebug(
+      `Datastore.putContent:  returning {cid:${inspect(entry.cid)}, size:${
+        entry.unixfs ? entry.unixfs.fileSize() : undefined
+      }`,
+    )
     return { cid: entry.cid.toString(), size: entry.unixfs ? entry.unixfs.fileSize() : undefined }
   }
 

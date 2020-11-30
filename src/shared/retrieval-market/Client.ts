@@ -156,7 +156,6 @@ export class Client {
   }
 
   sendDealProposal({ dealId }) {
-    // TODO: @brunolm migrate
     appStore.logsStore.logDebug(`Client.sendDealProposal: sending deal proposal ${dealId}`)
     const deal = ongoingDeals[dealId]
 
@@ -238,7 +237,6 @@ export class Client {
     const amount = deal.sizeReceived * deal.params.pricePerByte
     const nonce = deal.voucherNonce++
     const sv = await this.lotus.createSignedVoucher(deal.paymentChannel, amount, nonce)
-    // TODO: @brunolm migrate
     appStore.logsStore.logDebug(`Client.sendPayment(): sv = '${sv}'`)
 
     const newDealStatus = isLastVoucher ? dealStatuses.lastPaymentSent : dealStatuses.paymentSent

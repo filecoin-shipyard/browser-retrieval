@@ -88,12 +88,6 @@ export class Node {
 
     this.datastore = await Datastore.create()
 
-    // TODO: @brunolm double check
-    // this.datastore = await Datastore.create('/blocks', {
-    //   prefix: 'filecoin-retrieval',
-    //   version: 1,
-    // })
-
     appStore.logsStore.logDebug('creating retrieval market client')
     // retrieval-market client
     this.client = await Client.create(
@@ -330,7 +324,6 @@ export class Node {
           const { cid, size } = await this.datastore.putFile(file, {
             progress: (bytesLoaded) => {
               totalBytesLoaded += bytesLoaded
-              // TODO: @brunolm migrate
 
               appStore.uploadStore.setProgress(totalBytesLoaded / totalBytes)
             },
