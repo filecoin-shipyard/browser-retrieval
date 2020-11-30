@@ -25,10 +25,6 @@ export const QueryForm = observer((props) => {
       minerID,
     }
 
-    // TODO: @brunolm remove
-    msg.cid = 'bafk2bzacebhlhbcnhmvover42qq5bx773c522skieho6nhtbz7d2ow3f4sw24'
-    msg.minerID = 'f019243'
-
     appStore.query(msg)
   }
 
