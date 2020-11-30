@@ -46,6 +46,8 @@ export class OptionsStore {
 
   addKnownCid(cid: string, size: any) {
     set(this.knownCids, cid, { size })
+
+    this._save()
   }
 
   set(data: Partial<OptionsStore>) {
