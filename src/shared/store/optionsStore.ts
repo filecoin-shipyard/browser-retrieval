@@ -1,4 +1,4 @@
-import { makeAutoObservable, set, toJS } from 'mobx'
+import { makeAutoObservable, remove, set, toJS } from 'mobx'
 
 import { stringify } from '../stringify'
 import { AppStore } from './appStore'
@@ -59,7 +59,7 @@ export class OptionsStore {
   }
 
   removeKnownCid(cid: string) {
-    delete this.knownCids[cid]
+    remove(this.knownCids, cid)
 
     this._save()
   }

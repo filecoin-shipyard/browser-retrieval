@@ -20,6 +20,7 @@ import { Client } from './retrieval-market/Client'
 import { Provider } from './retrieval-market/Provider'
 import SocketClient from './socket-client/SocketClient'
 import { appStore } from 'shared/store/appStore'
+import { downloadBrowser } from './download-browser'
 
 let nodeInstance: Node
 
@@ -399,35 +400,21 @@ export class Node {
   }
 
   async _downloadLocally({ cid }) {
-    // TODO: @brunolm download cid ${cid}
-    alert(`TODO: @brunolm download cid ${cid}`)
-    // try {
-    // appStore.logsStore.logDebug(`Node._downloadLocally(): downloading ${cid}`)
-    //   const data = await this.datastore.cat(cid)
-    //   const response = await fetch(`data:application/octet-stream;base64,${data.toString('base64')}`)
-    //   const blob = await response.blob()
-    //   const url = URL.createObjectURL(blob)
-    //   const downloadId = await chrome.downloads.download({ url, filename: cid, saveAs: true })
+    try {
+      appStore.logsStore.logDebug(`Node._downloadLocally(): downloading ${cid}`)
 
-    //   function handleDownloadChanged(delta) {
-    //     if (delta.state && delta.state.current === 'complete' && delta.id === downloadId) {
-    // appStore.logsStore.logDebug(
-    //         `Node._downloadLocally.handleDownloadChanged():  download completed, revoking object url ${cid}`,
-    //       )
-    //       URL.revokeObjectURL(url)
-    //       chrome.downloads.onChanged.removeListener(handleDownloadChanged)
-    //     }
-    //   }
+      const data = await this.datastore.cat(cid)
+      const response = await fetch(`data:application/octet-stream;base64,${data.toString('base64')}`)
+      const blob = await response.blob()
 
-    //   chrome.downloads.onChanged.addListener(handleDownloadChanged)
-    // } catch (error) {
-    //   console.error(error)
-    // appStore.logsStore.logError(` Node._downloadLocally():  download failed: ${error.message}`)
-    //   ports.alertError(`Download failed: ${error.message}`)
-    // }
+      downloadBrowser({ cid, blob })
+    } catch (error) {
+      console.error(error)
+      appStore.logsStore.logError(` Node._downloadLocally():  download failed: ${error.message}`)
+    }
   }
 
-  async downloadFile({ cid, offer }) {
+  async downloadFile({ cid, offer }: { cid: string; offer?: any }) {
     appStore.logsStore.logDebug(` Node.downloadFile:\n  cid:'${cid}'\n  offer=${inspect(offer)}`)
     try {
       if (offer) {

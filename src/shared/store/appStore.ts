@@ -66,6 +66,14 @@ export class AppStore {
   setConnectedPeers(connectedPeers) {
     this.connectedPeers = connectedPeers
   }
+
+  downloadFile(msg: { cid: any; offers?: any }) {
+    this.node.downloadFile(msg)
+  }
+
+  deleteFile({ cid }) {
+    this.node.deleteFile(cid)
+  }
 }
 
 export const appStore = new AppStore()

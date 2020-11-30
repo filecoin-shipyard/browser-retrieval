@@ -4,14 +4,15 @@ import { Label } from 'components/Label'
 import { Table } from 'components/Table'
 import { TableCell } from 'components/TableCell'
 import { TableRow } from 'components/TableRow'
-import { appStore } from 'shared/store/appStore'
+import { keys } from 'mobx'
+import { observer } from 'mobx-react-lite'
 import prettyBytes from 'pretty-bytes'
 import React from 'react'
+import { appStore } from 'shared/store/appStore'
 
-export function KnownCids(props) {
-
+export const KnownCids = observer<any>((props) => {
   const { knownCids } = appStore.optionsStore
-  const knownCidsIds = Object.keys(knownCids)
+  const knownCidsIds = keys(knownCids)
 
   if (!knownCidsIds.length) {
     return null
@@ -19,22 +20,24 @@ export function KnownCids(props) {
 
   function downloadFile(cid) {
     const msg = { cid }
-    // TODO: @brunolm migrate
-    // chrome.runtime.sendMessage({ messageType: messageTypes.downloadFile, msg });
+
+    appStore.downloadFile(msg)
   }
 
   function deleteFile(cid) {
     const msg = { cid }
-    // TODO: @brunolm migrate
-    // chrome.runtime.sendMessage({ messageType: messageTypes.deleteFile, msg });
+
+    appStore.deleteFile(msg)
   }
+
+  const sortedCids = knownCidsIds.slice().sort() as string[]
 
   return (
     <Card {...props}>
       <Label className="p-4 pb-2">Your CIDs</Label>
       <Table>
         <tbody>
-          {knownCidsIds.sort().map((cid) => (
+          {sortedCids.map((cid) => (
             <TableRow key={cid}>
               <TableCell className="font-mono">{cid}</TableCell>
               <TableCell number>{Boolean(knownCids[cid].size) && prettyBytes(knownCids[cid].size)}</TableCell>
@@ -50,4 +53,4 @@ export function KnownCids(props) {
       </Table>
     </Card>
   )
-}
+})
