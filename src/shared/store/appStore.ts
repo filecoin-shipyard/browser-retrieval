@@ -7,6 +7,7 @@ import { LogsStore } from './logsStore'
 import { OffersStore } from './offersStore'
 import { OperationsStore } from './operationsStore'
 import { OptionsStore } from './optionsStore'
+import { QueriesStore } from './queriesStore'
 import { SettingsStore } from './settingsStore'
 import { UploadStore } from './uploadStore'
 
@@ -17,6 +18,7 @@ export class AppStore {
   offersStore: OffersStore
   operationsStore: OperationsStore
   optionsStore: OptionsStore
+  queriesStore: QueriesStore
   settingsStore: SettingsStore
   uploadStore: UploadStore
 
@@ -33,6 +35,7 @@ export class AppStore {
     this.offersStore = new OffersStore(this)
     this.operationsStore = new OperationsStore(this)
     this.optionsStore = new OptionsStore(this)
+    this.queriesStore = new QueriesStore(this)
     this.settingsStore = new SettingsStore(this)
     this.uploadStore = new UploadStore(this)
 
@@ -67,7 +70,7 @@ export class AppStore {
     this.connectedPeers = connectedPeers
   }
 
-  downloadFile(msg: { cid: any; offers?: any }) {
+  downloadFile(msg: { cid: any; offer?: any }) {
     this.node.downloadFile(msg)
   }
 

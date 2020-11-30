@@ -8,7 +8,7 @@ import { jsonStream } from 'shared/jsonStream'
 import { Lotus } from 'shared/lotus-client/Lotus'
 import { Services } from 'shared/models/services'
 import { OperationsQueue } from 'shared/OperationsQueue'
-import { getOptions } from 'shared/options'
+
 import { protocols } from 'shared/protocols'
 import { appStore } from 'shared/store/appStore'
 
@@ -54,7 +54,7 @@ export class Provider {
 
   async updateOptions() {
     appStore.logsStore.logDebug('Provider.updateOptions()')
-    const { paymentInterval, paymentIntervalIncrease } = await getOptions()
+    const { paymentInterval, paymentIntervalIncrease } = appStore.settingsStore
     this.paymentInterval = paymentInterval
     this.paymentIntervalIncrease = paymentIntervalIncrease
   }
@@ -77,7 +77,7 @@ export class Provider {
 
   async getDealParams(cid) {
     appStore.logsStore.logDebug(`Provider.getDealParams(): cid = ${cid}`)
-    const { pricesPerByte, knownCids } = await getOptions()
+    const { pricesPerByte, knownCids } = appStore.optionsStore
     const cidInfo = knownCids[cid]
 
     if (cidInfo) {

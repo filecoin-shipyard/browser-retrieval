@@ -9,18 +9,15 @@ import Websockets from 'libp2p-websockets'
 import PeerId from 'peer-id'
 import { Datastore } from 'shared/Datastore'
 import { messageTypes } from 'shared/messageTypes'
-import { clearOffers } from 'shared/offers'
 import { hasOngoingDeals } from 'shared/ongoingDeals'
-
+import { appStore } from 'shared/store/appStore'
 import { topics } from 'shared/topics'
 
+import { downloadBrowser } from './download-browser'
 import { Lotus } from './lotus-client/Lotus'
-
 import { Client } from './retrieval-market/Client'
 import { Provider } from './retrieval-market/Provider'
 import SocketClient from './socket-client/SocketClient'
-import { appStore } from 'shared/store/appStore'
-import { downloadBrowser } from './download-browser'
 
 let nodeInstance: Node
 
@@ -123,7 +120,7 @@ export class Node {
 
     appStore.logsStore.logDebug(`Node.initialize(): creating SocketClient.js (Socket connection)`)
     this.socketClient = await SocketClient.create(
-      { datastore: this.datastore, appStore: appStore },
+      { datastore: this.datastore },
       {
         handleCidReceived: (...args) => {
           if (!hasOngoingDeals()) {
@@ -230,9 +227,7 @@ export class Node {
     try {
       appStore.logsStore.logDebug(`CID received: ${cid}`)
       const { optionsStore } = appStore
-      const { knownCids } = optionsStore
-      knownCids[cid] = { size }
-      optionsStore.set({ knownCids })
+      optionsStore.addKnownCid(cid, size)
     } catch (error) {
       console.error(error)
       appStore.logsStore.logError(`save received cid failed: ${error.message}`)
@@ -241,12 +236,10 @@ export class Node {
 
   async query(rawCid, minerID) {
     try {
-      await this.clearOffers()
+      this.clearOffers()
 
       const cid = rawCid.trim()
       this.queriedCids.add(cid)
-
-      clearOffers()
 
       if (minerID) {
         appStore.logsStore.logDebug(`querying proxy for ${cid} , minerID:  ${minerID}`)

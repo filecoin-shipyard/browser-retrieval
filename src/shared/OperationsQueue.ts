@@ -1,7 +1,6 @@
 import { DateTime } from 'luxon'
 import { errorToJSON } from 'shared/errorToJson'
 import { Lotus } from 'shared/lotus-client/Lotus'
-import { Services } from 'shared/models/services'
 import { operations } from 'shared/Operations'
 import { appStore } from 'shared/store/appStore'
 
@@ -10,19 +9,15 @@ let operationsQueueInstance: OperationsQueue
 export class OperationsQueue {
   lotus: Lotus
 
-  appStore: Services['appStore']
-
   static async create(options) {
     if (!operationsQueueInstance) {
       operationsQueueInstance = new OperationsQueue()
-      operationsQueueInstance.appStore = options.appStore
 
       await operationsQueueInstance.initialize()
     }
 
     return operationsQueueInstance
   }
-
 
   /**
    * Interval to watch for new operations in the queue.
@@ -68,7 +63,7 @@ export class OperationsQueue {
   }
 
   async initialize() {
-    appStore.logsStore.logDebug('OperationsQueue.initializeActionsQueue()');
+    appStore.logsStore.logDebug('OperationsQueue.initializeActionsQueue()')
 
     try {
       this.lotus = await Lotus.create()
@@ -76,7 +71,7 @@ export class OperationsQueue {
       while (true) {
         for (const op of appStore.operationsStore.operations) {
           if (op.invokeAt && op.invokeAt <= new Date()) {
-            appStore.logsStore.logDebug(`OperationsQueue.runOperation(): ${op.label}`);
+            appStore.logsStore.logDebug(`OperationsQueue.runOperation(): ${op.label}`)
             this.runOperation(op)
           }
         }
@@ -84,7 +79,7 @@ export class OperationsQueue {
         await new Promise((r) => setTimeout(r, this.listenInterval))
       }
     } catch (err) {
-      appStore.logsStore.logDebug('Lotus create failed in initializeActionsQueue function');
+      appStore.logsStore.logDebug('Lotus create failed in initializeActionsQueue function')
     }
   }
 
@@ -94,7 +89,7 @@ export class OperationsQueue {
    * @param {Operation} op Operation
    */
   async runOperation(op) {
-    appStore.logsStore.logDebug('OperationsQueue.runOperation(op)');
+    appStore.logsStore.logDebug('OperationsQueue.runOperation(op)')
 
     try {
       this.updateOperation(op, {
@@ -113,7 +108,7 @@ export class OperationsQueue {
 
       const errorObj = errorToJSON(err)
 
-      appStore.logsStore.logError(`Running scheduled operation\n${JSON.stringify(errorObj, null, 2)}`);
+      appStore.logsStore.logError(`Running scheduled operation\n${JSON.stringify(errorObj, null, 2)}`)
 
       if (attempts > this.retryLimit) {
         this.updateOperation(op, {

@@ -8,6 +8,7 @@ import { Label } from 'components/Label'
 import { Table } from 'components/Table'
 import { TableCell } from 'components/TableCell'
 import { TableRow } from 'components/TableRow'
+import { toJS } from 'mobx'
 import { observer } from 'mobx-react-lite'
 import React from 'react'
 import { appStore } from 'shared/store/appStore'
@@ -18,11 +19,10 @@ export const Offers = observer<any>((props) => {
   function downloadFile(cid, offer) {
     const msg = {
       cid,
-      offer,
+      offer: toJS(offer),
     }
 
-    // TODO: @brunolm implement
-    // dispatchers.download(msg)
+    appStore.downloadFile(msg)
   }
 
   const { deals } = dealsStore

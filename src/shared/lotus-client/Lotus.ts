@@ -1,7 +1,6 @@
 import axios from 'axios'
 import inspect from 'browser-util-inspect'
 import { Buffer } from 'buffer'
-import { getOptions } from 'shared/options'
 import { appStore } from 'shared/store/appStore'
 
 // Required to workaround `Invalid asm.js: Unexpected token` error:
@@ -50,7 +49,8 @@ export class Lotus {
   }
 
   getAndParseOptions() {
-    const { lotusEndpoint, lotusToken, wallet, privateKey } = getOptions()
+    const { lotusEndpoint, lotusToken } = appStore.settingsStore
+    const { wallet, privateKey } = appStore.optionsStore
 
     return {
       lotusEndpoint,
@@ -291,7 +291,7 @@ export class Lotus {
     //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
     appStore.logsStore.log(`msgCid = ${inspect(msgCid)}`)
     if (msgCid === undefined) {
-      appStore.logsStore.log(`ERROR: Lotus.createPaymentChannel: fatal: pch create msgcid undefined`)
+      appStore.logsStore.logError(`Lotus.createPaymentChannel: fatal: pch create msgcid undefined`)
       return undefined
     }
 
@@ -299,16 +299,22 @@ export class Lotus {
     // Wait for PCH creation message response
     //
     const waitCreateResponseData = await this.stateWaitMsg(msgCid)
-    if (waitCreateResponseData === undefined) {
-      appStore.logsStore.log(`ERROR: Lotus.createPaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`)
+    if (!waitCreateResponseData) {
+      appStore.logsStore.logError(`Lotus.createPaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`)
       return undefined
     }
-    appStore.logsStore.log(
-      `DEBUG: Lotus.createPaymentChannel: response.data.result: ${inspect(waitCreateResponseData.result)}`,
+    appStore.logsStore.logDebug(
+      `Lotus.createPaymentChannel: response.data.result: ${inspect(waitCreateResponseData.result)}`,
     )
+
+    if (!waitCreateResponseData?.result?.ReturnDec) {
+      console.error('Lotus.createPaymentChannel() ReturnDec is null')
+      throw new Error('ReturnDec is null')
+    }
+
     const PCH = waitCreateResponseData.result.ReturnDec.IDAddress
     const PCHRobust = waitCreateResponseData.result.ReturnDec.RobustAddress
-    appStore.logsStore.log(`DEBUG: Lotus.createPaymentChannel: PCH Addresses = {id address:${PCH},robust:${PCHRobust}}`)
+    appStore.logsStore.logDebug(`Lotus.createPaymentChannel: PCH Addresses = {id address:${PCH},robust:${PCHRobust}}`)
 
     const paymentChannel = PCHRobust
     this.paymentChannelsInfo[paymentChannel] = {
@@ -317,7 +323,7 @@ export class Lotus {
       nextLane: 0, // TODO:  remove if not used anywhere
       lanesNextNonce: {}, // TODO:  remove if not used anywhere
     }
-    appStore.logsStore.log(`DEBUG: Lotus.createPaymentChannel: leaving => ${paymentChannel}`)
+    appStore.logsStore.logDebug(`Lotus.createPaymentChannel: leaving => ${paymentChannel}`)
     return paymentChannel
   }
 

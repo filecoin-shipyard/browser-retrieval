@@ -5,11 +5,9 @@ import { decodeCID } from 'shared/decodeCID'
 import { Lotus } from 'shared/lotus-client/Lotus'
 import { messageRequestTypes, messageResponseTypes, messages } from 'shared/messages'
 import { Services } from 'shared/models/services'
-import { addOffer } from 'shared/offers'
 import { hasOngoingDeals, ongoingDeals } from 'shared/ongoingDeals'
-import { getOptions } from 'shared/options'
 import { sha256 } from 'shared/sha256'
-import { AppStore, appStore } from 'shared/store/appStore'
+import { appStore } from 'shared/store/appStore'
 import socketIO from 'socket.io-client'
 
 let socketClientInstance: SocketClient
@@ -19,7 +17,6 @@ interface Callbacks {
 }
 
 export default class SocketClient {
-  appStore: AppStore
   datastore: Datastore
 
   handleCidReceived: (cid: string, size: number) => void
@@ -31,14 +28,13 @@ export default class SocketClient {
   lotus
 
   static async create(
-    { datastore, appStore }: Services,
+    { datastore }: Services,
 
     { handleCidReceived }: Callbacks,
   ) {
     if (!socketClientInstance) {
       socketClientInstance = new SocketClient()
 
-      socketClientInstance.appStore = appStore
       socketClientInstance.datastore = datastore
       socketClientInstance.lotus = await Lotus.create()
 
@@ -70,6 +66,18 @@ export default class SocketClient {
   }
 
   async buy({ cid, params, multiaddr }) {
+    if (!cid) {
+      console.warn('SocketClient.buy(): missing cid', cid)
+    }
+
+    if (!params) {
+      console.warn('SocketClient.buy(): missing params', params)
+    }
+
+    if (!multiaddr) {
+      console.warn('SocketClient.buy(): missing multiaddr', multiaddr)
+    }
+
     try {
       const deal = this._createOngoingDeal({ cid, params, multiaddr })
 
@@ -84,11 +92,11 @@ export default class SocketClient {
       appStore.logsStore.logError(`SocketClient._handleCidAvailability: error: ${error.message}`)
     }
 
-    const options = await getOptions()
+    const { wallet } = appStore.optionsStore
 
     this.socket.emit(
       messageRequestTypes.fundsConfirmed,
-      messages.createFundsSent({ clientToken: params.clientToken, paymentWallet: options.wallet }),
+      messages.createFundsSent({ clientToken: params.clientToken, paymentWallet: wallet }),
     )
   }
 
@@ -118,15 +126,22 @@ export default class SocketClient {
         return
       }
 
-      addOffer({
-        cid: message.cid,
-        params: {
-          price: message.priceAttofil,
-          size: message.approxSize,
-          clientToken: message.clientToken,
-          paymentWallet: message.paymentWallet,
-        },
-      })
+      const params = {
+        address: appStore.settingsStore.wsEndpoint,
+        price: message.priceAttofil,
+        size: message.approxSize,
+        clientToken: message.clientToken,
+        paymentWallet: message.paymentWallet,
+      }
+
+      appStore.offersStore.add(
+        message.cid,
+        [appStore.settingsStore.wsEndpoint].map((address) => ({
+          address,
+          ...params,
+          params,
+        })),
+      )
     })
   }
 

@@ -90,7 +90,6 @@ export class Client {
   handleMessage = async (source) => {
     for await (const message of source) {
       try {
-        // TODO: @brunolm migrate
         appStore.logsStore.logDebug(`Client.handleMessage(): message: ${inspect(message)}`)
         const deal = ongoingDeals[message.dealId]
 
@@ -100,7 +99,6 @@ export class Client {
 
         switch (message.status) {
           case dealStatuses.accepted: {
-            // TODO: @brunolm migrate
             appStore.logsStore.logDebug('Client.handleMessage(): case dealStatuses.accepted')
             deal.status = dealStatuses.accepted
             deal.customStatus = undefined
@@ -109,7 +107,6 @@ export class Client {
           }
 
           case dealStatuses.fundsNeeded: {
-            // TODO: @brunolm migrate
             appStore.logsStore.logDebug('Client.handleMessage(): case dealStatuses.fundsNeeded')
             deal.status = dealStatuses.ongoing
             deal.customStatus = undefined
@@ -119,7 +116,6 @@ export class Client {
           }
 
           case dealStatuses.fundsNeededLastPayment: {
-            // TODO: @brunolm migrate
             appStore.logsStore.logDebug('Client.handleMessage(): case dealStatuses.fundsNeededLastPayment')
             deal.status = dealStatuses.finalizing
             deal.customStatus = undefined
@@ -130,28 +126,24 @@ export class Client {
           }
 
           case dealStatuses.completed: {
-            // TODO: @brunolm migrate
             appStore.logsStore.logDebug('Client.handleMessage(): case dealStatuses.completed')
             await this.closeDeal(message)
             break
           }
 
           default: {
-            // TODO: @brunolm migrate
             appStore.logsStore.logDebug('Client.handleMessage(): case default')
-            // TODO: @brunolm migrate
-            appStore.logsStore.logDebug(
-              `ERROR: Client.handleMessage(): unknown deal message status received: ${message.status}`,
+            appStore.logsStore.logError(
+              `Client.handleMessage(): unknown deal message status received: ${message.status}`,
             )
             deal.sink.end()
             break
           }
         }
       } catch (error) {
-        console.error(error)
-        // TODO: @brunolm migrate
-        appStore.logsStore.logDebug(
-          `ERROR: Client.handleMessage(): handle deal message failed: ${error.message}\nMessage status: ${message.status}`,
+        console.error(message.status, error)
+        appStore.logsStore.logError(
+          `Client.handleMessage(): handle deal message failed: ${error.message}\nMessage status: ${message.status}`,
         )
       }
     }

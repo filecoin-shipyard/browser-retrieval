@@ -10,40 +10,42 @@ import { Label } from 'components/Label'
 import { SubLabel } from 'components/SubLabel'
 import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { clearOffers } from 'shared/offers'
-
 import { appStore } from 'shared/store/appStore'
+import { observer } from 'mobx-react-lite'
 
-export function QueryForm(props) {
+export const QueryForm = observer((props) => {
   const { handleSubmit, register, errors } = useForm()
-  const [checked, setChecked] = useState(false)
-  const [cid, setCid] = useState()
-
-
+  const { offersStore, queriesStore } = appStore
 
   async function onSubmit({ cid, minerID }) {
-    setCid(cid)
+    queriesStore.setCid(cid)
 
     const msg = {
       cid,
       minerID,
     }
 
+    // TODO: @brunolm remove
+    msg.cid = 'bafk2bzacebhlhbcnhmvover42qq5bx773c522skieho6nhtbz7d2ow3f4sw24'
+    msg.minerID = 'f019243'
+
     appStore.query(msg)
   }
 
-  if (!cid) {
-    clearOffers()
+  if (!queriesStore.cid) {
+    offersStore.clear()
   }
 
   function onCheck() {
-    if (checked) {
+    if (queriesStore.checked) {
       const minerInput = document.getElementById('minerID') as HTMLInputElement
       minerInput.value = ''
     }
 
-    return setChecked(!checked)
+    return queriesStore.toggleChecked()
   }
+
+  const { checked } = queriesStore
 
   return (
     <Card {...props}>
@@ -88,4 +90,4 @@ export function QueryForm(props) {
       </Form>
     </Card>
   )
-}
+})
