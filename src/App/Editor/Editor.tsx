@@ -20,15 +20,11 @@ export const Editor = ({ className, ...rest }) => {
   function onSubmit({ automationCode }) {
     optionsStore.set({ automationCode })
 
-    console.log('TODO: @brunolm')
-    // TODO: @brunolm
-    // chrome.runtime.sendMessage({ messageType: messageTypes.automationStart, data })
+    appStore.runAutomationCode()
   }
 
   function onBlur() {
-    console.log('TODO: @brunolm')
-    // TODO: @brunolm
-    // chrome.runtime.sendMessage({ messageType: messageTypes.automationStop })
+    appStore.stopAutomationCode()
   }
 
   return (

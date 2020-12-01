@@ -77,6 +77,14 @@ export class AppStore {
   deleteFile({ cid }) {
     this.node.deleteFile(cid)
   }
+
+  stopAutomationCode() {
+    this.node.stopLoop()
+  }
+
+  runAutomationCode() {
+    this.node.runAutomationCode()
+  }
 }
 
 export const appStore = new AppStore()
