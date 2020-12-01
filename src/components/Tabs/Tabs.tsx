@@ -20,8 +20,7 @@ export function Tabs({ className, tabs, children, ...rest }: BaseProps) {
     if (aggregated && tab.label !== 'Options') {
       setIsOpen(true)
 
-      // TODO: @brunolm implement
-      // setOptions({ unsaved: true })
+      optionsStore.set({ unsaved: true })
     } else {
       setCurrentTab(tab)
     }
