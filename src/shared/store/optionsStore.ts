@@ -4,7 +4,6 @@ import { stringify } from '../stringify'
 import { AppStore } from './appStore'
 
 export class OptionsStore {
-
   private readonly localStorageKey = `_${this.constructor.name}`
 
   knownCids = {}

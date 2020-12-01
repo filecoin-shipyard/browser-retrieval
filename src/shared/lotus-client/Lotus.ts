@@ -45,7 +45,7 @@ export class Lotus {
     const privKey = 'ciiFbmF7F7mrVs5E/IT8TV63PdFPLrRs9R/Cc3vri2I='
     const recoveredPKey = this.signer.keyRecover(privKey, false)
 
-    appStore.logsStore.log(`DEBUG: Lotus.keyRecover: recovered='${recoveredPKey.address}' (=='...7xbq'?)`)
+    appStore.logsStore.logDebug(`Lotus.keyRecover: recovered='${recoveredPKey.address}' (=='...7xbq'?)`)
   }
 
   getAndParseOptions() {
@@ -68,7 +68,7 @@ export class Lotus {
    * @return {number} Returns the next nonce, or undefined if an error occurred
    */
   async getNonce(addr: string) {
-    appStore.logsStore.log(`DEBUG: entering Lotus.getNonce`)
+    appStore.logsStore.logDebug(`entering Lotus.getNonce`)
     const { headers, lotusEndpoint } = this.getAndParseOptions()
 
     appStore.logsStore.log(
@@ -89,15 +89,15 @@ export class Lotus {
         { headers },
       )
     } catch (error) {
-      appStore.logsStore.log(`ERROR: Lotus.getNonce(): axios error: ${error.message}`)
+      appStore.logsStore.logError(`Lotus.getNonce(): axios error: ${error.message}`)
       return undefined
     }
     // appStore.logsStore.log("response.data = "+inspect(response.data));
     const nonce = response.data.result
     appStore.logsStore.log(`Nonce (${addr}) = ${nonce}`)
 
-    appStore.logsStore.log(`DEBUG: leaving Lotus.getNonce (ret = ${nonce})`)
-    appStore.logsStore.log(`DEBUG: Lotus.getNonce => ${nonce}`)
+    appStore.logsStore.logDebug(`leaving Lotus.getNonce (ret = ${nonce})`)
+    appStore.logsStore.logDebug(`Lotus.getNonce => ${nonce}`)
     return nonce
   }
 
@@ -107,7 +107,7 @@ export class Lotus {
    * @return {string} Returns the CID of the submitted message, or undefined if an error occurred
    */
   async mpoolPush(signedMessage) {
-    appStore.logsStore.log(`DEBUG: entering Lotus.mpoolPush (signedMessage=${inspect(signedMessage)})`)
+    appStore.logsStore.logDebug(`entering Lotus.mpoolPush (signedMessage=${inspect(signedMessage)})`)
     const { headers, lotusEndpoint } = this.getAndParseOptions()
     let response
     let msgCid
@@ -123,14 +123,14 @@ export class Lotus {
         },
         { headers },
       )
-      appStore.logsStore.log(`DEBUG: Lotus.mpoolPush: response.data = ${inspect(response.data)}`)
+      appStore.logsStore.logDebug(`Lotus.mpoolPush: response.data = ${inspect(response.data)}`)
       msgCid = response.data.result
     } catch (error) {
-      appStore.logsStore.log(`ERROR: Lotus.mpoolPush(): axios error: ${error.message}`)
+      appStore.logsStore.logError(`Lotus.mpoolPush(): axios error: ${error.message}`)
       return undefined
     }
-    appStore.logsStore.log(`DEBUG: leaving Lotus.mpoolPush => ${inspect(msgCid)}`)
-    appStore.logsStore.log(`DEBUG: Lotus.mpoolPush => ${inspect(msgCid)}`)
+    appStore.logsStore.logDebug(`leaving Lotus.mpoolPush => ${inspect(msgCid)}`)
+    appStore.logsStore.logDebug(`Lotus.mpoolPush => ${inspect(msgCid)}`)
     return msgCid
   }
 
@@ -140,11 +140,25 @@ export class Lotus {
    * @return {object} Returns the wait response.data member, or undefined if an error occurred
    */
   async stateWaitMsg(cid) {
-    appStore.logsStore.log(`DEBUG: entering Lotus.stateWaitMsg(cid='${cid}')`)
-    appStore.logsStore.log(`INFO: begining StateWaitMsg. This will take a while...`)
+    appStore.logsStore.logDebug(`entering Lotus.stateWaitMsg(cid='${cid}')`)
+    appStore.logsStore.log(`begining StateWaitMsg. This will take a while...`)
     const { headers, lotusEndpoint } = this.getAndParseOptions()
-    var response
+
+    let response
     try {
+      console.group('REQUEST')
+      console.log('lotusEndpoint', lotusEndpoint)
+      console.log('{ headers }', { headers })
+
+      console.log('req', {
+        jsonrpc: '2.0',
+        method: 'Filecoin.StateWaitMsg',
+        id: 1,
+        params: [cid, null],
+      })
+
+      console.groupEnd()
+
       response = await axios.post(
         lotusEndpoint,
         {
@@ -156,7 +170,7 @@ export class Lotus {
         { headers },
       )
     } catch (error) {
-      appStore.logsStore.log(`ERROR: Lotus.stateWaitMsg(): axios error: ${error.message}`)
+      appStore.logsStore.logError(`Lotus.stateWaitMsg(): axios error: ${error.message}`)
       return undefined
     }
     appStore.logsStore.log(`response.data = ${inspect(response.data)}`)
@@ -164,7 +178,7 @@ export class Lotus {
     appStore.logsStore.log(
       `--------------------------------------------------------------------------------------------------`,
     )
-    appStore.logsStore.log(`DEBUG: Lotus.stateWaitMsg => ${inspect(response.data)} ; ${inspect(response.data.result)}`)
+    appStore.logsStore.logDebug(`Lotus.stateWaitMsg => ${inspect(response.data)} ; ${inspect(response.data.result)}`)
     appStore.logsStore.log(
       `--------------------------------------------------------------------------------------------------`,
     )
@@ -177,8 +191,8 @@ export class Lotus {
    * @return {object} Returns the wait's response.data member, or undefined if an error occurred
    */
   async stateReadState(pch) {
-    appStore.logsStore.log(`DEBUG: entering Lotus.stateReadState(pch='${pch}')`)
-    appStore.logsStore.log(`INFO: begining StateReadState. This will take a while...`)
+    appStore.logsStore.logDebug(`entering Lotus.stateReadState(pch='${pch}')`)
+    appStore.logsStore.log(`begining StateReadState. This will take a while...`)
     const { headers, lotusEndpoint } = this.getAndParseOptions()
     var response
     try {
@@ -193,7 +207,7 @@ export class Lotus {
         { headers },
       )
     } catch (error) {
-      appStore.logsStore.log(`ERROR: Lotus.stateReadState(): axios error: ${error.message}`)
+      appStore.logsStore.logError(`Lotus.stateReadState(): axios error: ${error.message}`)
       return undefined
     }
     appStore.logsStore.log(`response.data = ${inspect(response.data)}`)
@@ -232,10 +246,10 @@ export class Lotus {
         BigInt(0),
       )
       let signedVoucher = this.signer.signVoucher(voucher, privateKeyBase64)
-      appStore.logsStore.log(`DEBUG: Lotus.createSignedVoucher: returning signedVoucher = '${inspect(signedVoucher)}'`)
+      appStore.logsStore.logDebug(`Lotus.createSignedVoucher: returning signedVoucher = '${inspect(signedVoucher)}'`)
       return signedVoucher
     } catch (error) {
-      appStore.logsStore.log(`ERROR: Lotus.createSignedVoucher: error: ${error.message}`)
+      appStore.logsStore.logError(`Lotus.createSignedVoucher: error: ${error.message}`)
       return undefined
     }
   }
@@ -253,17 +267,17 @@ export class Lotus {
     const fromKey = privateKeyBase64
     const toAddr = to
 
-    appStore.logsStore.log(
-      `DEBUG: Lotus.createPaymentChannel: [from:${fromAddr}, fromKey:*******************, to:${toAddr}, amount:${amountAttoFil}]`,
+    appStore.logsStore.logDebug(
+      `Lotus.createPaymentChannel: [from:${fromAddr}, fromKey:*******************, to:${toAddr}, amount:${amountAttoFil}]`,
     )
 
     let nonce = await this.getNonce(fromAddr)
-    appStore.logsStore.log(`DEBUG: Lotus.createPaymentChannel: nonce=${nonce}`)
+    appStore.logsStore.logDebug(`Lotus.createPaymentChannel: nonce=${nonce}`)
 
     //
     // Generate the PCH create message
     //
-    var signedCreateMessage // TODO:  does this need to be declared out here?
+    let signedCreateMessage
     try {
       let create_pymtchan = this.signer.createPymtChanWithFee(
         fromAddr,
@@ -274,20 +288,20 @@ export class Lotus {
         '16251176117',
         '140625002',
       ) // gas limit, fee cap, premium
-      appStore.logsStore.log('DEBUG: Lotus.createPaymentChannel: create_pymtchan=' + inspect(create_pymtchan))
+      appStore.logsStore.logDebug('Lotus.createPaymentChannel: create_pymtchan=' + inspect(create_pymtchan))
       // TODO:  use gas esimator:
       //create_pymtchan = await filRPC.getGasEstimation(create_pymtchan)
       signedCreateMessage = JSON.parse(this.signer.transactionSignLotus(create_pymtchan, fromKey))
-      appStore.logsStore.log('DEBUG: Lotus.createPaymentChannel: signedCreateMessage=' + inspect(signedCreateMessage))
+      appStore.logsStore.logDebug('Lotus.createPaymentChannel: signedCreateMessage=' + inspect(signedCreateMessage))
     } catch (error) {
-      appStore.logsStore.log(`ERROR: Lotus.createPaymentChannel: error creating and signing txn: ${error.message}`)
+      appStore.logsStore.logError(`Lotus.createPaymentChannel: error creating and signing txn: ${error.message}`)
       return undefined
     }
 
     //
     // MpoolPush the PCH create message
     //
-    var msgCid = await this.mpoolPush(signedCreateMessage)
+    const msgCid = await this.mpoolPush(signedCreateMessage)
     //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
     appStore.logsStore.log(`msgCid = ${inspect(msgCid)}`)
     if (msgCid === undefined) {
@@ -359,10 +373,10 @@ export class Lotus {
         '16251176117',
         '140625002',
       ) // gas limit, fee cap, premium
-      appStore.logsStore.log(`DEBUG: Lotus.updatePaymentChannel:  updatePaychMessage=${inspect(updatePaychMessage)}`)
+      appStore.logsStore.logDebug(`Lotus.updatePaymentChannel:  updatePaychMessage=${inspect(updatePaychMessage)}`)
       signedUpdateMessage = JSON.parse(this.signer.transactionSignLotus(updatePaychMessage, toPrivateKeyBase64))
     } catch (error) {
-      appStore.logsStore.log(`ERROR: Lotus.updatePaymentChannel: error generating Update message: ${error.message}`)
+      appStore.logsStore.logError(`Lotus.updatePaymentChannel: error generating Update message: ${error.message}`)
       return false
     }
 
@@ -371,9 +385,9 @@ export class Lotus {
     //
     var msgCid = await this.mpoolPush(signedUpdateMessage)
     //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
-    appStore.logsStore.log(`DEBUG: Lotus.updatePaymentChannel:  msgCid = ${inspect(msgCid)}`)
+    appStore.logsStore.logDebug(`Lotus.updatePaymentChannel:  msgCid = ${inspect(msgCid)}`)
     if (msgCid === undefined) {
-      appStore.logsStore.log(`ERROR: Lotus.updatePaymentChannel: fatal: pch update msgcid undefined`)
+      appStore.logsStore.logError(`Lotus.updatePaymentChannel: fatal: pch update msgcid undefined`)
       return false
     }
 
@@ -382,7 +396,7 @@ export class Lotus {
     //
     const waitUpdateResponseData = await this.stateWaitMsg(msgCid)
     if (waitUpdateResponseData === undefined) {
-      appStore.logsStore.log(`ERROR: Lotus.updatePaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`)
+      appStore.logsStore.logError(`Lotus.updatePaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`)
       return false
     }
     appStore.logsStore.log(
@@ -394,7 +408,7 @@ export class Lotus {
     //
     const waitReadPchStateResponseData = await this.stateReadState(pch)
     if (waitReadPchStateResponseData === undefined) {
-      appStore.logsStore.log(`ERROR: Lotus.updatePaymentChannel: fatal: Filecoin.StateReadState returned nothing`)
+      appStore.logsStore.logError(`Lotus.updatePaymentChannel: fatal: Filecoin.StateReadState returned nothing`)
       return false
     }
     appStore.logsStore.log(
@@ -435,7 +449,7 @@ export class Lotus {
       ) // gas limit, fee cap, premium)
       signedSettleMessage = JSON.parse(this.signer.transactionSignLotus(settlePaychMessage, toPrivateKeyBase64))
     } catch (error) {
-      appStore.logsStore.log(`ERROR: Lotus.settlePaymentChannel: error generating Settle msg: ${error.message}`)
+      appStore.logsStore.logError(`Lotus.settlePaymentChannel: error generating Settle msg: ${error.message}`)
       return
     }
 
@@ -444,9 +458,9 @@ export class Lotus {
     //
     var msgCid = await this.mpoolPush(signedSettleMessage)
     //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
-    appStore.logsStore.log(`DEBUG: Lotus.settlePaymentChannel:  msgCid = ${inspect(msgCid)}`)
+    appStore.logsStore.logDebug(`Lotus.settlePaymentChannel:  msgCid = ${inspect(msgCid)}`)
     if (msgCid === undefined) {
-      appStore.logsStore.log(`ERROR: Lotus.settlePaymentChannel: fatal: pch Settle msgcid undefined`)
+      appStore.logsStore.logError(`Lotus.settlePaymentChannel: fatal: pch Settle msgcid undefined`)
       return
     }
 
@@ -455,7 +469,7 @@ export class Lotus {
     //
     const waitSettleResponseData = await this.stateWaitMsg(msgCid)
     if (waitSettleResponseData === undefined) {
-      appStore.logsStore.log(`ERROR: Lotus.settlePaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`)
+      appStore.logsStore.logError(`Lotus.settlePaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`)
       return
     }
     appStore.logsStore.log(
@@ -467,7 +481,7 @@ export class Lotus {
     //
     const waitReadPchStateResponseData = await this.stateReadState(pch)
     if (waitReadPchStateResponseData === undefined) {
-      appStore.logsStore.log(`ERROR: Lotus.settlePaymentChannel: fatal: Filecoin.StateReadState returned nothing`)
+      appStore.logsStore.logError(`Lotus.settlePaymentChannel: fatal: Filecoin.StateReadState returned nothing`)
       return
     }
     appStore.logsStore.log(
@@ -506,7 +520,7 @@ export class Lotus {
       ) // gas limit, fee cap, premium
       signedCollectMessage = JSON.parse(this.signer.transactionSignLotus(collectPaychMessage, toPrivateKeyBase64))
     } catch (error) {
-      appStore.logsStore.log(`ERROR: Lotus.collectPaymentChannel: error generating Collect msg: ${error.message}`)
+      appStore.logsStore.logError(`Lotus.collectPaymentChannel: error generating Collect msg: ${error.message}`)
       return
     }
 
@@ -515,9 +529,9 @@ export class Lotus {
     //
     var msgCid = await this.mpoolPush(signedCollectMessage)
     //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
-    appStore.logsStore.log(`DEBUG: Lotus.collectPaymentChannel:  msgCid = ${inspect(msgCid)}`)
+    appStore.logsStore.logDebug(`Lotus.collectPaymentChannel:  msgCid = ${inspect(msgCid)}`)
     if (msgCid === undefined) {
-      appStore.logsStore.log(`ERROR: Lotus.collectPaymentChannel: fatal: pch Collect msgcid undefined`)
+      appStore.logsStore.logError(`Lotus.collectPaymentChannel: fatal: pch Collect msgcid undefined`)
       return
     }
 
@@ -526,7 +540,7 @@ export class Lotus {
     //
     const waitCollectResponseData = await this.stateWaitMsg(msgCid)
     if (waitCollectResponseData === undefined) {
-      appStore.logsStore.log(`ERROR: Lotus.collectPaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`)
+      appStore.logsStore.logError(`Lotus.collectPaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`)
       return
     }
     appStore.logsStore.log(
@@ -538,7 +552,7 @@ export class Lotus {
     //
     const waitReadPchStateResponseData = await this.stateReadState(pch)
     if (waitReadPchStateResponseData === undefined) {
-      appStore.logsStore.log(`ERROR: Lotus.collectPaymentChannel: fatal: Filecoin.StateReadState returned nothing`)
+      appStore.logsStore.logError(`Lotus.collectPaymentChannel: fatal: Filecoin.StateReadState returned nothing`)
       return
     }
     appStore.logsStore.log(
@@ -592,12 +606,12 @@ export class Lotus {
     // Watch the Log and your test wallet balances before and after.  The amount is 0.01 FIL.
     //
     //        // TEMP - DO NOT MERGE
-    appStore.logsStore.log(`DEBUG: ----------- Lotus.sendFunds Test -------------- `)
+    appStore.logsStore.logDebug(`----------- Lotus.sendFunds Test -------------- `)
     //        await this.lotus.sendFunds(10000000000000000,"f1d4jcvewwyiuepgccm4k5ng5lqhobj77eplj33zy");
-    appStore.logsStore.log(`DEBUG: ----------- Lotus.sendFunds End -------------- `)
+    appStore.logsStore.logDebug(`----------- Lotus.sendFunds End -------------- `)
     //        // END - DO NOT MERGE
     //
-    appStore.logsStore.log(`DEBUG: lotus.sendFunds(): sending ${amountAttoFil} to ${toWallet}`)
+    appStore.logsStore.logDebug(`lotus.sendFunds(): sending ${amountAttoFil} to ${toWallet}`)
 
     try {
       const { wallet, privateKeyBase64 } = this.getAndParseOptions()
@@ -607,7 +621,7 @@ export class Lotus {
       //
       let nonce = await this.getNonce(wallet)
       //nonce = (nonce.result==undefined) ? nonce : nonce.result;
-      appStore.logsStore.log(`DEBUG: lotus.sendFunds(): nonce: ${nonce}`)
+      appStore.logsStore.logDebug(`lotus.sendFunds(): nonce: ${nonce}`)
 
       //
       //  Sign transaction
@@ -624,19 +638,19 @@ export class Lotus {
         GasPremium: '140625002', // TODO: use gas estimator
       }
       const unsignedMessageJson = JSON.stringify(unsignedMessage, null, 2)
-      appStore.logsStore.log(`DEBUG: lotus.sendFunds(): unsignedMessageJson = ${unsignedMessageJson}`)
+      appStore.logsStore.logDebug(`lotus.sendFunds(): unsignedMessageJson = ${unsignedMessageJson}`)
 
       const signedMessage = JSON.parse(this.signer.transactionSignLotus(unsignedMessage, privateKeyBase64))
-      appStore.logsStore.log(`DEBUG: lotus.sendFunds(): signedMessage = ${inspect(signedMessage)}`)
+      appStore.logsStore.logDebug(`lotus.sendFunds(): signedMessage = ${inspect(signedMessage)}`)
 
       //
       // Mpoolpush signed Send message
       //
       var msgCid = await this.mpoolPush(signedMessage)
       //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
-      appStore.logsStore.log(`DEBUG: Lotus.sendFunds:  msgCid = ${inspect(msgCid)}`)
+      appStore.logsStore.logDebug(`Lotus.sendFunds:  msgCid = ${inspect(msgCid)}`)
       if (msgCid === undefined) {
-        appStore.logsStore.log(`ERROR: Lotus.sendFunds: fatal: send funds MPoolPush response was 'msgCid=${msgCid}'`)
+        appStore.logsStore.logError(`Lotus.sendFunds: fatal: send funds MPoolPush response was 'msgCid=${msgCid}'`)
         return false
       }
 
@@ -645,23 +659,23 @@ export class Lotus {
       //
       const waitSendResponse = await this.stateWaitMsg(msgCid)
       if (waitSendResponse === undefined) {
-        appStore.logsStore.log(`ERROR: Lotus.sendFunds: fatal: Filecoin.StateWaitMsg returned undefined`)
+        appStore.logsStore.logError(`Lotus.sendFunds: fatal: Filecoin.StateWaitMsg returned undefined`)
         return false
       }
-      appStore.logsStore.log(`DEBUG: Lotus.sendFunds: response.data: ${inspect(waitSendResponse)}`)
+      appStore.logsStore.logDebug(`Lotus.sendFunds: response.data: ${inspect(waitSendResponse)}`)
 
       //
       // Verify message receipt
       //
       const sendMsgResult = waitSendResponse.result
-      appStore.logsStore.log(`DEBUG: Lotus.sendFunds: sendMsgResult=${inspect(sendMsgResult)}`)
+      appStore.logsStore.logDebug(`Lotus.sendFunds: sendMsgResult=${inspect(sendMsgResult)}`)
       const sendMsgReceipt = sendMsgResult.Receipt
-      appStore.logsStore.log(`DEBUG: Lotus.sendFunds: sendMsgReceipt=${inspect(sendMsgReceipt)}`)
+      appStore.logsStore.logDebug(`Lotus.sendFunds: sendMsgReceipt=${inspect(sendMsgReceipt)}`)
       appStore.logsStore.log(
         `DEBUG: Lotus.sendFunds: receipt components:\n  { ExitCode: '${sendMsgReceipt.ExitCode}', Return: '${sendMsgReceipt.Return}', GasUsed: '${sendMsgReceipt.GasUsed}' }`,
       )
       if (sendMsgReceipt.ExitCode === 0) {
-        appStore.logsStore.log(`DEBUG: Lotus.sendFunds: receipt indicates no errors ==> returning true`)
+        appStore.logsStore.logDebug(`Lotus.sendFunds: receipt indicates no errors ==> returning true`)
         return true
       } else {
         appStore.logsStore.log(
@@ -670,7 +684,7 @@ export class Lotus {
         return false
       }
     } catch (error) {
-      appStore.logsStore.log(`ERROR: lotus.sendFunds(): caught exception: ${inspect(error)}`)
+      appStore.logsStore.logError(`lotus.sendFunds(): caught exception: ${inspect(error)}`)
       return false
     }
   }

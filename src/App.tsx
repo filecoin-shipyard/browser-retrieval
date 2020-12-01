@@ -1,6 +1,7 @@
 import './styles/tailwind.css'
 
 import { ConnectionIndicator } from 'App/ConnectionIndicator'
+import { Editor } from 'App/Editor'
 import { Home } from 'App/Home'
 import { Logs } from 'App/Logs'
 import { Options } from 'App/Options'
@@ -29,10 +30,10 @@ const tabs = [
     label: 'Import File',
     component: Upload,
   },
-  // {
-  //   label: 'Automation',
-  //   component: Editor,
-  // },
+  {
+    label: 'Automation',
+    component: Editor,
+  },
 ]
 
 export function App() {

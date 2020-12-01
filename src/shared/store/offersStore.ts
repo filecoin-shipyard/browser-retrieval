@@ -20,13 +20,13 @@ export class OffersStore {
     }
   }
 
-  add(cid: any, arg1: any) {
+  add(cid: any, offer: any) {
     const offers = this.offerInfo?.offers || []
 
     this.offerInfo = {
       ...this.offerInfo,
       cid,
-      offers: offers.concat(arg1),
+      offers: offers.concat(offer),
     }
   }
 }
