@@ -22,8 +22,8 @@ import SocketClient from './socket-client/SocketClient'
 let nodeInstance: Node
 
 export class Node {
-  static async create() {
-    if (!nodeInstance) {
+  static async create(force = false) {
+    if (!nodeInstance || force) {
       nodeInstance = new Node()
 
       await nodeInstance.initialize()
@@ -49,6 +49,7 @@ export class Node {
   connectedPeers = new Set()
   queriedCids = new Set()
 
+  /** Libp2p Node */
   node
 
   /** Retrieval market client */
@@ -444,9 +445,11 @@ export class Node {
   async stop() {
     appStore.logsStore.logDebug('stopping ipfs node')
 
-    // TODO: @brunolm migrate to state
-    // this.ports.postMultiaddrs()
-    // this.ports.postPeers()
+    this.multiaddrs = []
+
+    this.connectedPeers = new Set()
+    this.postPeers()
+
     await this.datastore.close()
     await this.node.stop()
   }

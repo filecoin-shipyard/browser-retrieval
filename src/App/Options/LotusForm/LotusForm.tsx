@@ -31,6 +31,9 @@ export function LotusForm(props) {
         },
         unsaved: aggregated,
       })
+
+      // reconnect after settings change
+      await appStore.connect()
     } else {
       setError('privateKey', { type: 'manual', message: `Wallet and private key don't match` })
     }

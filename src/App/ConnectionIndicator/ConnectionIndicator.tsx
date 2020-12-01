@@ -4,11 +4,7 @@ import React from 'react'
 import { appStore } from 'shared/store/appStore'
 
 export const ConnectionIndicator = observer((props: any) => {
-  if (!appStore.node) {
-    return null
-  }
-
-  const { multiaddrs } = appStore.node
+  const { multiaddrs } = appStore.node || { multiaddrs: [] }
 
   return (
     <StatusIndicator
@@ -21,6 +17,7 @@ export const ConnectionIndicator = observer((props: any) => {
           )}
         </svg>
       }
+      badge={appStore.connected ? '✓' : 'X'}
       label={multiaddrs ? 'Listening on:' : 'Trying to connect to rendezvous server'}
       description={multiaddrs && multiaddrs.join('\n')}
       {...props}

@@ -43,14 +43,17 @@ export class AppStore {
   }
 
   async connect() {
-    this.connected = true
-
     const { optionsStore } = this
 
     if (optionsStore.wallet !== '' || optionsStore.privateKey !== '') {
       try {
-        this.node = await Node.create()
+        await this.disconnect()
+
+        this.node = await Node.create(true)
+        this.connected = true
       } catch (error) {
+        this.connected = false
+
         if (error === 'Error: `Invalid Key Length`') {
           this.logsStore.logDebug(`start node failed: ${error}`)
           console.error(error)
@@ -59,6 +62,15 @@ export class AppStore {
           this.logsStore.logError(`start node failed: ${error.message}`)
         }
       }
+    }
+  }
+
+  private async disconnect() {
+    try {
+      await this.node?.stop()
+      this.connected = false
+    } catch (err) {
+      this.logsStore.logDebug(`stop node failed: ${err.message}`)
     }
   }
 
