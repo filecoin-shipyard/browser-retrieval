@@ -47,7 +47,7 @@ export class AppStore {
 
     if (optionsStore.wallet !== '' || optionsStore.privateKey !== '') {
       try {
-        await this.disconnect()
+        await this.tryDisconnect()
 
         this.node = await Node.create(true)
         this.connected = true
@@ -65,7 +65,7 @@ export class AppStore {
     }
   }
 
-  private async disconnect() {
+  private async tryDisconnect() {
     try {
       await this.node?.stop()
       this.connected = false
