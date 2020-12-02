@@ -304,7 +304,7 @@ export class Lotus {
     const msgCid = await this.mpoolPush(signedCreateMessage)
     //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
     appStore.logsStore.log(`msgCid = ${inspect(msgCid)}`)
-    if (msgCid === undefined) {
+    if (!msgCid) {
       appStore.logsStore.logError(`Lotus.createPaymentChannel: fatal: pch create msgcid undefined`)
       return undefined
     }
@@ -386,7 +386,7 @@ export class Lotus {
     var msgCid = await this.mpoolPush(signedUpdateMessage)
     //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
     appStore.logsStore.logDebug(`Lotus.updatePaymentChannel:  msgCid = ${inspect(msgCid)}`)
-    if (msgCid === undefined) {
+    if (!msgCid) {
       appStore.logsStore.logError(`Lotus.updatePaymentChannel: fatal: pch update msgcid undefined`)
       return false
     }
@@ -395,7 +395,7 @@ export class Lotus {
     // Wait for PCH update response
     //
     const waitUpdateResponseData = await this.stateWaitMsg(msgCid)
-    if (waitUpdateResponseData === undefined) {
+    if (!waitUpdateResponseData) {
       appStore.logsStore.logError(`Lotus.updatePaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`)
       return false
     }
@@ -407,7 +407,7 @@ export class Lotus {
     // Wait for new PCH state
     //
     const waitReadPchStateResponseData = await this.stateReadState(pch)
-    if (waitReadPchStateResponseData === undefined) {
+    if (!waitReadPchStateResponseData) {
       appStore.logsStore.logError(`Lotus.updatePaymentChannel: fatal: Filecoin.StateReadState returned nothing`)
       return false
     }
@@ -459,7 +459,7 @@ export class Lotus {
     var msgCid = await this.mpoolPush(signedSettleMessage)
     //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
     appStore.logsStore.logDebug(`Lotus.settlePaymentChannel:  msgCid = ${inspect(msgCid)}`)
-    if (msgCid === undefined) {
+    if (!msgCid) {
       appStore.logsStore.logError(`Lotus.settlePaymentChannel: fatal: pch Settle msgcid undefined`)
       return
     }
@@ -468,7 +468,7 @@ export class Lotus {
     // Wait for PCH Settle response
     //
     const waitSettleResponseData = await this.stateWaitMsg(msgCid)
-    if (waitSettleResponseData === undefined) {
+    if (!waitSettleResponseData) {
       appStore.logsStore.logError(`Lotus.settlePaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`)
       return
     }
@@ -480,7 +480,7 @@ export class Lotus {
     // Wait for new PCH state
     //
     const waitReadPchStateResponseData = await this.stateReadState(pch)
-    if (waitReadPchStateResponseData === undefined) {
+    if (!waitReadPchStateResponseData) {
       appStore.logsStore.logError(`Lotus.settlePaymentChannel: fatal: Filecoin.StateReadState returned nothing`)
       return
     }
@@ -530,7 +530,7 @@ export class Lotus {
     var msgCid = await this.mpoolPush(signedCollectMessage)
     //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
     appStore.logsStore.logDebug(`Lotus.collectPaymentChannel:  msgCid = ${inspect(msgCid)}`)
-    if (msgCid === undefined) {
+    if (!msgCid) {
       appStore.logsStore.logError(`Lotus.collectPaymentChannel: fatal: pch Collect msgcid undefined`)
       return
     }
@@ -539,7 +539,7 @@ export class Lotus {
     // Wait for PCH Collect response
     //
     const waitCollectResponseData = await this.stateWaitMsg(msgCid)
-    if (waitCollectResponseData === undefined) {
+    if (!waitCollectResponseData) {
       appStore.logsStore.logError(`Lotus.collectPaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`)
       return
     }
@@ -551,7 +551,7 @@ export class Lotus {
     // Wait for new PCH state
     //
     const waitReadPchStateResponseData = await this.stateReadState(pch)
-    if (waitReadPchStateResponseData === undefined) {
+    if (!waitReadPchStateResponseData) {
       appStore.logsStore.logError(`Lotus.collectPaymentChannel: fatal: Filecoin.StateReadState returned nothing`)
       return
     }
@@ -649,7 +649,7 @@ export class Lotus {
       var msgCid = await this.mpoolPush(signedMessage)
       //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
       appStore.logsStore.logDebug(`Lotus.sendFunds:  msgCid = ${inspect(msgCid)}`)
-      if (msgCid === undefined) {
+      if (!msgCid) {
         appStore.logsStore.logError(`Lotus.sendFunds: fatal: send funds MPoolPush response was 'msgCid=${msgCid}'`)
         return false
       }
@@ -658,7 +658,7 @@ export class Lotus {
       // Wait for Send message to be mined
       //
       const waitSendResponse = await this.stateWaitMsg(msgCid)
-      if (waitSendResponse === undefined) {
+      if (!waitSendResponse) {
         appStore.logsStore.logError(`Lotus.sendFunds: fatal: Filecoin.StateWaitMsg returned undefined`)
         return false
       }
