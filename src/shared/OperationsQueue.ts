@@ -9,7 +9,7 @@ let operationsQueueInstance: OperationsQueue
 export class OperationsQueue {
   lotus: Lotus
 
-  static async create(options) {
+  static async create() {
     if (!operationsQueueInstance) {
       operationsQueueInstance = new OperationsQueue()
 
@@ -35,31 +35,6 @@ export class OperationsQueue {
    */
   get retryLimit() {
     return 0
-  }
-
-  queue(op) {
-    if (!op.f || !op.metadata) {
-      throw new Error('OperationsQueue: Function and metadata are required')
-    }
-
-    appStore.operationsStore.queue({
-      ...op,
-      id: Date.now() + Math.random().toString(36).substr(2, 9),
-    })
-  }
-
-  remove(op) {
-    appStore.operationsStore.dequeue(op.id)
-  }
-
-  /**
-   * Finds and updates an operation stored.
-   *
-   * @param {Operation} op Operation
-   * @param {Partial.<Operation>} props Operation props
-   */
-  updateOperation(op, props) {
-    appStore.operationsStore.update(op, props)
   }
 
   async initialize() {
@@ -128,5 +103,9 @@ export class OperationsQueue {
         })
       }
     }
+  }
+
+  private updateOperation(op, props) {
+    appStore.operationsStore.update(op, props)
   }
 }

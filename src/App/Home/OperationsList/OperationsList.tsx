@@ -54,15 +54,15 @@ const renderOpsTable = ({ appStore, operations }) => {
                 {renderStatus(operation)}
               </TableCell>
               <TableCell>{operation.output || '-'}</TableCell>
-              {['done', 'failed'].includes(operation.status) ? (
-                <TableCell>
+              <TableCell>
+                {['done', 'failed'].includes(operation.status) ? (
                   <div className="flex">
                     <IconButton icon="trash" onClick={() => dismiss({ appStore, operation })} danger /> &nbsp; &nbsp;
                   </div>
-                </TableCell>
-              ) : (
-                <>&nbsp;</>
-              )}
+                ) : (
+                  <>&nbsp;</>
+                )}
+              </TableCell>
             </TableRow>
           ))}
       </tbody>
@@ -71,9 +71,7 @@ const renderOpsTable = ({ appStore, operations }) => {
 }
 
 export function OperationsList(props) {
-  const [_time, setTime] = useState(Date.now())
-
-
+  const [, setTime] = useState(Date.now())
 
   useEffect(() => {
     const interval = setInterval(() => setTime(Date.now()), 1000)

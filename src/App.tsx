@@ -11,6 +11,7 @@ import { Upload } from 'App/Upload'
 import { Tabs } from 'components/Tabs'
 import { WalletModal } from 'components/WalletModal'
 import React, { useEffect } from 'react'
+import { OperationsQueue } from 'shared/OperationsQueue'
 import { appStore } from 'shared/store/appStore'
 
 const tabs = [
@@ -40,6 +41,9 @@ export function App() {
   useEffect(() => {
     if (!appStore.connected) {
       appStore.connect()
+
+      // initialize operations loop
+      OperationsQueue.create()
     }
   })
 

@@ -1,14 +1,17 @@
 import { makeAutoObservable, toJS } from 'mobx'
 
-import { stringify } from '../stringify'
+import { stringify } from 'shared/stringify'
+import { Operations } from '../Operations'
 import { AppStore } from './appStore'
 
 interface Operation {
-  id: any
+  id?: any
   label: string
-  invokeAt: Date
-  output: string
-  status: any
+  invokeAt: any
+  output?: string
+  status?: any
+  f: keyof Operations
+  metadata: Record<string, any>
 }
 
 export class OperationsStore {
@@ -39,8 +42,11 @@ export class OperationsStore {
     this._save()
   }
 
-  queue(op) {
-    this._operations.push(op)
+  queue(op: Operation) {
+    this._operations.push({
+      ...op,
+      id: op.id || Date.now() + Math.random().toString(36).substr(2, 9),
+    })
     this._save()
   }
 
@@ -53,7 +59,7 @@ export class OperationsStore {
     this._save()
   }
 
-  update(operation, props) {
+  update(operation: Operation, props) {
     for (const [i, op] of Object.entries(this._operations)) {
       if (op.id === operation.id) {
         this._operations[i] = { ...op, ...props }

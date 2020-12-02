@@ -7,8 +7,6 @@ import { dealStatuses } from 'shared/dealStatuses'
 import { jsonStream } from 'shared/jsonStream'
 import { Lotus } from 'shared/lotus-client/Lotus'
 import { Services } from 'shared/models/services'
-import { OperationsQueue } from 'shared/OperationsQueue'
-
 import { protocols } from 'shared/protocols'
 import { appStore } from 'shared/store/appStore'
 
@@ -118,7 +116,7 @@ export class Provider {
               // TODO: code duplication with `dealStatuses.lastPaymentSent`
               this.setOrVerifyPaymentChannel(message)
               if (!(await this.checkPaymentVoucherValid(message))) {
-                throw { message: `received invalid voucher (${message.paymentVoucher}) on dealId ${message.dealId}` }
+                throw new Error(`received invalid voucher (${message.paymentVoucher}) on dealId ${message.dealId}`)
               } else {
                 await this.submitPaymentVoucher(message)
                 await this.sendBlocks(message)
@@ -131,7 +129,7 @@ export class Provider {
               // TODO: code duplication with `dealStatuses.paymentSent`
               this.setOrVerifyPaymentChannel(message)
               if (!(await this.checkPaymentVoucherValid(message))) {
-                throw { message: `received invalid voucher (${message.paymentVoucher}) on dealId ${message.dealId}` }
+                throw new Error(`received invalid voucher (${message.paymentVoucher}) on dealId ${message.dealId}`)
               } else {
                 await this.submitPaymentVoucher(message)
                 await this.sendDealCompleted(message)
@@ -162,9 +160,9 @@ export class Provider {
       deal.paymentChannel = message.paymentChannel
     } else {
       if (deal.paymentChannel !== message.paymentChannel) {
-        throw {
-          message: `received incorrect payment channel address (message.paymentChannel (${message.paymentChannel}) != deal.paymentChannel (${deal.paymentChannel})) on dealId ${message.dealId}`,
-        }
+        throw new Error(
+          `received incorrect payment channel address (message.paymentChannel (${message.paymentChannel}) != deal.paymentChannel (${deal.paymentChannel})) on dealId ${message.dealId}`,
+        )
       }
     }
   }
@@ -316,7 +314,7 @@ export class Provider {
     const isUpdateSuccessful = await this.lotus.updatePaymentChannel(paymentChannel, signedVoucher)
     appStore.logsStore.logDebug(`Provider.submitPaymentVoucher: isUpdateSuccessful=${isUpdateSuccessful}`)
     if (!isUpdateSuccessful) {
-      throw { message: 'ERROR: Provider.submitPaymentVoucher: failed to submit voucher' }
+      throw new Error('ERROR: Provider.submitPaymentVoucher: failed to submit voucher')
     }
   }
 
@@ -343,11 +341,7 @@ export class Provider {
   async pendCollectOperation(dealId, paymentChannelAddr) {
     appStore.logsStore.logDebug(`Provider.pendCollectOperation: dealId=${dealId}, paymentChannel=${paymentChannelAddr}`)
 
-    const operationsQueue = await OperationsQueue.create({
-      appStore: appStore,
-    })
-
-    operationsQueue.queue({
+    appStore.operationsStore.queue({
       label: `Collect channel ${paymentChannelAddr}`,
 
       // name of the method implemented in shared/Operations
