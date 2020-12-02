@@ -11,6 +11,8 @@ const importDagCBOR = () => {
   return require('ipld-dag-cbor');
 }
 
+const useDefaultGas = true;
+
 class Lotus {
   static async create() {
     ports.postLog(`DEBUG: entering Lotus.create`);
@@ -95,7 +97,7 @@ class Lotus {
    * @param  {string} message Payment channel
    * @return {string} Returns the gas estimation, or undefined if an error occurred
    */
-  async getGasEstimation(message, useDefault, defaultEstimation = {
+  async getGasEstimation(message, defaultEstimation = {
       GasLimit: "10000000",
       GasFeeCap: "16251176117",
       GasPremium: "140625002",
@@ -103,7 +105,7 @@ class Lotus {
     ports.postLog(`DEBUG: entering Lotus.gesGasEstimation`);
     let gasEstimation = defaultEstimation;
     
-    if (!useDefault)
+    if (!useDefaultGas)
     {
       let headers = this.headers;
       ports.postLog(`DEBUG: Lotus.gesGasEstimation:\n  message=${message}\n  this.headers=${inspect(headers)}\n  this.lotusEndpoint=${this.lotusEndpoint}`);
@@ -262,7 +264,7 @@ class Lotus {
         "To": toAddr,
         "Nonce": nonce,
         "Value": `${amountAttoFil}`,
-      }, true);
+      });
       let create_pymtchan = signer.createPymtChanWithFee(
         fromAddr, 
         toAddr, 
@@ -338,7 +340,7 @@ class Lotus {
         "To": toAddr,
         "Nonce": nonce,
         "Value": "0",
-      }, true);
+      });
       let updatePaychMessage = signer.updatePymtChanWithFee(pch, 
         toAddr, 
         signedVoucher, 
@@ -418,7 +420,7 @@ class Lotus {
         gasEstimation.GasLimit, 
         gasEstimation.GasFeeCap , 
         gasEstimation.GasPremium);
-      settlePaychMessage = await this.getGasEstimation(settlePaychMessage, true);
+      settlePaychMessage = await this.getGasEstimation(settlePaychMessage);
       signedSettleMessage = JSON.parse(signer.transactionSignLotus(settlePaychMessage, toPrivateKeyBase64));
     } catch (error) {
       ports.postLog(`ERROR: Lotus.settlePaymentChannel: error generating Settle msg: ${error.message}`);
@@ -477,7 +479,7 @@ class Lotus {
         "To": toAddr,
         "Nonce": nonce,
         "Value": "0",
-      }, true);
+      });
       let collectPaychMessage = signer.collectPymtChanWithFee(
         pch, 
         toAddr, 
@@ -593,7 +595,7 @@ class Lotus {
           GasLimit: "0",
           GasFeeCap: "0",
           GasPremium: "0",
-      }, true);
+      });
 
       //
       //  Sign transaction
