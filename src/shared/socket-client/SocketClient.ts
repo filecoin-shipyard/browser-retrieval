@@ -5,7 +5,6 @@ import { decodeCID } from 'shared/decodeCID'
 import { Lotus } from 'shared/lotus-client/Lotus'
 import { messageRequestTypes, messageResponseTypes, messages } from 'shared/messages'
 import { Services } from 'shared/models/services'
-import { hasOngoingDeals, ongoingDeals } from 'shared/ongoingDeals'
 import { sha256 } from 'shared/sha256'
 import { appStore } from 'shared/store/appStore'
 import socketIO from 'socket.io-client'
@@ -79,7 +78,7 @@ export default class SocketClient {
     }
 
     try {
-      const deal = this._createOngoingDeal({ cid, params, multiaddr })
+      const deal = this.createInboundDeal({ cid, params, multiaddr })
 
       if (!deal) {
         return
@@ -87,7 +86,7 @@ export default class SocketClient {
 
       await this._sendFunds(params)
 
-      this._setOngoingDealProps(params.clientToken, { status: dealStatuses.awaitingAcceptance })
+      this.setDealProps(params.clientToken, { status: dealStatuses.awaitingAcceptance })
     } catch (error) {
       appStore.logsStore.logError(`SocketClient._handleCidAvailability: error: ${error.message}`)
     }
@@ -118,7 +117,7 @@ export default class SocketClient {
       console.log(`Got ${messageResponseTypes.cidAvailability} message:`, message)
 
       if (!message.available) {
-        if (!hasOngoingDeals()) {
+        if (!appStore.dealsStore.hasOngoingDeals()) {
           this.socket.disconnect()
         }
 
@@ -170,11 +169,11 @@ export default class SocketClient {
       console.log('got message from server: chunk')
       console.log('message', message)
 
-      const deal = ongoingDeals[message.clientToken]
+      const deal = appStore.dealsStore.getInboundDeal(message.clientToken)
 
       // all chunks were received
       if (message.eof) {
-        this._setOngoingDealProps(message.clientToken, {
+        this.setDealProps(message.clientToken, {
           status: dealStatuses.finalizing,
         })
 
@@ -182,7 +181,7 @@ export default class SocketClient {
 
         this.handleCidReceived(message.cid, message.fullDataLenBytes)
 
-        await this._closeDeal({ dealId: ongoingDeals[message.clientToken].id })
+        await this._closeDeal({ dealId: deal.id })
 
         return
       }
@@ -202,7 +201,7 @@ export default class SocketClient {
         // pushed data needs to be an array of bytes
         deal.importerSink.push([...(dataBuffer as any)])
 
-        this._setOngoingDealProps(message.clientToken, {
+        this.setDealProps(message.clientToken, {
           sizeReceived: deal.sizeReceived + message.chunkLenBytes,
           status: dealStatuses.ongoing,
         })
@@ -224,7 +223,7 @@ export default class SocketClient {
     })
   }
 
-  _createOngoingDeal({ cid, params, multiaddr }) {
+  createInboundDeal({ cid, params, multiaddr }) {
     const decoded = decodeCID(cid)
 
     appStore.logsStore.logDebug(
@@ -243,7 +242,7 @@ export default class SocketClient {
 
     const dealId = params.clientToken
 
-    ongoingDeals[dealId] = {
+    appStore.dealsStore.createInboundDeal({
       id: dealId,
       status: dealStatuses.new,
       customStatus: undefined,
@@ -251,28 +250,19 @@ export default class SocketClient {
       params,
       peerMultiaddr: multiaddr,
       peerWallet: params.paymentWallet,
-      sink: pushable(),
       sizeReceived: 0,
       sizePaid: 0,
+      sink: pushable(),
       importerSink,
       importer: this.datastore.putContent(importerSink, importOptions),
       voucherNonce: 1,
-    }
+    })
 
-    // TODO: @brunolm migrate to state
-    // ports.postInboundDeals(ongoingDeals)
-
-    return ongoingDeals[dealId]
+    return appStore.dealsStore.inboundDeals.find((d) => d.id === dealId)
   }
 
-  _setOngoingDealProps(clientToken, props) {
-    ongoingDeals[clientToken] = {
-      ...ongoingDeals[clientToken],
-      ...props,
-    }
-
-    // TODO: @brunolm migrate to state
-    // ports.postInboundDeals(ongoingDeals)
+  setDealProps(dealId, props) {
+    appStore.dealsStore.setInboundDealProps(dealId, props)
   }
 
   async _sendFunds(params) {
@@ -286,18 +276,16 @@ export default class SocketClient {
 
   async _closeDeal({ dealId }) {
     appStore.logsStore.logDebug(`DEBUG: SocketClient.closeDeal: closing deal ${dealId}`)
-    const deal = ongoingDeals[dealId]
+    const deal = appStore.dealsStore.getInboundDeal(dealId)
 
-    this._setOngoingDealProps(dealId, {
+    this.setDealProps(dealId, {
       customStatus: 'Done',
     })
 
     deal.sink.end()
 
-    delete ongoingDeals[dealId]
-    await this.handleCidReceived(deal.cid, +deal.sizeReceived)
+    appStore.dealsStore.removeInboundDeal(dealId)
 
-    // TODO: @brunolm migrate to state
-    // ports.postInboundDeals(ongoingDeals)
+    await this.handleCidReceived(deal.cid, +deal.sizeReceived)
   }
 }

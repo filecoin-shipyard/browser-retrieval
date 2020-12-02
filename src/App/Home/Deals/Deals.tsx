@@ -7,16 +7,17 @@ import { appStore } from 'shared/store/appStore'
 import React from 'react'
 
 import { Deal } from './Deal'
+import { observer } from 'mobx-react-lite'
 
-export function Deals({ className, ...rest }) {
+export const Deals = observer<any>(({ className, ...rest }) => {
   const { dealsStore } = appStore
 
-  if (
-    !dealsStore.ongoingDeals ||
-    (!dealsStore.ongoingDeals.inbound?.length && !dealsStore.ongoingDeals.outbound?.length)
-  ) {
+  if (!dealsStore.hasOngoingDeals()) {
     return null
   }
+
+  const inbound = dealsStore.inboundDeals
+  const outbound = dealsStore.outboundDeals
 
   return (
     <Card className={classNames(className)} {...rest}>
@@ -33,14 +34,14 @@ export function Deals({ className, ...rest }) {
           </TableRow>
         </thead>
         <tbody>
-          {dealsStore.ongoingDeals.inbound?.map((deal) => (
+          {inbound?.map((deal) => (
             <Deal key={deal.id} deal={deal} inbound />
           ))}
-          {dealsStore.ongoingDeals.outbound?.map((deal) => (
+          {outbound?.map((deal) => (
             <Deal key={deal.id} deal={deal} />
           ))}
         </tbody>
       </Table>
     </Card>
   )
-}
+})

@@ -5,9 +5,7 @@ import { Datastore } from 'shared/Datastore'
 import { dealStatuses } from 'shared/dealStatuses'
 import { jsonStream } from 'shared/jsonStream'
 import { Lotus } from 'shared/lotus-client/Lotus'
-import { convertDealsToArray, ongoingDeals } from 'shared/ongoingDeals'
 import { protocols } from 'shared/protocols'
-
 import { appStore } from 'shared/store/appStore'
 
 interface DealParams {
@@ -61,8 +59,9 @@ export class Client {
 
     // TODO:  should dealId be random?  Maybe, but check this
     // TODO:  rand % max int  eliminate Math.floor
-    const dealId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
-    ongoingDeals[dealId] = {
+    const dealId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER).toString()
+
+    appStore.dealsStore.createInboundDeal({
       id: dealId,
       status: dealStatuses.new,
       customStatus: undefined,
@@ -76,22 +75,17 @@ export class Client {
       importerSink,
       importer: this.datastore.putContent(importerSink),
       voucherNonce: 1,
-    }
+    })
 
     this.sendDealProposal({ dealId })
-
-    this.postInboundDeals()
-  }
-
-  postInboundDeals() {
-    appStore.dealsStore.setInboundDeals(convertDealsToArray(ongoingDeals))
   }
 
   handleMessage = async (source) => {
     for await (const message of source) {
       try {
         appStore.logsStore.logDebug(`Client.handleMessage(): message: ${inspect(message)}`)
-        const deal = ongoingDeals[message.dealId]
+
+        const deal = appStore.dealsStore.getInboundDeal(message.dealId)
 
         if (!deal) {
           throw new Error(`Deal not found: ${message.dealId}`)
@@ -149,15 +143,16 @@ export class Client {
     }
   }
 
-  updateCustomStatus(str, deal) {
-    deal.customStatus = str
-
-    this.postInboundDeals()
+  updateCustomStatus(deal: { id: string }, str) {
+    appStore.dealsStore.setInboundDealProps(deal.id, {
+      customStatus: str,
+    })
   }
 
   sendDealProposal({ dealId }) {
     appStore.logsStore.logDebug(`Client.sendDealProposal: sending deal proposal ${dealId}`)
-    const deal = ongoingDeals[dealId]
+
+    const deal = appStore.dealsStore.getInboundDeal(dealId)
 
     deal.sink.push({
       dealId,
@@ -173,12 +168,13 @@ export class Client {
 
   async setupPaymentChannel({ dealId }) {
     appStore.logsStore.logDebug(`Client.setupPaymentChannel(): setting up payment channel ${dealId}`)
-    const deal = ongoingDeals[dealId]
+
+    const deal = appStore.dealsStore.getInboundDeal(dealId)
 
     const pchAmount = deal.params.size * deal.params.pricePerByte
     const toAddr = deal.params.wallet
 
-    this.updateCustomStatus('Creating payment channel', deal)
+    this.updateCustomStatus(deal, 'Creating payment channel')
 
     appStore.logsStore.logDebug(
       `Client.setupPaymentChannel(): PCH creation parameters:\n  pchAmount='${pchAmount}'\n  toAddr='${toAddr}'`,
@@ -212,27 +208,30 @@ export class Client {
    */
   async receiveBlocks({ dealId, blocks }) {
     appStore.logsStore.logDebug(`Client.receiveBlocks(): received ${blocks.length} blocks deal id: ${dealId}`)
-    const deal = ongoingDeals[dealId]
-    this.updateCustomStatus('Receiving data', deal)
+
+    const deal = appStore.dealsStore.getInboundDeal(dealId)
+
+    this.updateCustomStatus(deal, 'Receiving data')
 
     for (const block of blocks) {
       deal.importerSink.push(block.data)
       deal.sizeReceived += block.data ? block.data.length : 0
     }
-
-    this.postInboundDeals()
   }
 
   async finishImport({ dealId, blocks }) {
     appStore.logsStore.logDebug(`Client.finishImport(): finishing import ${dealId}`)
-    const deal = ongoingDeals[dealId]
+
+    const deal = appStore.dealsStore.getInboundDeal(dealId)
+
     deal.importerSink.end()
     await deal.importer
   }
 
   async sendPayment({ dealId }, isLastVoucher) {
     appStore.logsStore.logDebug(`Client.sendPayment(): sending payment ${dealId} (isLastVoucher=${isLastVoucher})`)
-    const deal = ongoingDeals[dealId]
+
+    const deal = appStore.dealsStore.getInboundDeal(dealId)
 
     const amount = deal.sizeReceived * deal.params.pricePerByte
     const nonce = deal.voucherNonce++
@@ -241,7 +240,7 @@ export class Client {
 
     const newDealStatus = isLastVoucher ? dealStatuses.lastPaymentSent : dealStatuses.paymentSent
 
-    this.updateCustomStatus('Sent signed voucher', deal)
+    this.updateCustomStatus(deal, 'Sent signed voucher')
 
     deal.sink.push({
       dealId,
@@ -253,16 +252,17 @@ export class Client {
 
   async closeDeal({ dealId }) {
     appStore.logsStore.logDebug(`Client.closeDeal: closing deal ${dealId}`)
-    const deal = ongoingDeals[dealId]
-    this.updateCustomStatus('Enqueueing channel collect operation', deal)
+
+    const deal = appStore.dealsStore.getInboundDeal(dealId)
+
+    this.updateCustomStatus(deal, 'Enqueueing channel collect operation')
     // TODO:
     // this.lotus.closePaymentChannel(deal.paymentChannel);
     deal.sink.end()
     // TODO:  pend an operation to call Collect on the channel when cron class is available
     // TODO:  stopgap solution:  window.setTimeout() to try to ensure channel Collect
-    delete ongoingDeals[dealId]
-    await this.cidReceivedCallback(deal.cid, deal.sizeReceived)
 
-    this.postInboundDeals()
+    appStore.dealsStore.removeInboundDeal(dealId)
+    await this.cidReceivedCallback(deal.cid, deal.sizeReceived)
   }
 }

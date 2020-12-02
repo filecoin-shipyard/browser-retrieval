@@ -13,19 +13,22 @@ import { observer } from 'mobx-react-lite'
 import React from 'react'
 import { appStore } from 'shared/store/appStore'
 
+function downloadFile(cid, offer) {
+  const msg = {
+    cid,
+    offer: toJS(offer),
+  }
+
+  appStore.downloadFile(msg)
+}
+
+function closeOffers() {
+  appStore.offersStore.clear()
+}
+
 export const Offers = observer<any>((props) => {
   const { dealsStore, offersStore } = appStore
 
-  function downloadFile(cid, offer) {
-    const msg = {
-      cid,
-      offer: toJS(offer),
-    }
-
-    appStore.downloadFile(msg)
-  }
-
-  const { deals } = dealsStore
   const { offerInfo } = offersStore
 
   if (!offerInfo?.offers?.length) {
@@ -34,9 +37,7 @@ export const Offers = observer<any>((props) => {
 
   const { cid, offers } = offerInfo
 
-  function closeOffers() {
-    appStore.offersStore.clear()
-  }
+  const hasDealWithCid = dealsStore.inboundDeals.some((ideal) => ideal.cid === cid)
 
   return (
     <Card {...props}>
@@ -59,8 +60,8 @@ export const Offers = observer<any>((props) => {
                   <Button
                     type="submit"
                     onClick={() => downloadFile(cid, offer)}
-                    disabled={deals?.inbound.some((deal) => deal.cid === cid)}
-                    className={classNames({ disabled: deals?.inbound.some((deal) => deal.cid === cid) })}
+                    disabled={hasDealWithCid}
+                    className={classNames({ disabled: hasDealWithCid })}
                   >
                     Buy
                   </Button>

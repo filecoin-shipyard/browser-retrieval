@@ -9,7 +9,6 @@ import Websockets from 'libp2p-websockets'
 import PeerId from 'peer-id'
 import { Datastore } from 'shared/Datastore'
 import { messageTypes } from 'shared/messageTypes'
-import { hasOngoingDeals } from 'shared/ongoingDeals'
 import { appStore } from 'shared/store/appStore'
 import { topics } from 'shared/topics'
 
@@ -118,7 +117,7 @@ export class Node {
       { datastore: this.datastore },
       {
         handleCidReceived: (...args) => {
-          if (!hasOngoingDeals()) {
+          if (!appStore.dealsStore.hasOngoingDeals()) {
             this.socketClient.disconnect()
           }
 
