@@ -95,35 +95,38 @@ class Lotus {
    * @param  {string} message Payment channel
    * @return {string} Returns the gas estimation, or undefined if an error occurred
    */
-  async getGasEstimation(message, defaultEstimation = {
+  async getGasEstimation(message, useDefault, defaultEstimation = {
       GasLimit: "10000000",
       GasFeeCap: "16251176117",
       GasPremium: "140625002",
   }) {
     ports.postLog(`DEBUG: entering Lotus.gesGasEstimation`);
     let gasEstimation = defaultEstimation;
-
-    let headers = this.headers;
-    ports.postLog(`DEBUG: Lotus.gesGasEstimation:\n  message=${message}\n  this.headers=${inspect(headers)}\n  this.lotusEndpoint=${this.lotusEndpoint}`);
-    var response;
-    try {
-      response = await axios.post(this.lotusEndpoint, {
-        jsonrpc: "2.0",
-        method: "Filecoin.GasEstimateMessageGas",
-        id: 1,
-        params: [message, null, null],
-      }, {headers});
-
-      ports.postLog(`DEBUG: Lotus.gesGasEstimation response:\n ${response.data}\n`);
-
-      gasEstimation.GasLimit = response.data.result.GasLimit;
-      gasEstimation.GasFeeCap = response.data.result.GasFeeCap;
-      gasEstimation.GasPremium = response.data.result.GasPremium;
-    } catch (error) {
-      ports.postLog(`ERROR: Lotus.gesGasEstimation(): axios error: ${error.message}`);
-      return gasEstimation;
-    }
     
+    if (!useDefault)
+    {
+      let headers = this.headers;
+      ports.postLog(`DEBUG: Lotus.gesGasEstimation:\n  message=${message}\n  this.headers=${inspect(headers)}\n  this.lotusEndpoint=${this.lotusEndpoint}`);
+      var response;
+      try {
+        response = await axios.post(this.lotusEndpoint, {
+          jsonrpc: "2.0",
+          method: "Filecoin.GasEstimateMessageGas",
+          id: 1,
+          params: [message, null, null],
+        }, {headers});
+
+        ports.postLog(`DEBUG: Lotus.gesGasEstimation response:\n ${response.data}\n`);
+
+        gasEstimation.GasLimit = response.data.result.GasLimit;
+        gasEstimation.GasFeeCap = response.data.result.GasFeeCap;
+        gasEstimation.GasPremium = response.data.result.GasPremium;
+      } catch (error) {
+        ports.postLog(`ERROR: Lotus.gesGasEstimation(): axios error: ${error.message}`);
+        return gasEstimation;
+      }
+    }
+
     ports.postLog(`DEBUG: leaving Lotus.gasEstimation (ret = ${gasEstimation})`);
     return gasEstimation;
   }
@@ -259,7 +262,7 @@ class Lotus {
         "To": toAddr,
         "Nonce": nonce,
         "Value": `${amountAttoFil}`,
-      });
+      }, true);
       let create_pymtchan = signer.createPymtChanWithFee(
         fromAddr, 
         toAddr, 
@@ -335,7 +338,7 @@ class Lotus {
         "To": toAddr,
         "Nonce": nonce,
         "Value": "0",
-      });
+      }, true);
       let updatePaychMessage = signer.updatePymtChanWithFee(pch, 
         toAddr, 
         signedVoucher, 
@@ -406,7 +409,7 @@ class Lotus {
         "To": toAddr,
         "Nonce": nonce,
         "Value": "0",
-      });
+      }, true);
 
       let settlePaychMessage = signer.settlePymtChanWithFee(
         pch, 
@@ -415,7 +418,7 @@ class Lotus {
         gasEstimation.GasLimit, 
         gasEstimation.GasFeeCap , 
         gasEstimation.GasPremium);
-      settlePaychMessage = await this.getGasEstimation(settlePaychMessage);
+      settlePaychMessage = await this.getGasEstimation(settlePaychMessage, true);
       signedSettleMessage = JSON.parse(signer.transactionSignLotus(settlePaychMessage, toPrivateKeyBase64));
     } catch (error) {
       ports.postLog(`ERROR: Lotus.settlePaymentChannel: error generating Settle msg: ${error.message}`);
@@ -474,7 +477,7 @@ class Lotus {
         "To": toAddr,
         "Nonce": nonce,
         "Value": "0",
-      });
+      }, true);
       let collectPaychMessage = signer.collectPymtChanWithFee(
         pch, 
         toAddr, 
@@ -590,7 +593,7 @@ class Lotus {
           GasLimit: "0",
           GasFeeCap: "0",
           GasPremium: "0",
-      });
+      }, true);
 
       //
       //  Sign transaction
