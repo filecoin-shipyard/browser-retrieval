@@ -20,6 +20,8 @@ interface Deal {
   voucherNonce?: number
   paymentChannel?: string
   Lane?: number
+  clientWalletAddr?: string
+  sizeSent?: number
 }
 
 export class DealsStore {
@@ -69,6 +71,45 @@ export class DealsStore {
   getInboundDeal(dealId: string) {
     const dealChannels = ongoingDeals[dealId]
     const deal = this.inboundDeals.find((d) => d.id === dealId)
+
+    return {
+      ...deal,
+      ...dealChannels,
+    }
+  }
+
+  setOutboundDealProps(dealId: string, props) {
+    const index = this.outboundDeals.findIndex((d) => d.id === dealId)
+
+    const val = get<any>(this.outboundDeals as any, index)
+
+    set(this.outboundDeals, index, {
+      ...val,
+      ...props,
+    })
+  }
+
+  createOutboundDeal(deal: Deal) {
+    const { sink, importerSink, importer } = deal
+
+    delete deal.sink
+    delete deal.importerSink
+    delete deal.importer
+
+    ongoingDeals[deal.id] = { id: deal.id, sink, importerSink, importer }
+    this.outboundDeals.push(deal)
+  }
+
+  removeOutboundDeal(dealId: any) {
+    const index = this.outboundDeals.findIndex((d) => d.id === dealId)
+
+    remove(this.outboundDeals, index as any)
+    delete ongoingDeals[dealId]
+  }
+
+  getOutboundDeal(dealId: string) {
+    const dealChannels = ongoingDeals[dealId]
+    const deal = this.outboundDeals.find((d) => d.id === dealId)
 
     return {
       ...deal,
