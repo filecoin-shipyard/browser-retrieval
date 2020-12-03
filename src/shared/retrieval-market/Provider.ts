@@ -22,8 +22,6 @@ export class Provider {
   paymentInterval
   paymentIntervalIncrease
 
-  ports
-
   static async create(...args) {
     if (!providerInstance) {
       // @ts-ignore
@@ -146,8 +144,7 @@ export class Provider {
           }
         } catch (error) {
           sink.end()
-          console.error(error)
-          appStore.logsStore.logDebug(`ERROR: handle deal message failed: ${error.message}`)
+          appStore.logsStore.logError(`ERROR: handle deal message failed: ${error.message} ${error.stack}`)
         }
       }
     })
@@ -196,26 +193,25 @@ export class Provider {
       throw new Error('Payment interval increase too large')
     }
 
-    this.ongoingDeals[dealId] = {
+    appStore.dealsStore.createOutboundDeal({
       id: dealId,
       status: dealStatuses.awaitingAcceptance,
       customStatus: undefined,
       cid,
-      clientWalletAddr: clientWalletAddr,
+      clientWalletAddr,
       params,
       sink,
       sizeSent: 0,
-    }
+    })
 
     await this.sendDealAccepted({ dealId })
-
-    this.ports.postOutboundDeals(this.ongoingDeals)
   }
 
   sendDealAccepted({ dealId }) {
     appStore.logsStore.logDebug('Provider.sendDealAccepted()')
     appStore.logsStore.logDebug(`sending deal accepted ${dealId}`)
-    const deal = this.ongoingDeals[dealId]
+
+    const deal = appStore.dealsStore.getOutboundDeal(dealId)
 
     deal.sink.push({
       dealId,
@@ -226,8 +222,9 @@ export class Provider {
   async sendBlocks({ dealId }) {
     appStore.logsStore.logDebug('Provider.sendBlocks()')
     appStore.logsStore.logDebug(`sending blocks ${dealId}`)
-    const deal = this.ongoingDeals[dealId]
-    this.updateCustomStatus('Sending data', deal)
+
+    const deal = appStore.dealsStore.getOutboundDeal(dealId)
+    this.updateCustomStatus(deal, 'Sending data')
     const entry = await this.datastore.get(deal.cid)
 
     const blocks = []
@@ -248,8 +245,6 @@ export class Provider {
       }
     }
 
-    deal.params.paymentInterval += deal.params.paymentIntervalIncrease
-
     deal.sink.push({
       dealId,
       status:
@@ -259,13 +254,21 @@ export class Provider {
       blocks,
     })
 
+    deal.params.paymentInterval += deal.params.paymentIntervalIncrease
     deal.sizeSent += blocksSize
-    this.ports.postOutboundDeals(this.ongoingDeals)
+
+    appStore.dealsStore.setOutboundDealProps(deal.id, {
+      params: {
+        ...deal.params,
+      },
+      sizeSent: deal.sizeSent,
+    })
   }
 
-  updateCustomStatus(str, deal) {
-    deal.customStatus = str
-    this.ports.postOutboundDeals(this.ongoingDeals)
+  updateCustomStatus(deal: { id: string }, str) {
+    appStore.dealsStore.setOutboundDealProps(deal.id, {
+      customStatus: str,
+    })
   }
 
   /**
@@ -280,8 +283,8 @@ export class Provider {
       `Provider.checkPaymentVoucherValid: arguments = dealId=${dealId},paymentChannel=${paymentChannel},signedVoucher=${signedVoucher}`,
     )
 
-    const deal = this.ongoingDeals[dealId]
-    this.updateCustomStatus('Verifying payment voucher', deal)
+    const deal = appStore.dealsStore.getOutboundDeal(dealId)
+    this.updateCustomStatus(deal, 'Verifying payment voucher')
     const clientWalletAddr = deal.clientWalletAddr
     appStore.logsStore.logDebug(`Provider.checkPaymentVoucherValid: clientWalletAddr=${clientWalletAddr}`)
 
@@ -308,8 +311,9 @@ export class Provider {
     appStore.logsStore.logDebug(
       `Provider.submitPaymentVoucher: submitting voucher dealId=${dealId},paymentChannel=${paymentChannel},signedVoucher=${signedVoucher}`,
     )
-    const deal = this.ongoingDeals[dealId]
-    this.updateCustomStatus('Updating payment channel with voucher', deal)
+
+    const deal = appStore.dealsStore.getOutboundDeal(dealId)
+    this.updateCustomStatus(deal, 'Updating payment channel with voucher')
 
     const isUpdateSuccessful = await this.lotus.updatePaymentChannel(paymentChannel, signedVoucher)
     appStore.logsStore.logDebug(`Provider.submitPaymentVoucher: isUpdateSuccessful=${isUpdateSuccessful}`)
@@ -321,21 +325,24 @@ export class Provider {
   async sendDealCompleted({ dealId }) {
     appStore.logsStore.logDebug('Provider.sendDealCompleted()')
     appStore.logsStore.logDebug(`sending deal completed ${dealId}`)
-    const deal = this.ongoingDeals[dealId]
+
+    const deal = appStore.dealsStore.getOutboundDeal(dealId)
     deal.sink.push({ dealId, status: dealStatuses.completed })
   }
 
   async closeDeal({ dealId }) {
-    const deal = this.ongoingDeals[dealId]
+    const deal = appStore.dealsStore.getOutboundDeal(dealId)
     const paymentChannel = deal.paymentChannel
-    appStore.logsStore.logDebug(`Provider.closeDeal: dealId=${dealId}, paymentChannel=${paymentChannel}`)
-    this.updateCustomStatus('Settling payment channel', deal)
-    await this.lotus.settlePaymentChannel(paymentChannel)
-    this.updateCustomStatus('Enqueueing channel collection', deal)
-    await this.pendCollectOperation(dealId, paymentChannel)
-    delete this.ongoingDeals[dealId]
 
-    this.ports.postOutboundDeals(this.ongoingDeals)
+    appStore.logsStore.logDebug(`Provider.closeDeal: dealId=${dealId}, paymentChannel=${paymentChannel}`)
+
+    this.updateCustomStatus(deal, 'Settling payment channel')
+    await this.lotus.settlePaymentChannel(paymentChannel)
+
+    this.updateCustomStatus(deal, 'Enqueueing channel collection')
+    await this.pendCollectOperation(dealId, paymentChannel)
+
+    appStore.dealsStore.removeOutboundDeal(dealId)
   }
 
   async pendCollectOperation(dealId, paymentChannelAddr) {
