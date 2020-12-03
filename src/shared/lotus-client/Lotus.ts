@@ -129,6 +129,10 @@ export class Lotus {
       appStore.logsStore.logError(`Lotus.mpoolPush(): axios error: ${error.message}`)
       return undefined
     }
+
+    // TODO: handle error messages from API
+    // ex: error: { code: 1, message: 'not enough funds (required: ... FIL, balance: ... FIL) ...' } }
+
     appStore.logsStore.logDebug(`leaving Lotus.mpoolPush => ${inspect(msgCid)}`)
     appStore.logsStore.logDebug(`Lotus.mpoolPush => ${inspect(msgCid)}`)
     return msgCid
@@ -277,6 +281,12 @@ export class Lotus {
     //
     // Generate the PCH create message
     //
+
+    // VM.Call failure: not enough gas: used=22871219, available=56657256, use=34721049 (RetCode=7)
+    const gasLimit = '20000000'
+    const gasFeeCap = '16251176117'
+    const gasPremium = '140625002'
+
     let signedCreateMessage
     try {
       let create_pymtchan = this.signer.createPymtChanWithFee(
@@ -284,9 +294,9 @@ export class Lotus {
         toAddr,
         `${amountAttoFil}`,
         nonce,
-        '10000000',
-        '16251176117',
-        '140625002',
+        gasLimit,
+        gasFeeCap,
+        gasPremium,
       ) // gas limit, fee cap, premium
       appStore.logsStore.logDebug('Lotus.createPaymentChannel: create_pymtchan=' + inspect(create_pymtchan))
       // TODO:  use gas esimator:

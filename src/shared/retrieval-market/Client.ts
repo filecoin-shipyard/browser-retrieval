@@ -1,6 +1,7 @@
 import inspect from 'browser-util-inspect'
 import pipe from 'it-pipe'
 import pushable from 'it-pushable'
+import { toJS } from 'mobx'
 import { Datastore } from 'shared/Datastore'
 import { dealStatuses } from 'shared/dealStatuses'
 import { jsonStream } from 'shared/jsonStream'
@@ -94,16 +95,20 @@ export class Client {
         switch (message.status) {
           case dealStatuses.accepted: {
             appStore.logsStore.logDebug('Client.handleMessage(): case dealStatuses.accepted')
-            deal.status = dealStatuses.accepted
-            deal.customStatus = undefined
+            appStore.dealsStore.setInboundDealProps(deal.id, {
+              status: dealStatuses.accepted,
+              customStatus: undefined,
+            })
             await this.setupPaymentChannel(message)
             break
           }
 
           case dealStatuses.fundsNeeded: {
             appStore.logsStore.logDebug('Client.handleMessage(): case dealStatuses.fundsNeeded')
-            deal.status = dealStatuses.ongoing
-            deal.customStatus = undefined
+            appStore.dealsStore.setInboundDealProps(deal.id, {
+              status: dealStatuses.ongoing,
+              customStatus: undefined,
+            })
             await this.receiveBlocks(message)
             await this.sendPayment(message, false)
             break
@@ -111,8 +116,10 @@ export class Client {
 
           case dealStatuses.fundsNeededLastPayment: {
             appStore.logsStore.logDebug('Client.handleMessage(): case dealStatuses.fundsNeededLastPayment')
-            deal.status = dealStatuses.finalizing
-            deal.customStatus = undefined
+            appStore.dealsStore.setInboundDealProps(deal.id, {
+              status: dealStatuses.finalizing,
+              customStatus: undefined,
+            })
             await this.receiveBlocks(message)
             await this.finishImport(message)
             await this.sendPayment(message, true)
@@ -182,10 +189,12 @@ export class Client {
 
     //await this.lotus.keyRecoverLogMsg();  // testing only
 
-    deal.paymentChannel = await this.lotus.createPaymentChannel(toAddr, pchAmount)
+    const paymentChannel = await this.lotus.createPaymentChannel(toAddr, pchAmount)
 
-    // Not using lanes currently
-    deal.Lane = 0
+    appStore.dealsStore.setInboundDealProps(dealId, {
+      paymentChannel,
+      Lane: 0, // Not using lanes currently
+    })
 
     appStore.logsStore.logDebug(
       `Client.setupPaymentChannel(): sending payment channel ready (pchAddr='${deal.paymentChannel}') for dealId='${dealId}'`,
@@ -195,8 +204,10 @@ export class Client {
       status: dealStatuses.paymentChannelReady,
     })
 
-    deal.status = dealStatuses.paymentChannelReady
-    deal.customStatus = undefined
+    appStore.dealsStore.setInboundDealProps(dealId, {
+      status: dealStatuses.paymentChannelReady,
+      customStatus: undefined,
+    })
 
     appStore.logsStore.logDebug(`Client.setupPaymentChannel(): done`)
   }
@@ -209,13 +220,17 @@ export class Client {
   async receiveBlocks({ dealId, blocks }) {
     appStore.logsStore.logDebug(`Client.receiveBlocks(): received ${blocks.length} blocks deal id: ${dealId}`)
 
-    const deal = appStore.dealsStore.getInboundDeal(dealId)
+    const deal = toJS(appStore.dealsStore.getInboundDeal(dealId))
 
     this.updateCustomStatus(deal, 'Receiving data')
 
     for (const block of blocks) {
       deal.importerSink.push(block.data)
+
       deal.sizeReceived += block.data ? block.data.length : 0
+      appStore.dealsStore.setInboundDealProps(dealId, {
+        sizeReceived: deal.sizeReceived,
+      })
     }
   }
 
@@ -242,12 +257,15 @@ export class Client {
 
     this.updateCustomStatus(deal, 'Sent signed voucher')
 
-    deal.sink.push({
+    // TODO: @brunolm paymentchannel and sv are undefined
+    // if mpool says it doesn't have funds, error is not handled
+    const message = {
       dealId,
       status: newDealStatus,
       paymentChannel: deal.paymentChannel,
       signedVoucher: sv,
-    })
+    }
+    deal.sink.push(message)
   }
 
   async closeDeal({ dealId }) {
