@@ -77,9 +77,8 @@
   },
   "scripts": {
     "start": "react-app-rewired start",
-    "start1": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test"
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test"
   },
   "watch": {
     "build": "src/{popup,background,shared}/**/*.js",
