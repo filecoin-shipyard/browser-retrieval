@@ -12,7 +12,6 @@ let lotusIntance: Lotus
 
 export class Lotus {
   signer
-  wallet
 
   id = 0
 
@@ -421,8 +420,8 @@ export class Lotus {
       appStore.logsStore.logError(`Lotus.updatePaymentChannel: fatal: Filecoin.StateReadState returned nothing`)
       return false
     }
-    appStore.logsStore.log(
-      `DEBUG: Lotus.updatePaymentChannel: response.data.result: ${inspect(waitReadPchStateResponseData.result)}`,
+    appStore.logsStore.logDebug(
+      `Lotus.updatePaymentChannel: response.data.result: ${inspect(waitReadPchStateResponseData.result)}`,
     )
 
     // TODO:  once we have a function to extract the value field from a signed voucher, check here
@@ -439,8 +438,8 @@ export class Lotus {
 
     const toAddr = wallet
     const toPrivateKeyBase64 = privateKeyBase64
-    appStore.logsStore.log(
-      `DEBUG: Lotus.settlePaymentChannel:\n  pch=${pch}\n  toAddr=${toAddr}\n  toPrivateKeyBase64=**************`,
+    appStore.logsStore.logDebug(
+      `Lotus.settlePaymentChannel:\n  pch=${pch}\n  toAddr=${toAddr}\n  toPrivateKeyBase64=**************`,
     )
 
     //

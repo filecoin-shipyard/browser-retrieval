@@ -20,7 +20,7 @@ export class OffersStore {
     }
   }
 
-  add(cid: any, offer: any) {
+  add(cid: any, offer) {
     const offers = this.offerInfo?.offers || []
 
     this.offerInfo = {

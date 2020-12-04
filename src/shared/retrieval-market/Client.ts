@@ -165,7 +165,7 @@ export class Client {
       dealId,
       status: dealStatuses.awaitingAcceptance,
       cid: deal.cid,
-      clientWalletAddr: this.lotus.wallet,
+      clientWalletAddr: appStore.optionsStore.wallet,
       params: deal.params,
     })
 
@@ -190,6 +190,8 @@ export class Client {
     //await this.lotus.keyRecoverLogMsg();  // testing only
 
     const paymentChannel = await this.lotus.createPaymentChannel(toAddr, pchAmount)
+
+    appStore.logsStore.logDebug(`Client.setupPaymentChannel(): paymentChannel:`, paymentChannel)
 
     appStore.dealsStore.setInboundDealProps(dealId, {
       paymentChannel,
@@ -265,6 +267,8 @@ export class Client {
       paymentChannel: deal.paymentChannel,
       signedVoucher: sv,
     }
+    appStore.logsStore.logDebug(`Client.sendPayment() message:\n${JSON.stringify(message, null, 2)}`)
+
     deal.sink.push(message)
   }
 

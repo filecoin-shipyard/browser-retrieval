@@ -33,8 +33,6 @@ export class Provider {
     return providerInstance
   }
 
-  ongoingDeals = {}
-
   constructor(services: Services, { node, datastore, lotus }) {
     this.node = node
     this.datastore = datastore
@@ -78,13 +76,18 @@ export class Provider {
 
     if (cidInfo) {
       const pricePerByte = pricesPerByte[cid] || pricesPerByte['*']
-      return {
-        wallet: this.lotus.wallet,
+
+      const dealParams = {
+        wallet: appStore.optionsStore.wallet,
         size: cidInfo.size,
         pricePerByte,
         paymentInterval: this.paymentInterval,
         paymentIntervalIncrease: this.paymentIntervalIncrease,
       }
+
+      appStore.logsStore.logDebug(`Provider.getDealParams(): dealParams:`, dealParams)
+
+      return dealParams
     }
 
     return null
@@ -152,15 +155,18 @@ export class Provider {
 
   setOrVerifyPaymentChannel(message) {
     // Set payment channel if undefined, else make sure it matches current message
-    const deal = this.ongoingDeals[message.dealId]
-    if (deal.paymentChannel === undefined) {
-      deal.paymentChannel = message.paymentChannel
-    } else {
-      if (deal.paymentChannel !== message.paymentChannel) {
-        throw new Error(
-          `received incorrect payment channel address (message.paymentChannel (${message.paymentChannel}) != deal.paymentChannel (${deal.paymentChannel})) on dealId ${message.dealId}`,
-        )
-      }
+    const deal = appStore.dealsStore.getOutboundDeal(message.dealId)
+
+    deal.paymentChannel = deal.paymentChannel || message.paymentChannel
+
+    appStore.dealsStore.setOutboundDealProps(message.dealId, {
+      paymentChannel: deal.paymentChannel,
+    })
+
+    if (deal.paymentChannel !== message.paymentChannel) {
+      throw new Error(
+        `received incorrect payment channel address (message.paymentChannel (${message.paymentChannel}) != deal.paymentChannel (${deal.paymentChannel})) on dealId ${message.dealId}`,
+      )
     }
   }
 
@@ -171,7 +177,8 @@ export class Provider {
       )}`,
     )
 
-    if (this.ongoingDeals[dealId]) {
+    const deal = appStore.dealsStore.getOutboundDeal(dealId)
+    if (deal?.id) {
       throw new Error('A deal already exists for the given id')
     }
 
@@ -332,6 +339,8 @@ export class Provider {
 
   async closeDeal({ dealId }) {
     const deal = appStore.dealsStore.getOutboundDeal(dealId)
+
+    // TODO: @brunolm here, this is undefined I guess
     const paymentChannel = deal.paymentChannel
 
     appStore.logsStore.logDebug(`Provider.closeDeal: dealId=${dealId}, paymentChannel=${paymentChannel}`)

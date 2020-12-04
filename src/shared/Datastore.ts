@@ -49,7 +49,7 @@ export class Datastore {
         [{ content }],
         {
           put: async (data, { cid }) => {
-            appStore.logsStore.logDebug(`Datastore.putContent.put:  cid=${cid}, data=${inspect(data)}`)
+            // appStore.logsStore.logDebug(`Datastore.putContent.put:  cid=${cid}, data=${inspect(data)}`)
             appStore.logsStore.logDebug(`Datastore.putContent.put writing CID: ${cid}`)
             const block = new Block(data, cid)
             return this.blockService.put(block)
