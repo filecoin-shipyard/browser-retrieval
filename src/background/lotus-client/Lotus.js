@@ -118,9 +118,9 @@ class Lotus {
           params: [message, null, null],
         }, {headers});
 
-        ports.postLog(`DEBUG: Lotus.gesGasEstimation response:\n ${inspect(response.data)}\n`);
+        //ports.postLog(`DEBUG: Lotus.gesGasEstimation response:\n ${inspect(response.data)}\n`);
 
-        message.gaslimit = response.data.result.GasLimit;
+        message.gaslimit = response.data.result.GasLimit * 2;
         message.gasfeecap = response.data.result.GasFeeCap;
         message.gaspremium = response.data.result.GasPremium;
 
@@ -268,8 +268,6 @@ class Lotus {
         gasEstimation.GasPremium);
 
       let createPaych = await this.getGasEstimation(createPaychDefault);
-      //ports.postLog(`DEBUG: Lotus.createPaymentChannel: createPaych = ${inspect(createPaych)}`);
-
       signedCreateMessage = JSON.parse(signer.transactionSignLotus(createPaych, fromKey));
       ports.postLog("DEBUG: Lotus.createPaymentChannel: signedCreateMessage="+inspect(signedCreateMessage));
     } catch (error) {
@@ -340,8 +338,6 @@ class Lotus {
         gasEstimation.GasPremium);
 
       let updatePaychMessage = await this.getGasEstimation(updatePaychMessageDefault);
-      //ports.postLog(`DEBUG: Lotus.updatePaymentChannel: updatePaychMessage = ${inspect(updatePaychMessage)}`);
-
       signedUpdateMessage = JSON.parse(signer.transactionSignLotus(updatePaychMessage, toPrivateKeyBase64));
     } catch (error) {
       ports.postLog(`ERROR: Lotus.updatePaymentChannel: error generating Update message: ${error.message}`);
@@ -407,8 +403,6 @@ class Lotus {
         gasEstimation.GasFeeCap , 
         gasEstimation.GasPremium);
       let settlePaychMessage = await this.getGasEstimation(settlePaychMessageDefault);
-      //ports.postLog(`DEBUG: Lotus.settlePaymentChannel: settlePaychMessage = ${inspect(settlePaychMessage)}`);
-
       signedSettleMessage = JSON.parse(signer.transactionSignLotus(settlePaychMessage, toPrivateKeyBase64));
     } catch (error) {
       ports.postLog(`ERROR: Lotus.settlePaymentChannel: error generating Settle msg: ${error.message}`);
@@ -470,8 +464,6 @@ class Lotus {
         gasEstimation.GasFeeCap , 
         gasEstimation.GasPremium);
       let collectPaychMessage = await this.getGasEstimation(collectPaychMessageDefault);
-      //ports.postLog(`DEBUG: Lotus.collectPaymentChannel: collectPaychMessage = ${inspect(collectPaychMessage)}`);
-
       signedCollectMessage = JSON.parse(signer.transactionSignLotus(collectPaychMessage, toPrivateKeyBase64));
     } catch (error) {
       ports.postLog(`ERROR: Lotus.collectPaymentChannel: error generating Collect msg: ${error.message}`);
@@ -573,20 +565,18 @@ class Lotus {
       //  Sign transaction
       //
       const unsignedMessageDefault = {
-        "to": toWallet,
-        "from": this.wallet,
-        "nonce": nonce,
-        "value": `${amountAttoFil}`,
-        "method": 0,
-        "params": "",
-        "gaslimit": gasEstimation.GasLimit,
-        "gasfeecap": gasEstimation.GasFeeCap,
-        "gaspremium": gasEstimation.GasPremium,
+        "To": toWallet,
+        "From": this.wallet,
+        "Nonce": nonce,
+        "Value": `${amountAttoFil}`,
+        "Method": 0,
+        "Params": "",
+        "GasLimit": gasEstimation.GasLimit,
+        "GasFeeCap": gasEstimation.GasFeeCap,
+        "GasPremium": gasEstimation.GasPremium,
       };
 
       let unsignedMessage = await this.getGasEstimation(unsignedMessageDefault);
-      //ports.postLog(`DEBUG: Lotus.sendFunds: unsignedMessage = ${inspect(unsignedMessage)}`);
-
       let signedMessage = JSON.parse(signer.transactionSignLotus(unsignedMessage, this.privateKeyBase64));
       ports.postLog(`DEBUG: Lotus.sendFunds: signedMessage = ${inspect(signedMessage)}`);
 

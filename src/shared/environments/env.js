@@ -4,7 +4,7 @@ export const env = {
   rendezvousPort: '443',
   pricesPerByte: { '*': 1000 },
   wsEndpoint: 'wss://retrievalproxy.browser-retrieval.filecoin.io:443',
-  lotusEndpoint: 'http://3.231.219.184:80/rpc/v0',
+  lotusEndpoint: 'https://cloud-lotus-1.browser-retrieval.filecoin.io/rpc/v0',
   lotusToken:
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIiwiYWRtaW4iXX0.jtLE4n-cWr1lzvFVDj9wupSHqDJgvQFIRP2takFTbAo',
   paymentInterval: 1048576,
