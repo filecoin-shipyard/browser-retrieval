@@ -33,6 +33,8 @@ export function WalletModal({ className, ...rest }: BaseProps) {
       optionsStore.set({
         ...data,
       })
+
+      await appStore.connect();
     } else {
       setError('privateKey', { type: 'manual', message: `Wallet and private key don't match` })
     }
