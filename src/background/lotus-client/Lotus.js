@@ -11,7 +11,12 @@ const importDagCBOR = () => {
   return require('ipld-dag-cbor');
 }
 
-const useDefaultGas = true;
+const gasEstimation = {
+  GasLimit: "10000000",
+  GasFeeCap: "16251176117",
+  GasPremium: "140625002",
+}
+const useDefaultGas = false;
 
 class Lotus {
   static async create() {
@@ -97,19 +102,14 @@ class Lotus {
    * @param  {string} message Payment channel
    * @return {string} Returns the gas estimation, or undefined if an error occurred
    */
-  async getGasEstimation(message, defaultEstimation = {
-      GasLimit: "10000000",
-      GasFeeCap: "16251176117",
-      GasPremium: "140625002",
-  }) {
+  async getGasEstimation(message) {
     ports.postLog(`DEBUG: entering Lotus.gesGasEstimation`);
-    let gasEstimation = defaultEstimation;
-    
+
     if (!useDefaultGas)
     {
       let headers = this.headers;
-      ports.postLog(`DEBUG: Lotus.gesGasEstimation:\n  message=${message}\n  this.headers=${inspect(headers)}\n  this.lotusEndpoint=${this.lotusEndpoint}`);
-      var response;
+      ports.postLog(`DEBUG: Lotus.gesGasEstimation:\n  message=${inspect(message)}\n  this.headers=${inspect(headers)}\n  this.lotusEndpoint=${this.lotusEndpoint}`);
+      var response = undefined;
       try {
         response = await axios.post(this.lotusEndpoint, {
           jsonrpc: "2.0",
@@ -118,19 +118,18 @@ class Lotus {
           params: [message, null, null],
         }, {headers});
 
-        ports.postLog(`DEBUG: Lotus.gesGasEstimation response:\n ${response.data}\n`);
+        ports.postLog(`DEBUG: Lotus.gesGasEstimation response:\n ${inspect(response.data)}\n`);
 
-        gasEstimation.GasLimit = response.data.result.GasLimit;
-        gasEstimation.GasFeeCap = response.data.result.GasFeeCap;
-        gasEstimation.GasPremium = response.data.result.GasPremium;
+        message.gaslimit = response.data.result.GasLimit;
+        message.gasfeecap = response.data.result.GasFeeCap;
+        message.gaspremium = response.data.result.GasPremium;
+
       } catch (error) {
-        ports.postLog(`ERROR: Lotus.gesGasEstimation(): axios error: ${error.message}`);
-        return gasEstimation;
+        ports.postLog(`ERROR: Lotus.gesGasEstimation(): axios error: ${error.message}\n`);
       }
     }
-
-    ports.postLog(`DEBUG: leaving Lotus.gasEstimation (ret = ${gasEstimation})`);
-    return gasEstimation;
+    ports.postLog(`DEBUG: leaving Lotus.gasEstimation (returned message= ${inspect(message)})`);
+    return message;
   }
 
   /**
@@ -259,13 +258,7 @@ class Lotus {
     //
     var signedCreateMessage;
     try {
-      let gasEstimation = await this.getGasEstimation({
-        "From": fromAddr,
-        "To": toAddr,
-        "Nonce": nonce,
-        "Value": `${amountAttoFil}`,
-      });
-      let create_pymtchan = signer.createPymtChanWithFee(
+      let createPaychDefault = signer.createPymtChanWithFee(
         fromAddr, 
         toAddr, 
         `${amountAttoFil}`, 
@@ -273,8 +266,11 @@ class Lotus {
         gasEstimation.GasLimit, 
         gasEstimation.GasFeeCap, 
         gasEstimation.GasPremium);
-      ports.postLog("DEBUG: Lotus.createPaymentChannel: create_pymtchan="+inspect(create_pymtchan));
-      signedCreateMessage = JSON.parse(signer.transactionSignLotus(create_pymtchan, fromKey));
+
+      let createPaych = await this.getGasEstimation(createPaychDefault);
+      //ports.postLog(`DEBUG: Lotus.createPaymentChannel: createPaych = ${inspect(createPaych)}`);
+
+      signedCreateMessage = JSON.parse(signer.transactionSignLotus(createPaych, fromKey));
       ports.postLog("DEBUG: Lotus.createPaymentChannel: signedCreateMessage="+inspect(signedCreateMessage));
     } catch (error) {
       ports.postLog(`ERROR: Lotus.createPaymentChannel: error creating and signing txn: ${error.message}`);
@@ -335,20 +331,17 @@ class Lotus {
     var signedUpdateMessage;  // TODO:  does this need to be declared out here?
     try {
       let nonce = await this.getNonce(toAddr);
-      let gasEstimation = await this.getGasEstimation({
-        "From": pch,
-        "To": toAddr,
-        "Nonce": nonce,
-        "Value": "0",
-      });
-      let updatePaychMessage = signer.updatePymtChanWithFee(pch, 
+      let updatePaychMessageDefault = signer.updatePymtChanWithFee(pch, 
         toAddr, 
         signedVoucher, 
         nonce, 
         gasEstimation.GasLimit, 
         gasEstimation.GasFeeCap, 
         gasEstimation.GasPremium);
-      //ports.postLog(`DEBUG: Lotus.updatePaymentChannel:  updatePaychMessage=${inspect(updatePaychMessage)}`);
+
+      let updatePaychMessage = await this.getGasEstimation(updatePaychMessageDefault);
+      //ports.postLog(`DEBUG: Lotus.updatePaymentChannel: updatePaychMessage = ${inspect(updatePaychMessage)}`);
+
       signedUpdateMessage = JSON.parse(signer.transactionSignLotus(updatePaychMessage, toPrivateKeyBase64));
     } catch (error) {
       ports.postLog(`ERROR: Lotus.updatePaymentChannel: error generating Update message: ${error.message}`);
@@ -406,21 +399,16 @@ class Lotus {
     var signedSettleMessage;   // TODO:  does this need to be declared out here?
     try {
       let nonce = await this.getNonce(toAddr);
-      let gasEstimation = await this.getGasEstimation({
-        "From": pch,
-        "To": toAddr,
-        "Nonce": nonce,
-        "Value": "0",
-      }, true);
-
-      let settlePaychMessage = signer.settlePymtChanWithFee(
+      let settlePaychMessageDefault = signer.settlePymtChanWithFee(
         pch, 
         toAddr, 
         nonce, 
         gasEstimation.GasLimit, 
         gasEstimation.GasFeeCap , 
         gasEstimation.GasPremium);
-      settlePaychMessage = await this.getGasEstimation(settlePaychMessage);
+      let settlePaychMessage = await this.getGasEstimation(settlePaychMessageDefault);
+      //ports.postLog(`DEBUG: Lotus.settlePaymentChannel: settlePaychMessage = ${inspect(settlePaychMessage)}`);
+
       signedSettleMessage = JSON.parse(signer.transactionSignLotus(settlePaychMessage, toPrivateKeyBase64));
     } catch (error) {
       ports.postLog(`ERROR: Lotus.settlePaymentChannel: error generating Settle msg: ${error.message}`);
@@ -474,19 +462,16 @@ class Lotus {
     var signedCollectMessage;   // TODO:  does this need to be declared out here?
     try {
       let nonce = await this.getNonce(toAddr);
-      let gasEstimation = await this.getGasEstimation({
-        "From": pch,
-        "To": toAddr,
-        "Nonce": nonce,
-        "Value": "0",
-      });
-      let collectPaychMessage = signer.collectPymtChanWithFee(
+      let collectPaychMessageDefault = signer.collectPymtChanWithFee(
         pch, 
         toAddr, 
         nonce, 
         gasEstimation.GasLimit, 
         gasEstimation.GasFeeCap , 
         gasEstimation.GasPremium);
+      let collectPaychMessage = await this.getGasEstimation(collectPaychMessageDefault);
+      //ports.postLog(`DEBUG: Lotus.collectPaymentChannel: collectPaychMessage = ${inspect(collectPaychMessage)}`);
+
       signedCollectMessage = JSON.parse(signer.transactionSignLotus(collectPaychMessage, toPrivateKeyBase64));
     } catch (error) {
       ports.postLog(`ERROR: Lotus.collectPaymentChannel: error generating Collect msg: ${error.message}`);
@@ -584,38 +569,26 @@ class Lotus {
       //nonce = (nonce.result==undefined) ? nonce : nonce.result;
       ports.postLog(`DEBUG: lotus.sendFunds(): nonce: ${nonce}`);
 
-      let gasEstimation = await this.getGasEstimation({
-        "To": toWallet,
-        "From": this.wallet,
-        "Nonce": nonce,
-        "Value": `${amountAttoFil}`,
-        "Method": 0,
-        "Params": ""}, 
-        {
-          GasLimit: "0",
-          GasFeeCap: "0",
-          GasPremium: "0",
-      });
-
       //
       //  Sign transaction
       //
-      const unsignedMessage = {
-        "To": toWallet,
-        "From": this.wallet,
-        "Nonce": nonce,
-        "Value": `${amountAttoFil}`,
-        "Method": 0,
-        "Params": "",
-        "GasLimit": gasEstimation.GasLimit,
-        "GasFeeCap": gasEstimation.GasFeeCap,
-        "GasPremium": gasEstimation.GasPremium,
+      const unsignedMessageDefault = {
+        "to": toWallet,
+        "from": this.wallet,
+        "nonce": nonce,
+        "value": `${amountAttoFil}`,
+        "method": 0,
+        "params": "",
+        "gaslimit": gasEstimation.GasLimit,
+        "gasfeecap": gasEstimation.GasFeeCap,
+        "gaspremium": gasEstimation.GasPremium,
       };
-      let unsignedMessageJson = JSON.stringify(unsignedMessage, 0, 4);
-      ports.postLog(`DEBUG: lotus.sendFunds(): unsignedMessageJson = ${unsignedMessageJson}`);
 
-      let signedMessage = JSON.parse(signer.transactionSignLotus(unsignedMessage,this.privateKeyBase64));
-      ports.postLog(`DEBUG: lotus.sendFunds(): signedMessage = ${inspect(signedMessage)}`);
+      let unsignedMessage = await this.getGasEstimation(unsignedMessageDefault);
+      //ports.postLog(`DEBUG: Lotus.sendFunds: unsignedMessage = ${inspect(unsignedMessage)}`);
+
+      let signedMessage = JSON.parse(signer.transactionSignLotus(unsignedMessage, this.privateKeyBase64));
+      ports.postLog(`DEBUG: Lotus.sendFunds: signedMessage = ${inspect(signedMessage)}`);
 
       //
       // Mpoolpush signed Send message
