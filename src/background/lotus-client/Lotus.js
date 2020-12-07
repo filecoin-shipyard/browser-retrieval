@@ -126,6 +126,9 @@ class Lotus {
         message.gaspremium = response.data.result.GasPremium;
 
       } catch (error) {
+        message.gaslimit = parseInt(gasEstimation.GasLimit),
+        message.gasfeecap = gasEstimation.GasFeeCap;
+        message.gaspremium = gasEstimation.GasPremium;
         ports.postLog(`ERROR: Lotus.gesGasEstimation(): axios error: ${error.message}\n`);
       }
     }
@@ -608,15 +611,15 @@ class Lotus {
       //  Sign transaction
       //
       const unsignedMessageDefault = {
-        "To": toWallet,
-        "From": this.wallet,
-        "Nonce": nonce,
-        "Value": `${amountAttoFil}`,
-        "Method": 0,
-        "Params": "",
-        "GasLimit": gasEstimation.GasLimit,
-        "GasFeeCap": gasEstimation.GasFeeCap,
-        "GasPremium": gasEstimation.GasPremium,
+        "to": toWallet,
+        "from": this.wallet,
+        "nonce": nonce,
+        "value": `${amountAttoFil}`,
+        "method": 0,
+        "params": "",
+        "gaslimit": parseInt(gasEstimation.GasLimit),
+        "gasfeecap": gasEstimation.GasFeeCap,
+        "gaspremium": gasEstimation.GasPremium,
       };
 
       let unsignedMessage = await this.getGasEstimation(unsignedMessageDefault);
