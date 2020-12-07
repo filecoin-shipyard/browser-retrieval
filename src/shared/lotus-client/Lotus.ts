@@ -11,9 +11,9 @@ const importDagCBOR = () => {
 let lotusIntance: Lotus
 
 const gasEstimation = {
-  GasLimit: '10000000',
-  GasFeeCap: '16251176117',
-  GasPremium: '140625002',
+  gasLimit: '10000000',
+  gasFeeCap: '16251176117',
+  gasPremium: '140625002',
 }
 const useDefaultGas = false
 
@@ -77,6 +77,10 @@ export class Lotus {
         message.gaslimit = response.data.result.GasLimit * 2
         message.gasfeecap = response.data.result.GasFeeCap
         message.gaspremium = response.data.result.GasPremium
+
+        gasEstimation.gasLimit = message.gaslimit
+        gasEstimation.gasFeeCap = message.gasfeecap
+        gasEstimation.gasPremium = message.gaspremium
       } catch (error) {
         appStore.logsStore.logError(`Lotus.gesGasEstimation(): axios error: ${error.message}\n`)
       }
@@ -120,9 +124,7 @@ export class Lotus {
     const { headers, lotusEndpoint } = this.getAndParseOptions()
 
     appStore.logsStore.logDebug(
-      `Lotus.getNonce:\n  addr=${addr}\n  this.headers=${inspect(headers)}\n  this.lotusEndpoint=${
-        this.lotusEndpoint
-      }`,
+      `Lotus.getNonce:\n  addr=${addr}\n  this.headers=${inspect(headers)}\n  this.lotusEndpoint=${this.lotusEndpoint}`,
     )
 
     let response
@@ -173,10 +175,16 @@ export class Lotus {
         { headers },
       )
       appStore.logsStore.logDebug(`Lotus.mpoolPush: response.data = ${inspect(response.data)}`)
+
+      if (response.data.error?.code > 0) {
+        throw new Error(`Lotus.mpoolPush: ${response.data.error?.message}`)
+      }
+
       msgCid = response.data.result
     } catch (error) {
-      appStore.logsStore.logError(`Lotus.mpoolPush(): axios error: ${error.message}`)
-      return undefined
+      appStore.logsStore.logError(`Lotus.mpoolPush(): error: ${error.message}`, error)
+
+      throw error
     }
 
     // TODO: handle error messages from API
@@ -214,15 +222,9 @@ export class Lotus {
       appStore.logsStore.logError(`Lotus.stateWaitMsg(): axios error: ${error.message}`)
       return undefined
     }
-    appStore.logsStore.log(`response.data = ${inspect(response.data)}`)
 
-    appStore.logsStore.log(
-      `--------------------------------------------------------------------------------------------------`,
-    )
     appStore.logsStore.logDebug(`Lotus.stateWaitMsg => ${inspect(response.data)} ; ${inspect(response.data.result)}`)
-    appStore.logsStore.log(
-      `--------------------------------------------------------------------------------------------------`,
-    )
+
     return response.data
   }
 
@@ -235,7 +237,7 @@ export class Lotus {
     appStore.logsStore.logDebug(`entering Lotus.stateReadState(pch='${pch}')`)
     appStore.logsStore.log(`begining StateReadState. This will take a while...`)
     const { headers, lotusEndpoint } = this.getAndParseOptions()
-    var response
+    let response
     try {
       response = await axios.post(
         lotusEndpoint,
@@ -251,16 +253,11 @@ export class Lotus {
       appStore.logsStore.logError(`Lotus.stateReadState(): axios error: ${error.message}`)
       return undefined
     }
-    appStore.logsStore.log(`response.data = ${inspect(response.data)}`)
-    appStore.logsStore.log(
-      `--------------------------------------------------------------------------------------------------`,
-    )
+
     appStore.logsStore.log(
       `DEBUG: Lotus.stateReadState => ${inspect(response.data)} ; ${inspect(response.data.result)}`,
     )
-    appStore.logsStore.log(
-      `--------------------------------------------------------------------------------------------------`,
-    )
+
     return response.data
   }
 
@@ -274,8 +271,8 @@ export class Lotus {
   async createSignedVoucher(pch, amountAttoFil, nonce) {
     try {
       const { privateKeyBase64 } = this.getAndParseOptions()
-      appStore.logsStore.log(
-        `DEBUG: Lotus.createSignedVoucher: args: pch='${pch}', amountAttoFil='${amountAttoFil}', nonce='${nonce}'`,
+      appStore.logsStore.logDebug(
+        `Lotus.createSignedVoucher: args: pch='${pch}', amountAttoFil='${amountAttoFil}', nonce='${nonce}'`,
       )
       let voucher = this.signer.createVoucher(
         pch,
@@ -293,6 +290,35 @@ export class Lotus {
       appStore.logsStore.logError(`Lotus.createSignedVoucher: error: ${error.message}`)
       return undefined
     }
+  }
+
+  /**
+   * Generate the PCH create message
+   */
+  async createSignedMessagePaymentChannel({ fromKey, fromAddr, toAddr, amountAttoFil, nonce }) {
+    let signedCreateMessage
+
+    try {
+      let createPaychDefault = this.signer.createPymtChanWithFee(
+        fromAddr,
+        toAddr,
+        `${amountAttoFil}`,
+        nonce,
+        gasEstimation.gasLimit,
+        gasEstimation.gasFeeCap,
+        gasEstimation.gasPremium,
+      )
+
+      let createPaych = await this.getGasEstimation(createPaychDefault)
+      signedCreateMessage = JSON.parse(this.signer.transactionSignLotus(createPaych, fromKey))
+      appStore.logsStore.logDebug('Lotus.createPaymentChannel: signedCreateMessage=' + inspect(signedCreateMessage))
+    } catch (error) {
+      appStore.logsStore.logError(`Lotus.createPaymentChannel: error creating and signing txn: ${error.message}`)
+
+      return undefined
+    }
+
+    return signedCreateMessage
   }
 
   /**
@@ -315,27 +341,16 @@ export class Lotus {
     let nonce = await this.getNonce(fromAddr)
     appStore.logsStore.logDebug(`Lotus.createPaymentChannel: nonce=${nonce}`)
 
-    //
     // Generate the PCH create message
-    //
+    const signedCreateMessage = await this.createSignedMessagePaymentChannel({
+      amountAttoFil,
+      fromAddr,
+      fromKey,
+      nonce,
+      toAddr,
+    })
 
-    let signedCreateMessage
-    try {
-      let createPaychDefault = this.signer.createPymtChanWithFee(
-        fromAddr,
-        toAddr,
-        `${amountAttoFil}`,
-        nonce,
-        gasEstimation.GasLimit,
-        gasEstimation.GasFeeCap,
-        gasEstimation.GasPremium,
-      )
-
-      let createPaych = await this.getGasEstimation(createPaychDefault)
-      signedCreateMessage = JSON.parse(this.signer.transactionSignLotus(createPaych, fromKey))
-      appStore.logsStore.logDebug('Lotus.createPaymentChannel: signedCreateMessage=' + inspect(signedCreateMessage))
-    } catch (error) {
-      appStore.logsStore.logError(`Lotus.createPaymentChannel: error creating and signing txn: ${error.message}`)
+    if (!signedCreateMessage) {
       return undefined
     }
 
@@ -356,14 +371,16 @@ export class Lotus {
     const waitCreateResponseData = await this.stateWaitMsg(msgCid)
     if (!waitCreateResponseData) {
       appStore.logsStore.logError(`Lotus.createPaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`)
+
       return undefined
     }
+
     appStore.logsStore.logDebug(
       `Lotus.createPaymentChannel: response.data.result: ${inspect(waitCreateResponseData.result)}`,
     )
 
     if (!waitCreateResponseData?.result?.ReturnDec) {
-      console.error('Lotus.createPaymentChannel() ReturnDec is null')
+      appStore.logsStore.logError('Lotus.createPaymentChannel() ReturnDec is null')
       throw new Error('ReturnDec is null')
     }
 
@@ -379,6 +396,7 @@ export class Lotus {
       lanesNextNonce: {}, // TODO:  remove if not used anywhere
     }
     appStore.logsStore.logDebug(`Lotus.createPaymentChannel: leaving => ${paymentChannel}`)
+
     return paymentChannel
   }
 
@@ -410,9 +428,9 @@ export class Lotus {
         toAddr,
         signedVoucher,
         nonce,
-        gasEstimation.GasLimit,
-        gasEstimation.GasFeeCap,
-        gasEstimation.GasPremium,
+        gasEstimation.gasLimit,
+        gasEstimation.gasFeeCap,
+        gasEstimation.gasPremium,
       )
 
       let updatePaychMessage = await this.getGasEstimation(updatePaychMessageDefault)
@@ -425,7 +443,7 @@ export class Lotus {
     //
     // Mpoolpush signed message
     //
-    var msgCid = await this.mpoolPush(signedUpdateMessage)
+    let msgCid = await this.mpoolPush(signedUpdateMessage)
     //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
     appStore.logsStore.logDebug(`Lotus.updatePaymentChannel:  msgCid = ${inspect(msgCid)}`)
     if (!msgCid) {
@@ -478,16 +496,16 @@ export class Lotus {
     //
     // Generate Settle PCH message
     //
-    var signedSettleMessage // TODO:  does this need to be declared out here?
+    let signedSettleMessage // TODO:  does this need to be declared out here?
     try {
       let nonce = await this.getNonce(toAddr)
       let settlePaychMessageDefault = this.signer.settlePymtChanWithFee(
         pch,
         toAddr,
         nonce,
-        gasEstimation.GasLimit,
-        gasEstimation.GasFeeCap,
-        gasEstimation.GasPremium,
+        gasEstimation.gasLimit,
+        gasEstimation.gasFeeCap,
+        gasEstimation.gasPremium,
       )
       let settlePaychMessage = await this.getGasEstimation(settlePaychMessageDefault)
       signedSettleMessage = JSON.parse(this.signer.transactionSignLotus(settlePaychMessage, toPrivateKeyBase64))
@@ -499,7 +517,7 @@ export class Lotus {
     //
     // Mpoolpush signed message
     //
-    var msgCid = await this.mpoolPush(signedSettleMessage)
+    const msgCid = await this.mpoolPush(signedSettleMessage)
     //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
     appStore.logsStore.logDebug(`Lotus.settlePaymentChannel:  msgCid = ${inspect(msgCid)}`)
     if (!msgCid) {
@@ -550,16 +568,16 @@ export class Lotus {
     //
     // Generate Collect PCH message
     //
-    var signedCollectMessage // TODO:  does this need to be declared out here?
+    let signedCollectMessage // TODO:  does this need to be declared out here?
     try {
       let nonce = await this.getNonce(toAddr)
       let collectPaychMessageDefault = this.signer.collectPymtChanWithFee(
         pch,
         toAddr,
         nonce,
-        gasEstimation.GasLimit,
-        gasEstimation.GasFeeCap,
-        gasEstimation.GasPremium,
+        gasEstimation.gasLimit,
+        gasEstimation.gasFeeCap,
+        gasEstimation.gasPremium,
       )
       let collectPaychMessage = await this.getGasEstimation(collectPaychMessageDefault)
       signedCollectMessage = JSON.parse(this.signer.transactionSignLotus(collectPaychMessage, toPrivateKeyBase64))
@@ -571,7 +589,7 @@ export class Lotus {
     //
     // Mpoolpush signed message
     //
-    var msgCid = await this.mpoolPush(signedCollectMessage)
+    const msgCid = await this.mpoolPush(signedCollectMessage)
     //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
     appStore.logsStore.logDebug(`Lotus.collectPaymentChannel:  msgCid = ${inspect(msgCid)}`)
     if (!msgCid) {
@@ -587,8 +605,8 @@ export class Lotus {
       appStore.logsStore.logError(`Lotus.collectPaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`)
       return
     }
-    appStore.logsStore.log(
-      `DEBUG: Lotus.collectPaymentChannel: response.data.result: ${inspect(waitCollectResponseData.result)}`,
+    appStore.logsStore.logDebug(
+      `Lotus.collectPaymentChannel: response.data.result: ${inspect(waitCollectResponseData.result)}`,
     )
 
     //
@@ -599,14 +617,14 @@ export class Lotus {
       appStore.logsStore.logError(`Lotus.collectPaymentChannel: fatal: Filecoin.StateReadState returned nothing`)
       return
     }
-    appStore.logsStore.log(
-      `DEBUG: Lotus.collectPaymentChannel: response.data.result: ${inspect(waitReadPchStateResponseData.result)}`,
+    appStore.logsStore.logDebug(
+      `Lotus.collectPaymentChannel: response.data.result: ${inspect(waitReadPchStateResponseData.result)}`,
     )
   }
 
   async checkPaymentVoucherValid(signedVoucher, expectedAmountAttoFil, fromWalletAddr) {
-    appStore.logsStore.log(
-      `DEBUG: Lotus.checkPaymentVoucherValid: args = signedVoucher=${signedVoucher},expectedAmountAttoFil=${expectedAmountAttoFil},fromWalletAddr=${fromWalletAddr}`,
+    appStore.logsStore.logDebug(
+      `Lotus.checkPaymentVoucherValid: args = signedVoucher=${signedVoucher},expectedAmountAttoFil=${expectedAmountAttoFil},fromWalletAddr=${fromWalletAddr}`,
     )
     return this.signer.verifyVoucherSignature(signedVoucher, fromWalletAddr)
   }
@@ -677,9 +695,9 @@ export class Lotus {
         value: `${amountAttoFil}`,
         method: 0,
         params: '',
-        gaslimit: gasEstimation.GasLimit,
-        gasfeecap: gasEstimation.GasFeeCap,
-        gaspremium: gasEstimation.GasPremium,
+        gaslimit: gasEstimation.gasLimit,
+        gasfeecap: gasEstimation.gasFeeCap,
+        gaspremium: gasEstimation.gasPremium,
       }
 
       let unsignedMessage = await this.getGasEstimation(unsignedMessageDefault)
@@ -689,11 +707,12 @@ export class Lotus {
       //
       // Mpoolpush signed Send message
       //
-      var msgCid = await this.mpoolPush(signedMessage)
+      const msgCid = await this.mpoolPush(signedMessage)
       //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
       appStore.logsStore.logDebug(`Lotus.sendFunds:  msgCid = ${inspect(msgCid)}`)
       if (!msgCid) {
         appStore.logsStore.logError(`Lotus.sendFunds: fatal: send funds MPoolPush response was 'msgCid=${msgCid}'`)
+
         return false
       }
 
@@ -703,6 +722,7 @@ export class Lotus {
       const waitSendResponse = await this.stateWaitMsg(msgCid)
       if (!waitSendResponse) {
         appStore.logsStore.logError(`Lotus.sendFunds: fatal: Filecoin.StateWaitMsg returned undefined`)
+
         return false
       }
       appStore.logsStore.logDebug(`Lotus.sendFunds: response.data: ${inspect(waitSendResponse)}`)
@@ -713,21 +733,26 @@ export class Lotus {
       const sendMsgResult = waitSendResponse.result
       appStore.logsStore.logDebug(`Lotus.sendFunds: sendMsgResult=${inspect(sendMsgResult)}`)
       const sendMsgReceipt = sendMsgResult.Receipt
+
       appStore.logsStore.logDebug(`Lotus.sendFunds: sendMsgReceipt=${inspect(sendMsgReceipt)}`)
-      appStore.logsStore.log(
-        `DEBUG: Lotus.sendFunds: receipt components:\n  { ExitCode: '${sendMsgReceipt.ExitCode}', Return: '${sendMsgReceipt.Return}', GasUsed: '${sendMsgReceipt.GasUsed}' }`,
+      appStore.logsStore.logDebug(
+        `Lotus.sendFunds: receipt components:\n  { ExitCode: '${sendMsgReceipt.ExitCode}', Return: '${sendMsgReceipt.Return}', GasUsed: '${sendMsgReceipt.GasUsed}' }`,
       )
+
       if (sendMsgReceipt.ExitCode === 0) {
         appStore.logsStore.logDebug(`Lotus.sendFunds: receipt indicates no errors ==> returning true`)
+
         return true
-      } else {
-        appStore.logsStore.log(
-          `ERROR: Lotus.sendFunds: failed with ExitCode=${sendMsgReceipt.ExitCode}, Return: '${sendMsgReceipt.Return}' ==> returning false`,
-        )
-        return false
       }
+
+      appStore.logsStore.log(
+        `ERROR: Lotus.sendFunds: failed with ExitCode=${sendMsgReceipt.ExitCode}, Return: '${sendMsgReceipt.Return}' ==> returning false`,
+      )
+
+      return false
     } catch (error) {
       appStore.logsStore.logError(`lotus.sendFunds(): caught exception: ${inspect(error)}`)
+
       return false
     }
   }
