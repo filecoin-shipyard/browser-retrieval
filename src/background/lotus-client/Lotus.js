@@ -12,7 +12,7 @@ const importDagCBOR = () => {
 }
 
 const gasEstimation = {
-  GasLimit: "10000000",
+  GasLimit: 10000000,
   GasFeeCap: "16251176117",
   GasPremium: "140625002",
 }
@@ -565,15 +565,15 @@ class Lotus {
       //  Sign transaction
       //
       const unsignedMessageDefault = {
-        "To": toWallet,
-        "From": this.wallet,
-        "Nonce": nonce,
-        "Value": `${amountAttoFil}`,
-        "Method": 0,
-        "Params": "",
-        "GasLimit": gasEstimation.GasLimit,
-        "GasFeeCap": gasEstimation.GasFeeCap,
-        "GasPremium": gasEstimation.GasPremium,
+        "to": toWallet,
+        "from": this.wallet,
+        "nonce": nonce,
+        "value": `${amountAttoFil}`,
+        "method": 0,
+        "params": "",
+        "gaslimit": gasEstimation.GasLimit,
+        "gasfeecap": gasEstimation.GasFeeCap,
+        "gaspremium": gasEstimation.GasPremium,
       };
 
       let unsignedMessage = await this.getGasEstimation(unsignedMessageDefault);
