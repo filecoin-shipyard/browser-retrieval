@@ -200,19 +200,6 @@ export class Lotus {
 
     let response
     try {
-      console.group('REQUEST')
-      console.log('lotusEndpoint', lotusEndpoint)
-      console.log('{ headers }', { headers })
-
-      console.log('req', {
-        jsonrpc: '2.0',
-        method: 'Filecoin.StateWaitMsg',
-        id: 1,
-        params: [cid, null],
-      })
-
-      console.groupEnd()
-
       response = await axios.post(
         lotusEndpoint,
         {
