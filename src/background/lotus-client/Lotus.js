@@ -125,6 +125,9 @@ class Lotus {
         message.gaspremium = response.data.result.GasPremium;
 
       } catch (error) {
+        message.gaslimit = parseInt(gasEstimation.GasLimit),
+        message.gasfeecap = gasEstimation.GasFeeCap;
+        message.gaspremium = gasEstimation.GasPremium;
         ports.postLog(`ERROR: Lotus.gesGasEstimation(): axios error: ${error.message}\n`);
       }
     }
