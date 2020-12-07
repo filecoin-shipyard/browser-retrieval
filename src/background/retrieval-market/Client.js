@@ -209,6 +209,7 @@ class Client {
   async sendPayment({ dealId }, isLastVoucher) {
     ports.postLog(`DEBUG: Client.sendPayment(): sending payment ${dealId} (isLastVoucher=${isLastVoucher})`);
     const deal = ongoingDeals[dealId];
+    ports.postLog(`DEBUG: Client.sendPayment(): deal ${inspect(deal)}`);
 
     const amount = deal.sizeReceived * deal.params.pricePerByte;
     const nonce = deal.voucherNonce++;
