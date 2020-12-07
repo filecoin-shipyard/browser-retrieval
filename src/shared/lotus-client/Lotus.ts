@@ -10,6 +10,13 @@ const importDagCBOR = () => {
 
 let lotusIntance: Lotus
 
+const gasEstimation = {
+  GasLimit: '10000000',
+  GasFeeCap: '16251176117',
+  GasPremium: '140625002',
+}
+const useDefaultGas = false
+
 export class Lotus {
   signer
 
@@ -36,6 +43,48 @@ export class Lotus {
   }
 
   async initialize() {}
+
+  /**
+   * Get the gas estimation for a payment channel
+   * @param  {string} message Payment channel
+   * @return {string} Returns the gas estimation, or undefined if an error occurred
+   */
+  async getGasEstimation(message) {
+    appStore.logsStore.logDebug(`entering Lotus.gesGasEstimation`)
+    const { headers, lotusEndpoint } = this.getAndParseOptions()
+
+    if (!useDefaultGas) {
+      appStore.logsStore.logDebug(
+        `Lotus.gesGasEstimation:\n  message=${inspect(message)}\n  this.headers=${inspect(
+          headers,
+        )}\n  this.lotusEndpoint=${this.lotusEndpoint}`,
+      )
+
+      try {
+        const response = await axios.post(
+          lotusEndpoint,
+          {
+            jsonrpc: '2.0',
+            method: 'Filecoin.GasEstimateMessageGas',
+            id: 1,
+            params: [message, null, null],
+          },
+          { headers },
+        )
+
+        //appStore.logsStore.logDebug(`Lotus.gesGasEstimation response:\n ${inspect(response.data)}\n`);
+
+        message.gaslimit = response.data.result.GasLimit * 2
+        message.gasfeecap = response.data.result.GasFeeCap
+        message.gaspremium = response.data.result.GasPremium
+      } catch (error) {
+        appStore.logsStore.logError(`Lotus.gesGasEstimation(): axios error: ${error.message}\n`)
+      }
+    }
+    appStore.logsStore.logDebug(`leaving Lotus.gasEstimation (returned message= ${inspect(message)})`)
+
+    return message
+  }
 
   // TODO:  remove once filecoin-signing-tools PR #317 is merged new npm package is published
   // for testing filecoin_signer only
@@ -70,12 +119,13 @@ export class Lotus {
     appStore.logsStore.logDebug(`entering Lotus.getNonce`)
     const { headers, lotusEndpoint } = this.getAndParseOptions()
 
-    appStore.logsStore.log(
-      `DEBUG: Lotus.getNonce:\n  addr=${addr}\n  this.headers=${inspect(headers)}\n  this.lotusEndpoint=${
+    appStore.logsStore.logDebug(
+      `Lotus.getNonce:\n  addr=${addr}\n  this.headers=${inspect(headers)}\n  this.lotusEndpoint=${
         this.lotusEndpoint
       }`,
     )
-    var response
+
+    let response
     try {
       response = await axios.post(
         lotusEndpoint,
@@ -134,6 +184,7 @@ export class Lotus {
 
     appStore.logsStore.logDebug(`leaving Lotus.mpoolPush => ${inspect(msgCid)}`)
     appStore.logsStore.logDebug(`Lotus.mpoolPush => ${inspect(msgCid)}`)
+
     return msgCid
   }
 
@@ -281,26 +332,20 @@ export class Lotus {
     // Generate the PCH create message
     //
 
-    // VM.Call failure: not enough gas: used=22871219, available=56657256, use=34721049 (RetCode=7)
-    const gasLimit = '20000000'
-    const gasFeeCap = '16251176117'
-    const gasPremium = '140625002'
-
     let signedCreateMessage
     try {
-      let create_pymtchan = this.signer.createPymtChanWithFee(
+      let createPaychDefault = this.signer.createPymtChanWithFee(
         fromAddr,
         toAddr,
         `${amountAttoFil}`,
         nonce,
-        gasLimit,
-        gasFeeCap,
-        gasPremium,
-      ) // gas limit, fee cap, premium
-      appStore.logsStore.logDebug('Lotus.createPaymentChannel: create_pymtchan=' + inspect(create_pymtchan))
-      // TODO:  use gas esimator:
-      //create_pymtchan = await filRPC.getGasEstimation(create_pymtchan)
-      signedCreateMessage = JSON.parse(this.signer.transactionSignLotus(create_pymtchan, fromKey))
+        gasEstimation.GasLimit,
+        gasEstimation.GasFeeCap,
+        gasEstimation.GasPremium,
+      )
+
+      let createPaych = await this.getGasEstimation(createPaychDefault)
+      signedCreateMessage = JSON.parse(this.signer.transactionSignLotus(createPaych, fromKey))
       appStore.logsStore.logDebug('Lotus.createPaymentChannel: signedCreateMessage=' + inspect(signedCreateMessage))
     } catch (error) {
       appStore.logsStore.logError(`Lotus.createPaymentChannel: error creating and signing txn: ${error.message}`)
@@ -370,19 +415,20 @@ export class Lotus {
     //
     // Generate update PCH message
     //
-    var signedUpdateMessage // TODO:  does this need to be declared out here?
+    let signedUpdateMessage
     try {
       let nonce = await this.getNonce(toAddr)
-      let updatePaychMessage = this.signer.updatePymtChanWithFee(
+      let updatePaychMessageDefault = this.signer.updatePymtChanWithFee(
         pch,
         toAddr,
         signedVoucher,
         nonce,
-        '10000000',
-        '16251176117',
-        '140625002',
-      ) // gas limit, fee cap, premium
-      appStore.logsStore.logDebug(`Lotus.updatePaymentChannel:  updatePaychMessage=${inspect(updatePaychMessage)}`)
+        gasEstimation.GasLimit,
+        gasEstimation.GasFeeCap,
+        gasEstimation.GasPremium,
+      )
+
+      let updatePaychMessage = await this.getGasEstimation(updatePaychMessageDefault)
       signedUpdateMessage = JSON.parse(this.signer.transactionSignLotus(updatePaychMessage, toPrivateKeyBase64))
     } catch (error) {
       appStore.logsStore.logError(`Lotus.updatePaymentChannel: error generating Update message: ${error.message}`)
@@ -448,14 +494,15 @@ export class Lotus {
     var signedSettleMessage // TODO:  does this need to be declared out here?
     try {
       let nonce = await this.getNonce(toAddr)
-      let settlePaychMessage = this.signer.settlePymtChanWithFee(
+      let settlePaychMessageDefault = this.signer.settlePymtChanWithFee(
         pch,
         toAddr,
         nonce,
-        '10000000',
-        '16251176117',
-        '140625002',
-      ) // gas limit, fee cap, premium)
+        gasEstimation.GasLimit,
+        gasEstimation.GasFeeCap,
+        gasEstimation.GasPremium,
+      )
+      let settlePaychMessage = await this.getGasEstimation(settlePaychMessageDefault)
       signedSettleMessage = JSON.parse(this.signer.transactionSignLotus(settlePaychMessage, toPrivateKeyBase64))
     } catch (error) {
       appStore.logsStore.logError(`Lotus.settlePaymentChannel: error generating Settle msg: ${error.message}`)
@@ -519,14 +566,15 @@ export class Lotus {
     var signedCollectMessage // TODO:  does this need to be declared out here?
     try {
       let nonce = await this.getNonce(toAddr)
-      let collectPaychMessage = this.signer.collectPymtChanWithFee(
+      let collectPaychMessageDefault = this.signer.collectPymtChanWithFee(
         pch,
         toAddr,
         nonce,
-        '10000000',
-        '16251176117',
-        '140625002',
-      ) // gas limit, fee cap, premium
+        gasEstimation.GasLimit,
+        gasEstimation.GasFeeCap,
+        gasEstimation.GasPremium,
+      )
+      let collectPaychMessage = await this.getGasEstimation(collectPaychMessageDefault)
       signedCollectMessage = JSON.parse(this.signer.transactionSignLotus(collectPaychMessage, toPrivateKeyBase64))
     } catch (error) {
       appStore.logsStore.logError(`Lotus.collectPaymentChannel: error generating Collect msg: ${error.message}`)
@@ -635,22 +683,21 @@ export class Lotus {
       //
       //  Sign transaction
       //
-      const unsignedMessage = {
-        To: toWallet,
-        From: wallet,
-        Nonce: nonce,
-        Value: `${amountAttoFil}`,
-        Method: 0,
-        Params: '',
-        GasLimit: 10000000, // TODO: use gas estimator
-        GasFeeCap: '16251176117', // TODO: use gas estimator
-        GasPremium: '140625002', // TODO: use gas estimator
+      const unsignedMessageDefault = {
+        to: toWallet,
+        from: wallet,
+        nonce: nonce,
+        value: `${amountAttoFil}`,
+        method: 0,
+        params: '',
+        gaslimit: gasEstimation.GasLimit,
+        gasfeecap: gasEstimation.GasFeeCap,
+        gaspremium: gasEstimation.GasPremium,
       }
-      const unsignedMessageJson = JSON.stringify(unsignedMessage, null, 2)
-      appStore.logsStore.logDebug(`lotus.sendFunds(): unsignedMessageJson = ${unsignedMessageJson}`)
 
-      const signedMessage = JSON.parse(this.signer.transactionSignLotus(unsignedMessage, privateKeyBase64))
-      appStore.logsStore.logDebug(`lotus.sendFunds(): signedMessage = ${inspect(signedMessage)}`)
+      let unsignedMessage = await this.getGasEstimation(unsignedMessageDefault)
+      let signedMessage = JSON.parse(this.signer.transactionSignLotus(unsignedMessage, privateKeyBase64))
+      appStore.logsStore.logDebug(`Lotus.sendFunds: signedMessage = ${inspect(signedMessage)}`)
 
       //
       // Mpoolpush signed Send message
