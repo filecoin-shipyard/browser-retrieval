@@ -12,7 +12,7 @@ const importDagCBOR = () => {
 }
 
 const gasEstimation = {
-  GasLimit: 10000000,
+  GasLimit: "10000000",
   GasFeeCap: "16251176117",
   GasPremium: "140625002",
 }
@@ -259,12 +259,12 @@ class Lotus {
     var signedCreateMessage;
     try {
       let createPaychDefault = signer.createPymtChanWithFee(
-        fromAddr, 
-        toAddr, 
-        `${amountAttoFil}`, 
-        nonce, 
-        gasEstimation.GasLimit, 
-        gasEstimation.GasFeeCap, 
+        fromAddr,
+        toAddr,
+        `${amountAttoFil}`,
+        nonce,
+        gasEstimation.GasLimit,
+        gasEstimation.GasFeeCap,
         gasEstimation.GasPremium);
 
       let createPaych = await this.getGasEstimation(createPaychDefault);
@@ -329,12 +329,12 @@ class Lotus {
     var signedUpdateMessage;  // TODO:  does this need to be declared out here?
     try {
       let nonce = await this.getNonce(toAddr);
-      let updatePaychMessageDefault = signer.updatePymtChanWithFee(pch, 
-        toAddr, 
-        signedVoucher, 
-        nonce, 
-        gasEstimation.GasLimit, 
-        gasEstimation.GasFeeCap, 
+      let updatePaychMessageDefault = signer.updatePymtChanWithFee(pch,
+        toAddr,
+        signedVoucher,
+        nonce,
+        gasEstimation.GasLimit,
+        gasEstimation.GasFeeCap,
         gasEstimation.GasPremium);
 
       let updatePaychMessage = await this.getGasEstimation(updatePaychMessageDefault);
@@ -396,11 +396,11 @@ class Lotus {
     try {
       let nonce = await this.getNonce(toAddr);
       let settlePaychMessageDefault = signer.settlePymtChanWithFee(
-        pch, 
-        toAddr, 
-        nonce, 
-        gasEstimation.GasLimit, 
-        gasEstimation.GasFeeCap , 
+        pch,
+        toAddr,
+        nonce,
+        gasEstimation.GasLimit,
+        gasEstimation.GasFeeCap ,
         gasEstimation.GasPremium);
       let settlePaychMessage = await this.getGasEstimation(settlePaychMessageDefault);
       signedSettleMessage = JSON.parse(signer.transactionSignLotus(settlePaychMessage, toPrivateKeyBase64));
@@ -457,11 +457,11 @@ class Lotus {
     try {
       let nonce = await this.getNonce(toAddr);
       let collectPaychMessageDefault = signer.collectPymtChanWithFee(
-        pch, 
-        toAddr, 
-        nonce, 
-        gasEstimation.GasLimit, 
-        gasEstimation.GasFeeCap , 
+        pch,
+        toAddr,
+        nonce,
+        gasEstimation.GasLimit,
+        gasEstimation.GasFeeCap ,
         gasEstimation.GasPremium);
       let collectPaychMessage = await this.getGasEstimation(collectPaychMessageDefault);
       signedCollectMessage = JSON.parse(signer.transactionSignLotus(collectPaychMessage, toPrivateKeyBase64));
@@ -544,7 +544,7 @@ class Lotus {
   async sendFunds(amountAttoFil, toWallet) {
     // To test this function, but this block of code Node.query (above first line) and query any CID.
     // Watch the Log and your test wallet balances before and after.  The amount is 0.01 FIL.
-    // 
+    //
     //        // TEMP - DO NOT MERGE
     //        ports.postLog(`DEBUG: ----------- Lotus.sendFunds Test -------------- `);
     //        await this.lotus.sendFunds(10000000000000000,"f1d4jcvewwyiuepgccm4k5ng5lqhobj77eplj33zy");
@@ -571,7 +571,7 @@ class Lotus {
         "value": `${amountAttoFil}`,
         "method": 0,
         "params": "",
-        "gaslimit": gasEstimation.GasLimit,
+        "gaslimit": parseInt(gasEstimation.GasLimit),
         "gasfeecap": gasEstimation.GasFeeCap,
         "gaspremium": gasEstimation.GasPremium,
       };
