@@ -3,9 +3,9 @@ import './Toast.css'
 import classNames from 'classnames'
 import { appStore } from 'shared/store/appStore'
 import React from 'react'
-import { BaseProps } from 'shared/models/base-props'
+import { observer } from 'mobx-react-lite'
 
-export function Toast({ className, ...rest }: BaseProps) {
+export const Toast = observer<any>(({ className, ...rest }) => {
   const { alertsStore } = appStore
 
   const { alerts } = alertsStore
@@ -30,4 +30,4 @@ export function Toast({ className, ...rest }: BaseProps) {
       ))}
     </div>
   )
-}
+})

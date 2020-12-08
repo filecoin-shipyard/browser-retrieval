@@ -5,7 +5,7 @@ export class SettingsStore {
   rendezvousIp = process.env.REACT_APP_RENDEZVOUS_IP || 'webrtc-star-1.browser-retrieval.filecoin.io'
   rendezvousPort = process.env.REACT_APP_RENDEZVOUS_PORT || '443'
   wsEndpoint = process.env.REACT_APP_WS_ENDPOINT || 'wss://retrievalproxy.browser-retrieval.filecoin.io:443'
-  lotusEndpoint = process.env.REACT_APP_LOTUS_ENDPOINT || 'http://3.231.219.184:80/rpc/v0'
+  lotusEndpoint = process.env.REACT_APP_LOTUS_ENDPOINT || 'https://cloud-lotus-1.browser-retrieval.filecoin.io/rpc/v0'
   lotusToken =
     process.env.REACT_APP_LOTUS_TOKEN ||
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIiwiYWRtaW4iXX0.jtLE4n-cWr1lzvFVDj9wupSHqDJgvQFIRP2takFTbAo'
