@@ -41,7 +41,7 @@ export function WalletModal({ className, ...rest }: BaseProps) {
   }
 
   return (
-    <div className={classNames(className, 'relative mx-2')} {...rest}>
+    <div className={classNames(className, 'wallet-modal relative mx-2')} {...rest}>
       <div className="fixed inset-0 flex items-center justify-center z-10">
         <div className="absolute inset-0 bg-black opacity-50" />
         <div
