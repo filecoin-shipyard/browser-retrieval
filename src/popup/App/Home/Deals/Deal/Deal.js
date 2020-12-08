@@ -6,11 +6,15 @@ import TableRow from 'src/popup/components/TableRow';
 import {formatCid} from 'src/shared/formatCid';
 
 import dealStatuses from '../../../../../shared/dealStatuses';
+import IconButton from 'src/popup/components/IconButton';
+import usePort from 'src/popup/hooks/usePort';
+import channels from 'src/shared/channels';
 
 /**
  * Renders the deal status.
  *
  * @param  {string} status
+ * @param customStatus
  */
 const renderStatus = ({ status, customStatus }) => {
   if (customStatus) {
@@ -51,6 +55,9 @@ const renderStatus = ({ status, customStatus }) => {
     case dealStatuses.completed:
       return <>Completed</>;
 
+    case dealStatuses.failed:
+      return <>Failed</>;
+
     default:
       return <></>;
   }
@@ -58,6 +65,11 @@ const renderStatus = ({ status, customStatus }) => {
 
 function Deal({ deal, inbound, ...rest }) {
   const progress = (inbound ? deal.sizeReceived : deal.sizeSent) / deal.params.size;
+  const deals = usePort(channels.deals);
+
+  const removeFailedDeal = (deal) => {
+   deals.pop(deal.id)
+  }
 
   return (
     <TableRow {...rest}>
@@ -78,6 +90,7 @@ function Deal({ deal, inbound, ...rest }) {
         <ProgressIndicator progress={progress} />
       </TableCell>
       <TableCell number>{prettyBytes(deal.params.size)}</TableCell>
+      <TableCell buttons>{deal.status === dealStatuses.failed && <IconButton icon="close" onClick={() => removeFailedDeal(deal)} danger/>}</TableCell>
     </TableRow>
   );
 }

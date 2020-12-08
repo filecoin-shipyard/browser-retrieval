@@ -10,6 +10,7 @@ const dealStatuses = {
   lastPaymentSent: 'DealStatusLastPaymentSent',
   finalizing: 'DealStatusFinalizing',
   completed: 'DealStatusCompleted',
+  failed: 'DealStatusFailed'
 };
 
 export default dealStatuses;

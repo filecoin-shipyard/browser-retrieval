@@ -126,7 +126,7 @@ class Lotus {
         message.gaspremium = response.data.result.GasPremium;
 
       } catch (error) {
-        message.gaslimit = parseInt(gasEstimation.GasLimit),
+        message.gaslimit = parseInt(gasEstimation.GasLimit);
         message.gasfeecap = gasEstimation.GasFeeCap;
         message.gaspremium = gasEstimation.GasPremium;
         ports.postLog(`ERROR: Lotus.gesGasEstimation(): axios error: ${error.message}\n`);
@@ -288,7 +288,7 @@ class Lotus {
     //
     // Generate the PCH create message
     //
-    var signedCreateMessage;
+    let signedCreateMessage;
     try {
       let createPaychDefault = signer.createPymtChanWithFee(
         fromAddr,
@@ -305,6 +305,13 @@ class Lotus {
     } catch (error) {
       ports.postLog(`ERROR: Lotus.createPaymentChannel: error creating and signing txn: ${error.message}`);
       return undefined
+    }
+
+    const hasMinBalance = await this.hasMinBalance(signedCreateMessage?.Message.GasFeeCap);
+
+    if (!hasMinBalance) {
+      ports.alertError('ERROR: not enough funds to execute transaction');
+      return undefined;
     }
 
     //
@@ -358,7 +365,7 @@ class Lotus {
     //
     // Generate update PCH message
     //
-    var signedUpdateMessage;  // TODO:  does this need to be declared out here?
+    let signedUpdateMessage;
     try {
       let nonce = await this.getNonce(toAddr);
       let updatePaychMessageDefault = signer.updatePymtChanWithFee(pch,
@@ -374,6 +381,13 @@ class Lotus {
     } catch (error) {
       ports.postLog(`ERROR: Lotus.updatePaymentChannel: error generating Update message: ${error.message}`);
       return false
+    }
+
+    const hasMinBalance = await this.hasMinBalance(signedUpdateMessage?.Message.GasFeeCap);
+
+    if (!hasMinBalance) {
+      ports.alertError('ERROR: not enough funds to execute transaction');
+      return undefined;
     }
 
     //
@@ -424,7 +438,7 @@ class Lotus {
     //
     // Generate Settle PCH message
     //
-    var signedSettleMessage;   // TODO:  does this need to be declared out here?
+    let signedSettleMessage;
     try {
       let nonce = await this.getNonce(toAddr);
       let settlePaychMessageDefault = signer.settlePymtChanWithFee(
@@ -439,6 +453,13 @@ class Lotus {
     } catch (error) {
       ports.postLog(`ERROR: Lotus.settlePaymentChannel: error generating Settle msg: ${error.message}`);
       return;
+    }
+
+    const hasMinBalance = await this.hasMinBalance(signedSettleMessage?.Message.GasFeeCap);
+
+    if (!hasMinBalance) {
+      ports.alertError('ERROR: not enough funds to execute transaction');
+      return undefined;
     }
 
     //
@@ -485,7 +506,7 @@ class Lotus {
     //
     // Generate Collect PCH message
     //
-    var signedCollectMessage;   // TODO:  does this need to be declared out here?
+    let signedCollectMessage;
     try {
       let nonce = await this.getNonce(toAddr);
       let collectPaychMessageDefault = signer.collectPymtChanWithFee(
@@ -500,6 +521,13 @@ class Lotus {
     } catch (error) {
       ports.postLog(`ERROR: Lotus.collectPaymentChannel: error generating Collect msg: ${error.message}`);
       return;
+    }
+
+    const hasMinBalance = await this.hasMinBalance(signedCollectMessage?.Message.GasFeeCap);
+
+    if (!hasMinBalance) {
+      ports.alertError('ERROR: not enough funds to execute transaction');
+      return undefined;
     }
 
     //
@@ -571,11 +599,11 @@ class Lotus {
    * Sends funds to a wallet address from this.wallet.
    * @returns {boolean} True if current wallet balance is greater than minimum required to query Storage Miner.
    */
-  async hasMinBalance() {
+  async hasMinBalance(gasFeeCap) {
     let balance = await this.getBalance(this.wallet);
     let tenBN = new BigNumber(10);
-    let balanceBN = new BigNumber(balance).dividedBy(tenBN.pow(balance.toString().length));
-    let minimum = new BigNumber(gasEstimation.GasFeeCap).dividedBy(tenBN.pow(gasEstimation.GasFeeCap.toString().length));
+    let balanceBN = new BigNumber(balance).dividedBy(tenBN.pow(18));
+    let minimum = new BigNumber(gasFeeCap).dividedBy(tenBN.pow(gasFeeCap.length));
 
     ports.postLog(`DEBUG: lotus.hasMinBalance(): balanceBN ${balanceBN} minimum: ${minimum} compare: ${balanceBN.comparedTo(minimum) === 1}`);
     return balanceBN.comparedTo(minimum) === 1;
@@ -625,6 +653,14 @@ class Lotus {
       let unsignedMessage = await this.getGasEstimation(unsignedMessageDefault);
       let signedMessage = JSON.parse(signer.transactionSignLotus(unsignedMessage, this.privateKeyBase64));
       ports.postLog(`DEBUG: Lotus.sendFunds: signedMessage = ${inspect(signedMessage)}`);
+
+
+      const hasMinBalance = await this.hasMinBalance(signedMessage?.Message.GasFeeCap);
+
+      if (!hasMinBalance) {
+        ports.alertError('ERROR: not enough funds to execute transaction');
+        return undefined;
+      }
 
       //
       // Mpoolpush signed Send message

@@ -2,7 +2,6 @@ export const env = {
   id: 'production',
   rendezvousIp: 'webrtc-star-1.browser-retrieval.filecoin.io',
   rendezvousPort: '443',
-  pricesPerByte: { '*': 1000 },
   wsEndpoint: 'wss://retrievalproxy.browser-retrieval.filecoin.io:443',
   lotusEndpoint: 'https://cloud-lotus-1.browser-retrieval.filecoin.io/rpc/v0',
   lotusToken:

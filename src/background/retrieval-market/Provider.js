@@ -9,6 +9,7 @@ import protocols from 'src/shared/protocols';
 import inspect from 'browser-util-inspect';
 import { DateTime } from 'luxon';
 import { operationsQueue } from 'src/shared/OperationsQueue'
+import { ongoingDeals } from 'src/background/ongoingDeals';
 
 class Provider {
   static async create(...args) {
@@ -88,6 +89,17 @@ class Provider {
 
             case dealStatuses.paymentChannelReady: {
               await this.sendBlocks(message);
+              break;
+            }
+
+            case dealStatuses.failed: {
+              ports.postLog('DEBUG: Provider.handleProtocol(): case dealStatuses.failed');
+
+              let deal = this.ongoingDeals[message.dealId];
+              deal.status = dealStatuses.failed;
+
+              this.updateCustomStatus("Failed", deal);
+
               break;
             }
 
@@ -279,6 +291,8 @@ class Provider {
     const isUpdateSuccessful = await this.lotus.updatePaymentChannel(paymentChannel, signedVoucher);
     ports.postLog(`DEBUG: Provider.submitPaymentVoucher: isUpdateSuccessful=${isUpdateSuccessful}`);
     if (!isUpdateSuccessful) {
+      deal.sink.push({ dealId, status: dealStatuses.failed });
+      this.updateCustomStatus("Failed", deal);
       throw {"message":"ERROR: Provider.submitPaymentVoucher: failed to submit voucher"};
     }
   }

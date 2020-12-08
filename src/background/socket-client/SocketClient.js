@@ -79,19 +79,24 @@ export default class SocketClient {
         return;
       }
 
-      await this._sendFunds(params);
+      const sendFunds = await this._sendFunds(params);
+      console.log({ sendFunds });
+      if (!sendFunds) {
+        return;
+      }
 
       this._setOngoingDealProps(params.clientToken, { status: dealStatuses.awaitingAcceptance });
+      const options = await getOptions();
+
+      if (sendFunds) {
+        this.socket.emit(
+          messageRequestTypes.fundsConfirmed,
+          messages.createFundsSent({ clientToken: params.clientToken, paymentWallet: options.wallet }),
+        );
+      }
     } catch (error) {
       ports.postLog(`ERROR: SocketClient._handleCidAvailability: error: ${error.message}`);
     }
-
-    const options = await getOptions();
-
-    this.socket.emit(
-      messageRequestTypes.fundsConfirmed,
-      messages.createFundsSent({ clientToken: params.clientToken, paymentWallet: options.wallet }),
-    );
   }
 
   // Private:
@@ -264,7 +269,20 @@ export default class SocketClient {
     ports.postLog(
       `DEBUG: SocketClient._handleCidAvailability: sending ${params.price} attofil to ${params.paymentWallet}`,
     );
-    await lotus.sendFunds(params.price, params.paymentWallet);
+    const sendFunds = lotus.sendFunds(params.price, params.paymentWallet);
+
+    if (!sendFunds) {
+      ongoingDeals[params.dealId] = {
+        status: dealStatuses.failed,
+        customStatus: 'Failed',
+      };
+
+      ports.postInboundDeals(ongoingDeals);
+
+      return false;
+    }
+
+    return true;
   }
 
   async _closeDeal({ dealId }) {

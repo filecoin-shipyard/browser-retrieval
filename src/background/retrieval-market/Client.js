@@ -87,6 +87,14 @@ class Client {
             break;
           }
 
+          case dealStatuses.failed: {
+            ports.postLog('DEBUG: Client.handleMessage(): case dealStatuses.failed');
+            let deal = ongoingDeals[message.dealId];
+            deal.status = dealStatuses.failed;
+            this.updateCustomStatus('Failed', deal);
+            break;
+          }
+
           case dealStatuses.fundsNeeded: {
             ports.postLog('DEBUG: Client.handleMessage(): case dealStatuses.fundsNeeded');
             deal.status = dealStatuses.ongoing;
@@ -163,6 +171,18 @@ class Client {
     //await this.lotus.keyRecoverLogMsg();  // testing only
 
     deal.paymentChannel = await this.lotus.createPaymentChannel(toAddr, pchAmount);
+
+    if (!deal.paymentChannel) {
+      let deal = ongoingDeals[dealId];
+      deal.status = dealStatuses.failed;
+
+      this.updateCustomStatus('Failed', deal);
+
+      return deal.sink.push({
+        dealId,
+        status: dealStatuses.failed,
+      });
+    }
 
     // Not using lanes currently
     deal.Lane = 0;

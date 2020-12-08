@@ -17,6 +17,8 @@ const dynamicOptions = {
   wallet: '',
   privateKey: '',
 
+  pricesPerByte: { '*': 1000 },
+
   offerInfo: {
     cid: undefined,
     offers: [],
