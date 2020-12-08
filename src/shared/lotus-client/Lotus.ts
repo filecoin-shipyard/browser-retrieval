@@ -2,6 +2,7 @@ import axios from 'axios'
 import inspect from 'browser-util-inspect'
 import { Buffer } from 'buffer'
 import { appStore } from 'shared/store/appStore'
+import BigNumber from 'bignumber.js';
 
 // Required to workaround `Invalid asm.js: Unexpected token` error:
 const importDagCBOR = () => {
@@ -15,6 +16,9 @@ const gasEstimation = {
   gasFeeCap: '16251176117',
   gasPremium: '140625002',
 }
+
+const minimumBalance = 0.2;
+
 const useDefaultGas = false
 
 export class Lotus {
@@ -88,6 +92,51 @@ export class Lotus {
     appStore.logsStore.logDebug(`leaving Lotus.gasEstimation (returned message= ${inspect(message)})`)
 
     return message
+  }
+
+  /**
+   * Get balance for an address
+   * @param  {string} addr Wallet address like `f156e3l2vwd5wi5jwdrd6gdg4y7t2yknq6see7xbq`
+   * @return {number} Returns the balance, or undefined if an error occurred
+   */
+  async getBalance(addr) {
+    appStore.logsStore.logDebug(`entering Lotus.getBalance`);
+    const { headers, lotusEndpoint } = this.getAndParseOptions()
+    appStore.logsStore.logDebug(`Lotus.getBalance:\n  addr=${addr}\n  this.headers=${inspect(headers)}\n  this.lotusEndpoint=${lotusEndpoint}`);
+
+    let response;
+    try {
+      response = await axios.post(lotusEndpoint, {
+        jsonrpc: "2.0",
+        method: "Filecoin.WalletBalance",
+        id: 1,
+        params: [addr]
+      }, {headers});
+    } catch (error) {
+      appStore.logsStore.logError(`Lotus.getBalance(): axios error: ${error.message}`);
+      return undefined
+    }
+
+    const balance = response.data.result;
+    appStore.logsStore.logDebug(`leaving Lotus.getBalance (balance = ${balance})`);
+
+    return balance;
+  }
+
+  /**
+   * Sends funds to a wallet address from this.wallet.
+   * @returns {boolean} True if current wallet balance is greater than minimum required to query Storage Miner.
+   */
+  async hasMinBalance() {
+    const { wallet } = appStore.optionsStore
+
+    let balance = await this.getBalance(wallet);
+    let tenBN = new BigNumber(10);
+    let balanceBN = new BigNumber(balance).dividedBy(tenBN.pow(18));
+    let minimum = new BigNumber(minimumBalance);
+
+    appStore.logsStore.logDebug(`lotus.hasMinBalance(): balanceBN ${balanceBN} minimum: ${minimum} compare: ${balanceBN.comparedTo(minimum) === 1}`);
+    return balanceBN.comparedTo(minimum) === 1;
   }
 
   // TODO:  remove once filecoin-signing-tools PR #317 is merged new npm package is published
