@@ -19,12 +19,10 @@ export class AlertsStore {
   }
 
   dismiss(id: number) {
-    // const index = this.alerts.findIndex((v) => v === id)
-    //
-    // if (index >= 0) {
-    //   this.alerts.splice(index, 1)
-    // }
+    const index = this.alerts.findIndex((v) => v.id === id)
 
-    return this.alerts = [];
+    if (index >= 0) {
+      this.alerts.splice(index, 1)
+    }
   }
 }
