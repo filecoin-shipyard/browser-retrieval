@@ -12,7 +12,7 @@ const importDagCBOR = () => {
 let lotusIntance: Lotus
 
 const gasEstimation = {
-  gaslimit: 20000000,
+  gaslimit: '10000000',
   gasfeecap: '16251176117',
   gaspremium: '140625002',
 }
@@ -83,7 +83,7 @@ export class Lotus {
         message.gaspremium = response.data.result.GasPremium
       
       } catch (error) {
-        message.gaslimit = gasEstimation.gaslimit
+        message.gaslimit = parseInt(gasEstimation.gaslimit) * 2
         message.gasfeecap = gasEstimation.gasfeecap
         message.gaspremium = gasEstimation.gaspremium
         appStore.logsStore.logError(`Lotus.gesGasEstimation(): axios error: ${error.message}\n`)
@@ -353,7 +353,7 @@ export class Lotus {
         toAddr,
         `${amountAttoFil}`,
         nonce,
-        gasEstimation.gaslimit.toString(),
+        gasEstimation.gaslimit,
         gasEstimation.gasfeecap,
         gasEstimation.gaspremium,
       )
@@ -477,7 +477,7 @@ export class Lotus {
         toAddr,
         signedVoucher,
         nonce,
-        gasEstimation.gaslimit.toString(),
+        gasEstimation.gaslimit,
         gasEstimation.gasfeecap,
         gasEstimation.gaspremium,
       )
@@ -552,7 +552,7 @@ export class Lotus {
         pch,
         toAddr,
         nonce,
-        gasEstimation.gaslimit.toString(),
+        gasEstimation.gaslimit,
         gasEstimation.gasfeecap,
         gasEstimation.gaspremium,
       )
@@ -624,7 +624,7 @@ export class Lotus {
         pch,
         toAddr,
         nonce,
-        gasEstimation.gaslimit.toString(),
+        gasEstimation.gaslimit,
         gasEstimation.gasfeecap,
         gasEstimation.gaspremium,
       )
@@ -744,7 +744,7 @@ export class Lotus {
         value: `${amountAttoFil}`,
         method: 0,
         params: '',
-        gaslimit: gasEstimation.gaslimit,
+        gaslimit: parseInt(gasEstimation.gaslimit),
         gasfeecap: gasEstimation.gasfeecap,
         gaspremium: gasEstimation.gaspremium,
       }
