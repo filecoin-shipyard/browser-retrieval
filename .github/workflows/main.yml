@@ -30,7 +30,7 @@ jobs:
         run: echo Deploying app to 34.232.70.238
 
       # Runs a set of commands using the runners shell
-      - name: Setup SSH
+      - name: Setup SSH and Deploy
         env:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
         run: |
@@ -38,11 +38,5 @@ jobs:
           ssh-keyscan github.com >> ~/.ssh/known_hosts
           ssh-agent -a $SSH_AUTH_SOCK > /dev/null
           ssh-add - <<< "${{ secrets.DEPLOY_PRIVATE_KEY }}"
-          
-      # Runs after ssh setup
-      - name: Deploy
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-        run: |
           ssh ubuntu@34.232.70.238 ls
           
