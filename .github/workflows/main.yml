@@ -34,5 +34,5 @@ jobs:
         run: |
           eval "$(ssh-agent -s)"
           ssh-keyscan github.com >> ~/.ssh/known_hosts
-          ssh-add - <<< "${DEPLOY_PRIVATE_KEY}"
+          ssh-add - <<< "${secrets.DEPLOY_PRIVATE_KEY}"
           ssh ubuntu@34.232.70.238 ls
