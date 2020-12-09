@@ -28,7 +28,7 @@ export const Editor = ({ className, ...rest }) => {
   }
 
   return (
-    <div className={classNames(className, 'p-4')} {...rest} onBlur={onBlur}>
+    <div className={classNames(className, 'p-4 main-page')} {...rest} onBlur={onBlur}>
       <Card className="p-4">
         <Form className="flex-col" onSubmit={handleSubmit(onSubmit)}>
           <div className="flex">

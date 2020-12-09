@@ -9,7 +9,7 @@ import { QueryForm } from './QueryForm'
 
 export const Home = ({ className, ...rest }) => {
   return (
-    <div className={classNames(className, 'p-4')} {...rest}>
+    <div className={classNames(className, 'p-4 main-page')} {...rest}>
       <QueryForm />
       <Offers className="mt-4" />
       <KnownCids className="mt-4" />

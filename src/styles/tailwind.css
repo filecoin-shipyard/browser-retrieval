@@ -805,7 +805,7 @@ video {
 }
 
 .h-full {
-  height: 100%;
+  height: 100vh;
 }
 
 .text-xs {
@@ -1144,10 +1144,6 @@ video {
   }
 }
 
-body {
-  width: 780px;
-}
-
 svg {
   fill: currentColor;
 }
@@ -1190,6 +1186,16 @@ svg {
 
 .error-width {
   width: 748px;
+}
+
+.main-page {
+  width: 780px;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.header-wrapper {
+  width: 980px;
 }
 
 input[type=checkbox]:checked {
