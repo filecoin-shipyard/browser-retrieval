@@ -12,9 +12,9 @@ const importDagCBOR = () => {
 let lotusIntance: Lotus
 
 const gasEstimation = {
-  gasLimit: '10000000',
-  gasFeeCap: '16251176117',
-  gasPremium: '140625002',
+  gaslimit: 20000000,
+  gasfeecap: '16251176117',
+  gaspremium: '140625002',
 }
 
 const minimumBalance = 0.2;
@@ -81,11 +81,11 @@ export class Lotus {
         message.gaslimit = response.data.result.GasLimit * 2
         message.gasfeecap = response.data.result.GasFeeCap
         message.gaspremium = response.data.result.GasPremium
-
-        gasEstimation.gasLimit = message.gaslimit
-        gasEstimation.gasFeeCap = message.gasfeecap
-        gasEstimation.gasPremium = message.gaspremium
+      
       } catch (error) {
+        message.gaslimit = gasEstimation.gaslimit
+        message.gasfeecap = gasEstimation.gasfeecap
+        message.gaspremium = gasEstimation.gaspremium
         appStore.logsStore.logError(`Lotus.gesGasEstimation(): axios error: ${error.message}\n`)
       }
     }
@@ -353,9 +353,9 @@ export class Lotus {
         toAddr,
         `${amountAttoFil}`,
         nonce,
-        gasEstimation.gasLimit,
-        gasEstimation.gasFeeCap,
-        gasEstimation.gasPremium,
+        gasEstimation.gaslimit.toString(),
+        gasEstimation.gasfeecap,
+        gasEstimation.gaspremium,
       )
 
       let createPaych = await this.getGasEstimation(createPaychDefault)
@@ -477,9 +477,9 @@ export class Lotus {
         toAddr,
         signedVoucher,
         nonce,
-        gasEstimation.gasLimit,
-        gasEstimation.gasFeeCap,
-        gasEstimation.gasPremium,
+        gasEstimation.gaslimit.toString(),
+        gasEstimation.gasfeecap,
+        gasEstimation.gaspremium,
       )
 
       let updatePaychMessage = await this.getGasEstimation(updatePaychMessageDefault)
@@ -552,9 +552,9 @@ export class Lotus {
         pch,
         toAddr,
         nonce,
-        gasEstimation.gasLimit,
-        gasEstimation.gasFeeCap,
-        gasEstimation.gasPremium,
+        gasEstimation.gaslimit.toString(),
+        gasEstimation.gasfeecap,
+        gasEstimation.gaspremium,
       )
       let settlePaychMessage = await this.getGasEstimation(settlePaychMessageDefault)
       signedSettleMessage = JSON.parse(this.signer.transactionSignLotus(settlePaychMessage, toPrivateKeyBase64))
@@ -624,9 +624,9 @@ export class Lotus {
         pch,
         toAddr,
         nonce,
-        gasEstimation.gasLimit,
-        gasEstimation.gasFeeCap,
-        gasEstimation.gasPremium,
+        gasEstimation.gaslimit.toString(),
+        gasEstimation.gasfeecap,
+        gasEstimation.gaspremium,
       )
       let collectPaychMessage = await this.getGasEstimation(collectPaychMessageDefault)
       signedCollectMessage = JSON.parse(this.signer.transactionSignLotus(collectPaychMessage, toPrivateKeyBase64))
@@ -744,9 +744,9 @@ export class Lotus {
         value: `${amountAttoFil}`,
         method: 0,
         params: '',
-        gaslimit: gasEstimation.gasLimit,
-        gasfeecap: gasEstimation.gasFeeCap,
-        gaspremium: gasEstimation.gasPremium,
+        gaslimit: gasEstimation.gaslimit,
+        gasfeecap: gasEstimation.gasfeecap,
+        gaspremium: gasEstimation.gaspremium,
       }
 
       let unsignedMessage = await this.getGasEstimation(unsignedMessageDefault)
