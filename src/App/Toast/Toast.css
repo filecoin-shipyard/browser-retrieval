@@ -1,8 +1,8 @@
 .toast {
   position: fixed;
   width: 100%;
-  max-width: 780px;
   z-index: 10;
+  display: flex;
 }
 
 .toast-item {

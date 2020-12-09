@@ -49,7 +49,7 @@ export function App() {
 
   return (
     <>
-      <Toast />
+      <Toast className="main-page" />
       <Tabs className="text-xs text-black" tabs={tabs}>
         <li className="flex-1 px-4">Filecoin Retrieval</li>
         <li className="flex mr-8">

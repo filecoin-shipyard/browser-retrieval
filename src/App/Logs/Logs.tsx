@@ -30,7 +30,7 @@ export const Logs = observer<any>(({ className, ...rest }) => {
   }
 
   return (
-    <div className={classNames(className, 'p-4')} {...rest}>
+    <div className={classNames(className, 'p-4 main-page')} {...rest}>
       <Card className="p-4">
         <div className="flex">
           <Label className="flex-1 mb-2">Logs</Label>

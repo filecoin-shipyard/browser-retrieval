@@ -29,7 +29,7 @@ export const Upload = observer<any>(({ className, ...rest }) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop })
 
   return (
-    <div className={classNames('p-4')}>
+    <div className={classNames('p-4 main-page')}>
       <div
         className={classNames(
           className,

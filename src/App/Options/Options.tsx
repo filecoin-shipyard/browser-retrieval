@@ -7,7 +7,7 @@ import { PriceTable } from './PriceTable'
 
 export function Options({ className, ...rest }) {
   return (
-    <div className={classNames(className, 'p-4')} {...rest}>
+    <div className={classNames(className, 'p-4 main-page')} {...rest}>
       <LotusForm />
       <PriceForm />
       <PriceTable />
