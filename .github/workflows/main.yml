@@ -40,7 +40,7 @@ jobs:
           ssh-add - <<< "${{ secrets.DEPLOY_PRIVATE_KEY }}"
 
       # Deploy
-      - name: Deploy
+      - name: Deploy via SSH
         env:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
         run: |
