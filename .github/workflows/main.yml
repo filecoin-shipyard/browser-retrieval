@@ -25,12 +25,12 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
-      # Runs a single command using the runners shell
+      # Start
       - name: Start
         run: echo Deploying app to 34.232.70.238
 
-      # Runs a set of commands using the runners shell
-      - name: Setup SSH and Deploy
+      # Setup SSH
+      - name: Setup SSH
         env:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
         run: |
@@ -40,3 +40,10 @@ jobs:
           ssh-add - <<< "${{ secrets.DEPLOY_PRIVATE_KEY }}"
           ssh ubuntu@34.232.70.238 ls
 
+
+      # Deploy
+      - name: Deploy
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          ssh ubuntu@34.232.70.238 ls
