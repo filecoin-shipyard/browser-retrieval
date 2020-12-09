@@ -38,12 +38,10 @@ jobs:
           ssh-keyscan 34.232.70.238 >> ~/.ssh/known_hosts
           ssh-agent -a $SSH_AUTH_SOCK > /dev/null
           ssh-add - <<< "${{ secrets.DEPLOY_PRIVATE_KEY }}"
-          ssh ubuntu@34.232.70.238 ls
-
 
       # Deploy
       - name: Deploy
         env:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
         run: |
-          ssh ubuntu@34.232.70.238 ls
+          ssh ubuntu@34.232.70.238 ~/deploy/deploy_browser-retrieval.sh
