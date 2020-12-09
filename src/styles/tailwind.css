@@ -1194,10 +1194,6 @@ svg {
   margin: 0 auto;
 }
 
-.header-wrapper {
-  width: 980px;
-}
-
 input[type=checkbox]:checked {
   -webkit-appearance: auto;
      -moz-appearance: auto;
