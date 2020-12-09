@@ -1,3 +1,4 @@
+import BigNumber from 'bignumber.js'
 import pushable from 'it-pushable'
 import { Datastore } from 'shared/Datastore'
 import { dealStatuses } from 'shared/dealStatuses'
@@ -146,8 +147,7 @@ export default class SocketClient {
 
   _handleFundsConfirmed() {
     this.socket.on(messageResponseTypes.fundsConfirmed, (message) => {
-      console.log(messageResponseTypes.fundsConfirmed)
-      console.log(message)
+      appStore.logsStore.logDebug('messageResponseTypes.fundsConfirmed', messageResponseTypes.fundsConfirmed)
 
       // TODO: periodically send this message to check on status
       this.socket.emit(
@@ -156,8 +156,22 @@ export default class SocketClient {
       )
     })
 
-    this.socket.on(messageResponseTypes.fundsConfirmedErrorInsufficientFunds, () => {
-      // TODO: something
+    this.socket.on(messageResponseTypes.fundsConfirmedErrorInsufficientFunds, (message) => {
+      appStore.logsStore.logDebug(
+        'messageResponseTypes.fundsConfirmedErrorInsufficientFunds',
+        messageResponseTypes.fundsConfirmedErrorInsufficientFunds,
+        message,
+      )
+
+      const price = message.priceAttofil
+      const current = message.remainingBalance
+      const diff = new BigNumber(price).minus(current).toString()
+
+      appStore.alertsStore.create({
+        id: 'fundsConfirmedErrorInsufficientFunds',
+        message: `Insufficient funds. Required: ${price} Current: ${current} Diff: ${diff}`,
+        type: 'error',
+      })
     })
     this.socket.on(messageResponseTypes.fundsConfirmedErrorPriceChanged, () => {
       // TODO: something
