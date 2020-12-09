@@ -2,17 +2,22 @@
   position: fixed;
   width: 100%;
   z-index: 10;
+  top: 0;
+  left: 0;
   display: flex;
+  justify-content: center;
+  flex-direction: column;
 }
 
 .toast-item {
   display: flex;
-
   border-radius: 0.25rem;
   border: 1px solid transparent;
   margin-bottom: 0.5rem;
   padding: 0.75rem 1.25rem;
   position: relative;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .toast-item div:first-child {
