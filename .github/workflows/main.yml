@@ -44,4 +44,4 @@ jobs:
         env:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
         run: |
-          ssh ubuntu@34.232.70.238 ~/deploy/deploy_browser-retrieval.sh
+          ssh ubuntu@34.232.70.238 /home/ubuntu/deploy/deploy_browser-retrieval.sh
