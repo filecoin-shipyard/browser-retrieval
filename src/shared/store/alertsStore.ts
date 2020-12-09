@@ -2,7 +2,7 @@ import { makeAutoObservable } from 'mobx'
 import { AppStore } from './appStore'
 
 interface AlertMessage {
-  id: number
+  id: number | string
   message: string
   type: string
 }
