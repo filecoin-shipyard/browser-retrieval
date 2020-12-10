@@ -26,6 +26,10 @@ export class OffersStore {
       offers: [],
       params: undefined,
     }
+
+    clearTimeout(this.searchingTimeout)
+    this.searching = false
+    this.notFound = false
   }
 
   add(cid: any, offer) {

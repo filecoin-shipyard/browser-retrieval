@@ -38,8 +38,8 @@ export const QueryForm = (props) => {
     // msg.minerID = 'f019243'
 
     appStore.queriesStore.setCid(cid)
-    appStore.offersStore.triggerSearch()
     appStore.query(msg)
+    appStore.offersStore.triggerSearch()
   }
 
   function onCheck() {
