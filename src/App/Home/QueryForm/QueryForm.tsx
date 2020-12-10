@@ -17,11 +17,15 @@ export const QueryForm = (props) => {
   const [checked, setChecked] = useState(false)
 
   async function onSubmit({ cid, minerID }) {
-    const mimBalance = await appStore.node.lotus.hasMinBalance();
+    const mimBalance = await appStore.node.lotus.hasMinBalance()
 
     if (!mimBalance) {
-      appStore.alertsStore.create({id: Math.floor(Math.random() * 1000), message: 'Your wallet does not have minimum FIL required!', type: 'warning'})
-      return;
+      appStore.alertsStore.create({
+        id: Math.floor(Math.random() * 1000),
+        message: 'Your wallet does not have minimum FIL required!',
+        type: 'warning',
+      })
+      return
     }
 
     const msg = {
@@ -33,7 +37,9 @@ export const QueryForm = (props) => {
     // msg.cid = 'bafk2bzacebhlhbcnhmvover42qq5bx773c522skieho6nhtbz7d2ow3f4sw24'
     // msg.minerID = 'f019243'
 
+    appStore.queriesStore.setCid(cid)
     appStore.query(msg)
+    appStore.offersStore.triggerSearch()
   }
 
   function onCheck() {
