@@ -25,28 +25,23 @@ yarn
 yarn build
 ```
 
-## Add it to your browser
+## Developing, Testing and Deploying
 
-- Chrome
+### Developing
 
-  - Open the Extension Management page by navigating to `chrome://extensions`.
-  - Enable Developer Mode by clicking the toggle switch next to “Developer mode“.
-  - Click the “Load unpacked“ button
-  - Select the extension’s `build/` directory.
+To start the app in development mode use the script `yarn start`. It'll start a dev server on the `PORT=#` in your `.env` file or port `3000` if nothing is specified. Changes in code will cause the application to reload automatically, but be aware that some changes might cause peers to disconnect, in that case you'll have to reload the page manually.
 
-- Firefox
+### Unit tests
 
-  - Navigate to `about:debugging`)
-  - Click “This Firefox”
-  - Click “Load Temporary Add-on”
-  - Open the extension’s `build/` directory and select **any file** inside the folder.
+Run `yarn test`
 
-- Edge
+### e2e tests
 
-  - Open the Extension Management page by navigating to `edge://extensions/`.
-  - Enable Developer Mode by clicking the toggle switch next to “Developer mode“.
-  - Click the “Load Unpacked“ button
-  - Select the extension’s `build/` directory.
+You must have the app running beforehand (ex: `yarn start`). Then run `yarn e2e`.
+
+### Deploying
+
+Deploys are configured to happen automatically via Git Actions whenever code is merged or changed in `master` branch.
 
 ## Development Status
 
