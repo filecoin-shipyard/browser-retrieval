@@ -10,6 +10,7 @@ interface RecentCID {
 }
 
 const recentTimeLimit = { hours: 72 }
+const limit = 10
 
 export class RecentCIDStore {
   private readonly localStorageKey = `_${this.constructor.name}`
@@ -45,6 +46,8 @@ export class RecentCIDStore {
         cid,
         date: new Date(),
       })
+
+      this.recentCIDs.splice(limit)
     }
   }
 
