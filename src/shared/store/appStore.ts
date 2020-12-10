@@ -8,6 +8,7 @@ import { OffersStore } from './offersStore'
 import { OperationsStore } from './operationsStore'
 import { OptionsStore } from './optionsStore'
 import { QueriesStore } from './queriesStore'
+import { RecentCIDStore } from './recentCIDStore'
 import { SettingsStore } from './settingsStore'
 import { UploadStore } from './uploadStore'
 
@@ -19,6 +20,7 @@ export class AppStore {
   operationsStore: OperationsStore
   optionsStore: OptionsStore
   queriesStore: QueriesStore
+  recentCIDStore: RecentCIDStore
   settingsStore: SettingsStore
   uploadStore: UploadStore
 
@@ -36,6 +38,7 @@ export class AppStore {
     this.operationsStore = new OperationsStore(this)
     this.optionsStore = new OptionsStore(this)
     this.queriesStore = new QueriesStore(this)
+    this.recentCIDStore = new RecentCIDStore(this)
     this.settingsStore = new SettingsStore(this)
     this.uploadStore = new UploadStore(this)
 
@@ -52,10 +55,14 @@ export class AppStore {
         this.node = await Node.create(true)
         this.connected = true
 
-        const mimBalance = await this.node.lotus.hasMinBalance();
+        const mimBalance = await this.node.lotus.hasMinBalance()
 
         if (!mimBalance) {
-          this.alertsStore.create({id: Math.floor(Math.random() * 1000), message: 'Your wallet does not have minimum FIL required!', type: 'warning'})
+          this.alertsStore.create({
+            id: Math.floor(Math.random() * 1000),
+            message: 'Your wallet does not have minimum FIL required!',
+            type: 'warning',
+          })
         }
       } catch (error) {
         this.connected = false

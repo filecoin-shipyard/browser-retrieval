@@ -185,6 +185,9 @@ export class Node {
 
       if (params) {
         appStore.logsStore.logDebug(`someone queried for a CID I have: ${cid}`)
+
+        appStore.recentCIDStore.addOrUpdate(cid)
+
         await this.publish({
           peerId,
           messageType: messageTypes.queryResponse,
@@ -200,6 +203,8 @@ export class Node {
   }
 
   async handleQueryResponse({ messageType, cid, multiaddrs, params, peerId }) {
+    appStore.recentCIDStore.addOrUpdate(cid)
+
     if (!peerId || this.id !== peerId || !this.queriedCids.has(cid)) {
       // message not for this peer
       return
