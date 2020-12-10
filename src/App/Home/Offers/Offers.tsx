@@ -26,16 +26,39 @@ function closeOffers() {
   appStore.offersStore.clear()
 }
 
+const renderSearching = () => {
+  const { offersStore } = appStore
+  const { searching, notFound } = offersStore
+
+  if (searching) {
+    return (
+      <TableRow>
+        <TableCell colSpan={3}>Searching...</TableCell>
+      </TableRow>
+    )
+  }
+
+  if (notFound) {
+    return (
+      <TableRow>
+        <TableCell colSpan={3}>CID not found</TableCell>
+      </TableRow>
+    )
+  }
+
+  return null
+}
+
 export const Offers = observer<any>((props) => {
-  const { dealsStore, offersStore } = appStore
+  const { dealsStore, offersStore, queriesStore } = appStore
+  const { offerInfo, searching, notFound } = offersStore
 
-  const { offerInfo } = offersStore
-
-  if (!offerInfo?.offers?.length) {
+  if (!offerInfo?.offers?.length && !searching && !notFound) {
     return null
   }
 
-  const { cid, offers } = offerInfo
+  const { cid } = queriesStore
+  const { offers } = offerInfo
 
   const hasDealWithCid = dealsStore.inboundDeals.some((ideal) => ideal.cid === cid)
 
@@ -47,7 +70,7 @@ export const Offers = observer<any>((props) => {
       </div>
       <Table>
         <tbody>
-          {offers.map((offer) => (
+          {(offers || []).map((offer) => (
             <TableRow key={offer.address}>
               <TableCell className="font-mono">
                 {/^ws/.test(offer.address) ? 'Storage Miner Network' : offer.address}
@@ -69,6 +92,7 @@ export const Offers = observer<any>((props) => {
               </TableCell>
             </TableRow>
           ))}
+          {renderSearching()}
         </tbody>
       </Table>
     </Card>
