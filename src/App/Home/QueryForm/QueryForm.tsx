@@ -16,7 +16,14 @@ export const QueryForm = (props) => {
   const { handleSubmit, register, errors } = useForm()
   const [checked, setChecked] = useState(false)
 
-  function onSubmit({ cid, minerID }) {
+  async function onSubmit({ cid, minerID }) {
+    const mimBalance = await appStore.node.lotus.hasMinBalance();
+
+    if (!mimBalance) {
+      appStore.alertsStore.create({id: Math.floor(Math.random() * 1000), message: 'Your wallet does not have minimum FIL required!', type: 'warning'})
+      return;
+    }
+
     const msg = {
       cid,
       minerID,

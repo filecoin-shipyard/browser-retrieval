@@ -55,7 +55,7 @@ export class AppStore {
         const mimBalance = await this.node.lotus.hasMinBalance();
 
         if (!mimBalance) {
-          this.alertsStore.create({id: 1, message: 'Your wallet does not have minimum FIL required!', type: 'warning'})
+          this.alertsStore.create({id: Math.floor(Math.random() * 1000), message: 'Your wallet does not have minimum FIL required!', type: 'warning'})
         }
       } catch (error) {
         this.connected = false
