@@ -1,7 +1,7 @@
-import { makeAutoObservable, toJS } from 'mobx'
+import { makeAutoObservable } from 'mobx'
+import { autosave } from 'shared/autoSaveDecorator'
+import { Operations } from 'shared/Operations'
 
-import { stringify } from 'shared/stringify'
-import { Operations } from '../Operations'
 import { AppStore } from './appStore'
 
 interface Operation {
@@ -36,40 +36,34 @@ export class OperationsStore {
     })) as Operation[]
   }
 
+  @autosave
   setOperations(value) {
     this._operations = value
-
-    this._save()
   }
 
+  @autosave
   queue(op: Operation) {
     this._operations.push({
       ...op,
       id: op.id || Date.now() + Math.random().toString(36).substr(2, 9),
     })
-    this._save()
   }
 
+  @autosave
   dequeue(op) {
     const index = this._operations.findIndex((o) => o.id === op.id)
 
     if (index >= 0) {
       this._operations.splice(index, 1)
     }
-    this._save()
   }
 
+  @autosave
   update(operation: Operation, props) {
     for (const [i, op] of Object.entries(this._operations)) {
       if (op.id === operation.id) {
         this._operations[i] = { ...op, ...props }
       }
     }
-
-    this._save()
-  }
-
-  private _save() {
-    localStorage.setItem(this.localStorageKey, stringify(toJS(this)))
   }
 }

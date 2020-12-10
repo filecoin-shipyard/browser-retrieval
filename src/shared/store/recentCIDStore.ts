@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon'
-import { makeAutoObservable, toJS } from 'mobx'
+import { makeAutoObservable } from 'mobx'
+import { autosave } from 'shared/autoSaveDecorator'
 
-import { stringify } from '../stringify'
 import { AppStore } from './appStore'
 
 interface RecentCID {
@@ -30,6 +30,7 @@ export class RecentCIDStore {
     makeAutoObservable(this)
   }
 
+  @autosave
   addOrUpdate(cid: string) {
     const { entry, index } = this.findRecentByCid(cid)
 
@@ -45,8 +46,6 @@ export class RecentCIDStore {
         date: new Date(),
       })
     }
-
-    this._save()
   }
 
   private findRecentByCid(cid: string) {
@@ -56,9 +55,5 @@ export class RecentCIDStore {
       entry: this.recentCIDs[index],
       index,
     }
-  }
-
-  private _save() {
-    localStorage.setItem(this.localStorageKey, stringify(toJS(this)))
   }
 }
