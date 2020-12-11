@@ -9,6 +9,7 @@ import { Lotus } from 'shared/lotus-client/Lotus'
 import { Services } from 'shared/models/services'
 import { protocols } from 'shared/protocols'
 import { appStore } from 'shared/store/appStore'
+import { BigNumber } from 'bignumber.js';
 
 let providerInstance: Provider
 
@@ -295,11 +296,26 @@ export class Provider {
     const clientWalletAddr = deal.clientWalletAddr
     appStore.logsStore.logDebug(`Provider.checkPaymentVoucherValid: clientWalletAddr=${clientWalletAddr}`)
 
-    const expectedAmountAttoFil = deal.sizeSent * deal.params.pricePerByte
+    const expectedAmountAttoFil = new BigNumber(deal.sizeSent).multipliedBy(deal.params.pricePerByte);
+    appStore.logsStore.logDebug(`DEBUG: Provider.checkPaymentVoucherValid: expectedAmountAttoFil = ${expectedAmountAttoFil}\n  = [(${deal.sizeSent} bytes sent) * (${deal.params.pricePerByte} pricePerByte)]`);
+
+    // validate if the amount of the signed voucher is matching the expected amount
+    const svDecodedVoucher = await this.lotus.decodeSignedVoucher(signedVoucher);
+    const svAmount = new BigNumber(svDecodedVoucher.amount);
+    if (!svAmount.isEqualTo(expectedAmountAttoFil)) {
+      appStore.logsStore.logError(`Voucher validation failed: the expected amount ${expectedAmountAttoFil} doesn't match the voucher amount ${svAmount}`);
+      appStore.alertsStore.create({
+        id: 'voucherAmountValidationFailed',
+        message: `Voucher amount validation failed. Expected: ${expectedAmountAttoFil}  Voucher amount: ${svAmount}`,
+        type: 'error',
+      })
+      return false;
+    }
+
+    // check if the signed voucher is valid
     appStore.logsStore.logDebug(
       `Provider.checkPaymentVoucherValid: expectedAmountAttoFil = ${expectedAmountAttoFil}\n  = [(${deal.sizeSent} bytes sent) * (${deal.params.pricePerByte} pricePerByte)]`,
     )
-
     const svValid = await this.lotus.checkPaymentVoucherValid(signedVoucher, expectedAmountAttoFil, clientWalletAddr)
     appStore.logsStore.logDebug(`Provider.checkPaymentVoucherValid: ${signedVoucher} => ${svValid}`)
     return svValid

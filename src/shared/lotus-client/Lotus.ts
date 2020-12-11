@@ -19,7 +19,21 @@ const gasEstimation = {
 
 const minimumBalance = 0.2;
 
-const useDefaultGas = false
+const useDefaultGas = false;
+
+interface DecodeSignedVoucher {
+  channelAddr: string,
+  timeLockMin: bigint,
+  timeLockMax: bigint,
+  secretPreimage: string,
+  extra: bigint,
+  lane: bigint,
+  nonce: bigint,
+  amount: string,
+  minSettleHeight: bigint,
+  merges: bigint,
+  signature: string,
+}
 
 export class Lotus {
   signer
@@ -683,12 +697,13 @@ export class Lotus {
     delete this.paymentChannelsInfo[paymentChannel]
   }
 
-  decodeSignedVoucher(signedVoucher) {
+  decodeSignedVoucher(signedVoucher) : DecodeSignedVoucher {
     const buffer = Buffer.from(signedVoucher, 'base64')
     const decoded = importDagCBOR().util.deserialize(buffer)
 
     if (decoded.length !== 11) {
-      return 'Deserialize Buffer does not have correct length'
+      appStore.logsStore.logError('Deserialize Buffer does not have correct length');
+      return
     }
 
     return {
@@ -699,7 +714,7 @@ export class Lotus {
       extra: decoded[4],
       lane: decoded[5],
       nonce: decoded[6],
-      amount: parseInt(decoded[7].toString('hex'), 16),
+      amount: decoded[7].toString(),
       minSettleHeight: decoded[8],
       merges: decoded[9],
       signature: decoded[10].toString('hex'),

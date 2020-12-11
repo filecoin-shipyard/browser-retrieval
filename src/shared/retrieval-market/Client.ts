@@ -198,6 +198,7 @@ export class Client {
       Lane: 0, // Not using lanes currently
     })
 
+    // TODO: deal.paymentChannel is undefined, but paymentChannel is, why?
     appStore.logsStore.logDebug(
       `Client.setupPaymentChannel(): sending payment channel ready (pchAddr='${deal.paymentChannel}') for dealId='${dealId}'`,
     )
