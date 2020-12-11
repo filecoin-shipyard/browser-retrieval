@@ -1,0 +1,27 @@
+.main-page {
+  flex: 1;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.main {
+  width: 100%;
+}
+
+.side {
+  margin-left: 1rem;
+  width: 240px;
+}
+
+@media (max-width: 700px) {
+  .main-page {
+    flex-direction: column;
+    flex: auto;
+  }
+
+  .side {
+    margin-left: 0;
+    margin-top: 1rem;
+    width: 100%;
+  }
+}

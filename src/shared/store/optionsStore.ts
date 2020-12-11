@@ -1,6 +1,6 @@
-import { makeAutoObservable, remove, set, toJS } from 'mobx'
+import { makeAutoObservable, remove, set } from 'mobx'
+import { autosave } from 'shared/autoSaveDecorator'
 
-import { stringify } from '../stringify'
 import { AppStore } from './appStore'
 
 export class OptionsStore {
@@ -44,35 +44,27 @@ export class OptionsStore {
     makeAutoObservable(this)
   }
 
+  @autosave
   addKnownCid(cid: string, size: any) {
     set(this.knownCids, cid, { size })
-
-    this._save()
   }
 
+  @autosave
   set(data: Partial<OptionsStore>) {
     const keys = Object.keys(data)
 
     for (const key of keys) {
       this[key] = data[key]
     }
-
-    this._save()
   }
 
+  @autosave
   removeKnownCid(cid: string) {
     remove(this.knownCids, cid)
-
-    this._save()
   }
 
+  @autosave
   removePrice(cid: any) {
     remove(this.pricesPerByte, cid)
-
-    this._save()
-  }
-
-  private _save() {
-    localStorage.setItem(this.localStorageKey, stringify(toJS(this)))
   }
 }
