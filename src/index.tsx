@@ -4,8 +4,19 @@ import ReactDOM from 'react-dom'
 
 import { App } from './App'
 import reportWebVitals from './reportWebVitals'
+import { appStore } from './shared/store/appStore'
 
 configure({ useProxies: 'ifavailable' })
+
+window.onbeforeunload = (e) => {
+  if (!appStore.dealsStore.hasOngoingDeals()) {
+    return
+  }
+
+  e.returnValue = 'You have ongoing deals, if you leave they will stop. Are you sure?'
+
+  return e.returnValue
+}
 
 ReactDOM.render(
   <React.StrictMode>
