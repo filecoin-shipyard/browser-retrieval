@@ -13,7 +13,7 @@ import { RecentCids } from './RecentCids'
 export const Home = ({ className, ...rest }) => {
   return (
     <div className={classNames(className, 'p-4 main-page flex items-start justify-start')} {...rest}>
-      <div className="flex-1">
+      <div className="main">
         <QueryForm />
         <Offers className="mt-4" />
         <KnownCids className="mt-4" />
@@ -21,7 +21,7 @@ export const Home = ({ className, ...rest }) => {
         <OperationsList className="mt-4" />
       </div>
       <div className="side">
-        <RecentCids className="ml-4" />
+        <RecentCids />
       </div>
     </div>
   )
