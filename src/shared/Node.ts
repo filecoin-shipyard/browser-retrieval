@@ -335,9 +335,18 @@ export class Node {
       const totalBytes = files.reduce((sum, file) => sum + file.size, 0)
       let totalBytesLoaded = 0
 
+      const importOptions = {
+        cidVersion: 1,
+        hashAlg: 'blake2b-256',
+        rawLeaves: true,
+        maxChunkSize: 1048576,
+        maxChildrenPerNode: 1024,
+      }
+
       await Promise.all(
         files.map(async (file) => {
           const { cid, size } = await this.datastore.putFile(file, {
+            ...importOptions,
             progress: (bytesLoaded) => {
               totalBytesLoaded += bytesLoaded
 
@@ -345,7 +354,7 @@ export class Node {
             },
           })
 
-          appStore.optionsStore.addKnownCid(cid, size)
+          appStore.optionsStore.addKnownCid(cid, size || file.size)
           appStore.optionsStore.set({ knownCids })
         }),
       )
