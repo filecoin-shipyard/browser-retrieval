@@ -81,7 +81,7 @@ export class Lotus {
         message.gaslimit = response.data.result.GasLimit * 2
         message.gasfeecap = response.data.result.GasFeeCap
         message.gaspremium = response.data.result.GasPremium
-      
+
       } catch (error) {
         message.gaslimit = parseInt(gasEstimation.gaslimit) * 2
         message.gasfeecap = gasEstimation.gasfeecap
@@ -158,7 +158,6 @@ export class Lotus {
       lotusToken: lotusToken,
       wallet: wallet,
       privateKeyBase64: privateKey,
-      privateKey: this.signer.keyRecover(privateKey).private_hexstring,
       headers: { Authorization: `Bearer ${lotusToken}` },
     }
   }
