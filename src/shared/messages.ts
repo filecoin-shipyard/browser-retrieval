@@ -17,6 +17,8 @@ export const messageResponseTypes = {
   fundsConfirmedErrorPriceChanged: 'funds_confirmed_error_price_changed',
 
   chunk: 'chunk',
+
+  voucherAmountValidationFailed: 'voucher_amount_validation_failed',
 }
 
 export const messages = {

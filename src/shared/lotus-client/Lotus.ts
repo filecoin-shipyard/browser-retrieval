@@ -19,7 +19,21 @@ const gasEstimation = {
 
 const minimumBalance = 0.2;
 
-const useDefaultGas = false
+const useDefaultGas = false;
+
+interface DecodeSignedVoucher {
+  channelAddr: string,
+  timeLockMin: bigint,
+  timeLockMax: bigint,
+  secretPreimage: string,
+  extra: bigint,
+  lane: bigint,
+  nonce: bigint,
+  amount: number,
+  minSettleHeight: bigint,
+  merges: bigint,
+  signature: string,
+}
 
 export class Lotus {
   signer
@@ -672,7 +686,7 @@ export class Lotus {
 
   async checkPaymentVoucherValid(signedVoucher, expectedAmountAttoFil, fromWalletAddr) {
     appStore.logsStore.logDebug(
-      `Lotus.checkPaymentVoucherValid: args = signedVoucher=${signedVoucher},expectedAmountAttoFil=${expectedAmountAttoFil},fromWalletAddr=${fromWalletAddr}`,
+      `Lotus.checkPaymentVoucherValid: signedVoucher=${signedVoucher},expectedAmountAttoFil=${expectedAmountAttoFil},fromWalletAddr=${fromWalletAddr}`,
     )
     return this.signer.verifyVoucherSignature(signedVoucher, fromWalletAddr)
   }
@@ -682,12 +696,13 @@ export class Lotus {
     delete this.paymentChannelsInfo[paymentChannel]
   }
 
-  decodeSignedVoucher(signedVoucher) {
+  decodeSignedVoucher(signedVoucher) : DecodeSignedVoucher {
     const buffer = Buffer.from(signedVoucher, 'base64')
     const decoded = importDagCBOR().util.deserialize(buffer)
 
     if (decoded.length !== 11) {
-      return 'Deserialize Buffer does not have correct length'
+      appStore.logsStore.logError('Deserialize Buffer does not have correct length');
+      return
     }
 
     return {
