@@ -184,6 +184,17 @@ export class Node {
       const params = await this.provider.getDealParams(cid)
 
       if (params) {
+        const mimBalance = await appStore.node.lotus.hasMinBalance()
+
+        if (!mimBalance) {
+          appStore.alertsStore.create({
+            id: Math.floor(Math.random() * 1000),
+            message: 'Your wallet does not have minimum FIL required!',
+            type: 'warning',
+          })
+          return
+        }
+
         appStore.logsStore.logDebug(`someone queried for a CID I have: ${cid}`)
 
         appStore.recentCIDStore.addOrUpdate(cid)

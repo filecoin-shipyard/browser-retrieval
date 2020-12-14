@@ -48,7 +48,7 @@ export class AppStore {
   async connect() {
     const { optionsStore } = this
 
-    if (optionsStore.wallet !== '' || optionsStore.privateKey !== '') {
+    if (optionsStore.wallet || optionsStore.privateKey) {
       try {
         await this.tryDisconnect()
 
