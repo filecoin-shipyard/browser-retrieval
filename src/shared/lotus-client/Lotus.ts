@@ -29,7 +29,7 @@ interface DecodeSignedVoucher {
   extra: bigint,
   lane: bigint,
   nonce: bigint,
-  amount: string,
+  amount: number,
   minSettleHeight: bigint,
   merges: bigint,
   signature: string,
@@ -687,7 +687,7 @@ export class Lotus {
 
   async checkPaymentVoucherValid(signedVoucher, expectedAmountAttoFil, fromWalletAddr) {
     appStore.logsStore.logDebug(
-      `Lotus.checkPaymentVoucherValid: args = signedVoucher=${signedVoucher},expectedAmountAttoFil=${expectedAmountAttoFil},fromWalletAddr=${fromWalletAddr}`,
+      `Lotus.checkPaymentVoucherValid: signedVoucher=${signedVoucher},expectedAmountAttoFil=${expectedAmountAttoFil},fromWalletAddr=${fromWalletAddr}`,
     )
     return this.signer.verifyVoucherSignature(signedVoucher, fromWalletAddr)
   }
@@ -714,7 +714,7 @@ export class Lotus {
       extra: decoded[4],
       lane: decoded[5],
       nonce: decoded[6],
-      amount: decoded[7].toString(),
+      amount: parseInt(decoded[7].toString('hex'), 16),
       minSettleHeight: decoded[8],
       merges: decoded[9],
       signature: decoded[10].toString('hex'),

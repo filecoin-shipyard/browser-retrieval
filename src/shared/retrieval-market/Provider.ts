@@ -288,20 +288,18 @@ export class Provider {
    */
   async checkPaymentVoucherValid({ dealId, paymentChannel, signedVoucher }) {
     appStore.logsStore.logDebug(
-      `Provider.checkPaymentVoucherValid: arguments = dealId=${dealId},paymentChannel=${paymentChannel},signedVoucher=${signedVoucher}`,
+      `Provider.checkPaymentVoucherValid: dealId=${dealId}, paymentChannel=${paymentChannel}, signedVoucher=${signedVoucher}`,
     )
 
     const deal = appStore.dealsStore.getOutboundDeal(dealId)
     this.updateCustomStatus(deal, 'Verifying payment voucher')
     const clientWalletAddr = deal.clientWalletAddr
     appStore.logsStore.logDebug(`Provider.checkPaymentVoucherValid: clientWalletAddr=${clientWalletAddr}`)
-
-    const expectedAmountAttoFil = new BigNumber(deal.sizeSent).multipliedBy(deal.params.pricePerByte);
-    appStore.logsStore.logDebug(`DEBUG: Provider.checkPaymentVoucherValid: expectedAmountAttoFil = ${expectedAmountAttoFil}\n  = [(${deal.sizeSent} bytes sent) * (${deal.params.pricePerByte} pricePerByte)]`);
-
-    // validate if the amount of the signed voucher is matching the expected amount
+    
+    // check if the amount of the signed voucher is matching the expected amount
     const svDecodedVoucher = await this.lotus.decodeSignedVoucher(signedVoucher);
     const svAmount = new BigNumber(svDecodedVoucher.amount);
+    const expectedAmountAttoFil = new BigNumber(deal.sizeSent).multipliedBy(deal.params.pricePerByte);
     if (!svAmount.isEqualTo(expectedAmountAttoFil)) {
       appStore.logsStore.logError(`Voucher validation failed: the expected amount ${expectedAmountAttoFil} doesn't match the voucher amount ${svAmount}`);
       appStore.alertsStore.create({
@@ -311,11 +309,8 @@ export class Provider {
       })
       return false;
     }
-
-    // check if the signed voucher is valid
-    appStore.logsStore.logDebug(
-      `Provider.checkPaymentVoucherValid: expectedAmountAttoFil = ${expectedAmountAttoFil}\n  = [(${deal.sizeSent} bytes sent) * (${deal.params.pricePerByte} pricePerByte)]`,
-    )
+    appStore.logsStore.logDebug(`Provider.checkPaymentVoucherValid: expectedAmountAttoFil = ${expectedAmountAttoFil} matches the voucher amount = ${svAmount}`);
+    
     const svValid = await this.lotus.checkPaymentVoucherValid(signedVoucher, expectedAmountAttoFil, clientWalletAddr)
     appStore.logsStore.logDebug(`Provider.checkPaymentVoucherValid: ${signedVoucher} => ${svValid}`)
     return svValid
