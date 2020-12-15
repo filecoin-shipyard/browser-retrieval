@@ -11,9 +11,11 @@ const importDagCBOR = () => {
 
 let lotusIntance: Lotus
 
+const minCurrentBaseFee = '5000000000'
+
 const gasEstimation = {
-  gaslimit: '10000000',
-  gasfeecap: '16251176117',
+  gaslimit: '12000000',
+  gasfeecap: minCurrentBaseFee,
   gaspremium: '140625002',
 }
 
@@ -92,12 +94,12 @@ export class Lotus {
 
         //appStore.logsStore.logDebug(`Lotus.gesGasEstimation response:\n ${inspect(response.data)}\n`);
 
-        message.gaslimit = response.data.result.GasLimit * 2
-        message.gasfeecap = response.data.result.GasFeeCap
+        message.gaslimit = response.data.result.GasLimit * 2.4
+        message.gasfeecap = minCurrentBaseFee //response.data.result.GasFeeCap
         message.gaspremium = response.data.result.GasPremium
 
       } catch (error) {
-        message.gaslimit = parseInt(gasEstimation.gaslimit) * 2
+        message.gaslimit = parseInt(gasEstimation.gaslimit) * 2.4
         message.gasfeecap = gasEstimation.gasfeecap
         message.gaspremium = gasEstimation.gaspremium
         appStore.logsStore.logError(`Lotus.gesGasEstimation(): axios error: ${error.message}\n`)
