@@ -12,6 +12,7 @@ import { toJS } from 'mobx'
 import { observer } from 'mobx-react-lite'
 import React from 'react'
 import { appStore } from 'shared/store/appStore'
+import BigNumber from 'bignumber.js'
 
 function downloadFile(cid, offer) {
   const msg = {
@@ -62,6 +63,17 @@ export const Offers = observer<any>((props) => {
 
   const hasDealWithCid = dealsStore.inboundDeals.some((ideal) => ideal.cid === cid)
 
+  function roundUpPrice(price) {
+    const BigNumberPrice = new BigNumber(price);
+    const result = BigNumberPrice.dividedBy(new BigNumber(10).pow(18));
+
+    if (result.comparedTo(new BigNumber(0.01)) === 1) {
+      return result.dp(3, BigNumber.ROUND_HALF_EVEN).toNumber() + ' FIL';
+    }
+
+    return price + ' attoFIL';
+  }
+
   return (
     <Card {...props}>
       <div className="flex">
@@ -76,7 +88,7 @@ export const Offers = observer<any>((props) => {
                 {/^ws/.test(offer.address) ? 'Storage Miner Network' : offer.address}
               </TableCell>
 
-              <TableCell number>{offer.price} attoFIL</TableCell>
+              <TableCell number>{roundUpPrice(offer.price)}</TableCell>
 
               <TableCell buttons>
                 <div className="flex">

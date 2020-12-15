@@ -9,6 +9,8 @@ import { Lotus } from 'shared/lotus-client/Lotus'
 import { protocols } from 'shared/protocols'
 import { appStore } from 'shared/store/appStore'
 
+import { decodeCID } from '../decodeCID'
+
 interface DealParams {
   wallet: string
   size: number
@@ -53,6 +55,14 @@ export class Client {
     appStore.logsStore.logDebug(`dialing peer ${peerMultiaddr}`)
     const { stream } = await this.node.dialProtocol(peerMultiaddr, protocols.filecoinRetrieval)
 
+    const decoded = decodeCID(cid)
+
+    appStore.logsStore.logDebug(
+      `Client.retrieve: cidVersion ${decoded.version} hashAlg ${decoded.hashAlg} rawLeaves ${decoded.rawLeaves} format ${decoded.format}`,
+    )
+
+    const { importOptions } = decoded
+
     const sink = pushable()
     pipe(sink, jsonStream.stringify, stream, jsonStream.parse, this.handleMessage)
 
@@ -74,7 +84,7 @@ export class Client {
       sizeReceived: 0,
       sizePaid: 0,
       importerSink,
-      importer: this.datastore.putContent(importerSink),
+      importer: this.datastore.putContent(importerSink, importOptions),
       voucherNonce: 1,
     })
 
@@ -190,6 +200,7 @@ export class Client {
     //await this.lotus.keyRecoverLogMsg();  // testing only
 
     const paymentChannel = await this.lotus.createPaymentChannel(toAddr, pchAmount)
+    // const paymentChannel = undefined // debug without funds
 
     appStore.logsStore.logDebug(`Client.setupPaymentChannel(): paymentChannel:`, paymentChannel)
 
@@ -254,6 +265,7 @@ export class Client {
     const amount = deal.sizeReceived * deal.params.pricePerByte
     const nonce = deal.voucherNonce++
     const sv = await this.lotus.createSignedVoucher(deal.paymentChannel, amount, nonce)
+    // const sv = undefined // debug without funds
     appStore.logsStore.logDebug(`Client.sendPayment(): sv = '${sv}'`)
 
     const newDealStatus = isLastVoucher ? dealStatuses.lastPaymentSent : dealStatuses.paymentSent
