@@ -15,7 +15,7 @@ interface Operation {
 }
 
 export class OperationsStore {
-  private readonly localStorageKey = `_${this.constructor.name}`
+  private readonly localStorageKey = '_OperationsStore'
 
   private _operations: Operation[] = []
 

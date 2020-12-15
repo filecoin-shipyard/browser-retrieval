@@ -4,7 +4,7 @@ import { autosave } from 'shared/autoSaveDecorator'
 import { AppStore } from './appStore'
 
 export class OptionsStore {
-  private readonly localStorageKey = `_${this.constructor.name}`
+  private readonly localStorageKey = `_OptionsStore`
 
   knownCids = {}
 
