@@ -244,13 +244,7 @@ export default class SocketClient {
       `SocketClient.query: cidVersion ${decoded.version} hashAlg ${decoded.hashAlg} rawLeaves ${decoded.rawLeaves} format ${decoded.format}`,
     )
 
-    const importOptions = {
-      cidVersion: decoded.version,
-      hashAlg: decoded.hashAlg,
-      rawLeaves: true,
-      maxChunkSize: 1048576,
-      maxChildrenPerNode: 1024,
-    }
+    const { importOptions } = decoded
 
     const importerSink = pushable()
 

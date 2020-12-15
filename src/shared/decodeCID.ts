@@ -16,6 +16,17 @@ export const decodeCID = (value) => {
     hashAlg: decoded.multihash.name,
     rawLeaves: true,
     format: decoded.multicodec.name,
+
+    importOptions:
+      cid.version === 0
+        ? undefined
+        : {
+            cidVersion: cid.version,
+            hashAlg: decoded.multihash.name,
+            rawLeaves: true,
+            maxChunkSize: 1048576,
+            maxChildrenPerNode: 1024,
+          },
   }
 }
 
