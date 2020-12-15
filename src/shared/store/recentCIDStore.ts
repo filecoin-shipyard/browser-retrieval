@@ -13,7 +13,7 @@ const recentTimeLimit = { hours: 72 }
 const limit = 10
 
 export class RecentCIDStore {
-  private readonly localStorageKey = `_${this.constructor.name}`
+  private readonly localStorageKey = '_RecentCIDStore'
 
   recentCIDs: RecentCID[] = []
 
