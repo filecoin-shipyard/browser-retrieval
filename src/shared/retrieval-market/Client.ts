@@ -61,17 +61,7 @@ export class Client {
       `Client.retrieve: cidVersion ${decoded.version} hashAlg ${decoded.hashAlg} rawLeaves ${decoded.rawLeaves} format ${decoded.format}`,
     )
 
-    let importOptions = undefined
-
-    if (decoded.version === 1) {
-      importOptions = {
-        cidVersion: decoded.version,
-        hashAlg: decoded.hashAlg,
-        rawLeaves: true,
-        maxChunkSize: 1048576,
-        maxChildrenPerNode: 1024,
-      }
-    }
+    const { importOptions } = decoded
 
     const sink = pushable()
     pipe(sink, jsonStream.stringify, stream, jsonStream.parse, this.handleMessage)
