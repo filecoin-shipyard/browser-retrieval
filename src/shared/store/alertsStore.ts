@@ -2,9 +2,9 @@ import { makeAutoObservable } from 'mobx'
 import { AppStore } from './appStore'
 
 interface AlertMessage {
-  id: number | string
+  id?: number | string
   message: string
-  type: string
+  type: 'error' | 'warning'
 }
 
 export class AlertsStore {
@@ -15,7 +15,16 @@ export class AlertsStore {
   }
 
   create(alert: AlertMessage) {
-    this.alerts.push(alert)
+    let { id } = alert
+
+    if (!id) {
+      id = `${Date.now()}-${Math.random()}`
+    }
+
+    this.alerts.push({
+      ...alert,
+      id,
+    })
   }
 
   dismiss(id: number) {

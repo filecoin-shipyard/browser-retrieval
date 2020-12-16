@@ -93,10 +93,10 @@ export class Client {
 
   handleMessage = async (source) => {
     for await (const message of source) {
+      const deal = appStore.dealsStore.getInboundDeal(message.dealId)
+
       try {
         appStore.logsStore.logDebug(`Client.handleMessage(): message: ${inspect(message)}`)
-
-        const deal = appStore.dealsStore.getInboundDeal(message.dealId)
 
         if (!deal) {
           throw new Error(`Deal not found: ${message.dealId}`)
@@ -113,34 +113,21 @@ export class Client {
             break
           }
 
-          case dealStatuses.fundsNeeded: {
-            appStore.logsStore.logDebug('Client.handleMessage(): case dealStatuses.fundsNeeded')
-            appStore.dealsStore.setInboundDealProps(deal.id, {
-              status: dealStatuses.ongoing,
-              customStatus: undefined,
-            })
-            await this.receiveBlocks(message)
-            await this.sendPayment(message, false)
+          case dealStatuses.fundsNeeded:
+          case dealStatuses.fundsNeededLastPayment:
+            await this.handleFundsNeededMessage(message)
             break
-          }
-
-          case dealStatuses.fundsNeededLastPayment: {
-            appStore.logsStore.logDebug('Client.handleMessage(): case dealStatuses.fundsNeededLastPayment')
-            appStore.dealsStore.setInboundDealProps(deal.id, {
-              status: dealStatuses.finalizing,
-              customStatus: undefined,
-            })
-            await this.receiveBlocks(message)
-            await this.finishImport(message)
-            await this.sendPayment(message, true)
-            break
-          }
 
           case dealStatuses.completed: {
             appStore.logsStore.logDebug('Client.handleMessage(): case dealStatuses.completed')
             await this.closeDeal(message)
             break
           }
+
+          case dealStatuses.abort:
+            appStore.logsStore.log('Client.handleMessage(): case abort')
+            await this.closeDeal(message, { saveCid: false })
+            break
 
           default: {
             appStore.logsStore.logDebug('Client.handleMessage(): case default')
@@ -152,11 +139,46 @@ export class Client {
           }
         }
       } catch (error) {
-        console.error(message.status, error)
         appStore.logsStore.logError(
           `Client.handleMessage(): handle deal message failed: ${error.message}\nMessage status: ${message.status}`,
         )
+
+        appStore.alertsStore.create({
+          message: `An error occured: ${error.message}`,
+          type: 'error',
+        })
+
+        deal.sink.push({
+          dealId: message.dealId,
+          status: dealStatuses.abort,
+          error: error?.message,
+        })
+
+        this.closeDeal(message, { saveCid: false })
       }
+    }
+  }
+
+  async handleFundsNeededMessage(message) {
+    appStore.logsStore.logDebug(`Client.handleFundsNeededMessage(): case ${message.status}`)
+
+    const deal = appStore.dealsStore.getInboundDeal(message.dealId)
+    const isFundsNeeded = message.status === dealStatuses.fundsNeeded
+    const isLastPaymentNeeded = message.status === dealStatuses.fundsNeededLastPayment
+
+    appStore.dealsStore.setInboundDealProps(deal.id, {
+      status: isFundsNeeded ? dealStatuses.ongoing : dealStatuses.finalizing,
+      customStatus: undefined,
+    })
+
+    this.receiveBlocks(message)
+    appStore.logsStore.logDebug(`Client.handleFundsNeededMessage(): Blocks received`)
+
+    if (isFundsNeeded) {
+      await this.sendPayment(message, false)
+    } else if (isLastPaymentNeeded) {
+      await this.finishImport(message)
+      await this.sendPayment(message, true)
     }
   }
 
@@ -200,6 +222,11 @@ export class Client {
     //await this.lotus.keyRecoverLogMsg();  // testing only
 
     const paymentChannel = await this.lotus.createPaymentChannel(toAddr, pchAmount)
+
+    if (!paymentChannel) {
+      throw new Error('payment channel could not be created')
+    }
+
     // const paymentChannel = undefined // debug without funds
 
     appStore.logsStore.logDebug(`Client.setupPaymentChannel(): paymentChannel:`, paymentChannel)
@@ -231,7 +258,7 @@ export class Client {
    * @param {string} info.dealId
    * @param {Array<{ type: string; data: Array<number> }>} info.blocks
    */
-  async receiveBlocks({ dealId, blocks }) {
+  receiveBlocks({ dealId, blocks }) {
     appStore.logsStore.logDebug(`Client.receiveBlocks(): received ${blocks.length} blocks deal id: ${dealId}`)
 
     const deal = toJS(appStore.dealsStore.getInboundDeal(dealId))
@@ -272,8 +299,6 @@ export class Client {
 
     this.updateCustomStatus(deal, 'Sent signed voucher')
 
-    // TODO: @brunolm paymentchannel and sv are undefined
-    // if mpool says it doesn't have funds, error is not handled
     const message = {
       dealId,
       status: newDealStatus,
@@ -285,7 +310,7 @@ export class Client {
     deal.sink.push(message)
   }
 
-  async closeDeal({ dealId }) {
+  async closeDeal({ dealId }, { saveCid } = { saveCid: true }) {
     appStore.logsStore.logDebug(`Client.closeDeal: closing deal ${dealId}`)
 
     const deal = appStore.dealsStore.getInboundDeal(dealId)
@@ -298,6 +323,9 @@ export class Client {
     // TODO:  stopgap solution:  window.setTimeout() to try to ensure channel Collect
 
     appStore.dealsStore.removeInboundDeal(dealId)
-    await this.cidReceivedCallback(deal.cid, deal.sizeReceived)
+
+    if (saveCid) {
+      await this.cidReceivedCallback(deal.cid, deal.sizeReceived)
+    }
   }
 }

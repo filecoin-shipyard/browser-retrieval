@@ -9,7 +9,7 @@ import { Lotus } from 'shared/lotus-client/Lotus'
 import { Services } from 'shared/models/services'
 import { protocols } from 'shared/protocols'
 import { appStore } from 'shared/store/appStore'
-import { BigNumber } from 'bignumber.js';
+import { BigNumber } from 'bignumber.js'
 
 let providerInstance: Provider
 
@@ -99,6 +99,7 @@ export class Provider {
     const sink = pushable()
     pipe(sink, jsonStream.stringify, stream, jsonStream.parse, async (source) => {
       for await (const message of source) {
+        const deal = appStore.dealsStore.getOutboundDeal(message.dealId)
         try {
           appStore.logsStore.logDebug(`Provider.handleProtocol():  message=${inspect(message)}`)
 
@@ -113,45 +114,73 @@ export class Provider {
               break
             }
 
-            case dealStatuses.paymentSent: {
-              // TODO: why not to split in two functions to be more clear?
-              // TODO: code duplication with `dealStatuses.lastPaymentSent`
-              this.setOrVerifyPaymentChannel(message)
-              if (!(await this.checkPaymentVoucherValid(message))) {
-                throw new Error(`received invalid voucher (${message.paymentVoucher}) on dealId ${message.dealId}`)
-              } else {
-                await this.submitPaymentVoucher(message)
-                await this.sendBlocks(message)
-              }
+            case dealStatuses.paymentSent:
+            case dealStatuses.lastPaymentSent:
+              await this.handlePaymentMessage(message)
               break
-            }
 
-            case dealStatuses.lastPaymentSent: {
-              // TODO: why not to split in two functions to be more clear?
-              // TODO: code duplication with `dealStatuses.paymentSent`
-              this.setOrVerifyPaymentChannel(message)
-              if (!(await this.checkPaymentVoucherValid(message))) {
-                throw new Error(`received invalid voucher (${message.paymentVoucher}) on dealId ${message.dealId}`)
-              } else {
-                await this.submitPaymentVoucher(message)
-                await this.sendDealCompleted(message)
-                await this.closeDeal(message)
-              }
+            case dealStatuses.abort:
+              sink.end()
+              this.closeDeal(message)
+
+              appStore.logsStore.logError(`Client aborted the connection ${JSON.stringify(message)}`, message.error)
+              appStore.alertsStore.create({
+                message: 'A client aborted the connection',
+                type: 'warning',
+              })
               break
-            }
 
             default: {
-              appStore.logsStore.logDebug(`ERROR: unknown deal message received: ${JSON.stringify(message)}`)
+              appStore.logsStore.logDebug(`unknown deal message received: ${JSON.stringify(message)}`)
               sink.end()
               break
             }
           }
         } catch (error) {
+          deal.sink.push({
+            dealId: deal.id,
+            status: dealStatuses.abort,
+          })
+
           sink.end()
-          appStore.logsStore.logError(`ERROR: handle deal message failed: ${error.message} ${error.stack}`)
+          this.closeDeal(message)
+
+          appStore.alertsStore.create({
+            message: `An error occured: ${error.message}`,
+            type: 'error',
+          })
+
+          appStore.logsStore.logError(`handle deal message failed: ${error.message} ${error.stack}`)
         }
       }
     })
+  }
+
+  async handlePaymentMessage(message) {
+    appStore.logsStore.logDebug(`Provider.handlePaymentMessage(): handle ${message.status}`)
+
+    this.setOrVerifyPaymentChannel(message)
+
+    const isVoucherValid = await this.checkPaymentVoucherValid(message)
+
+    if (!isVoucherValid) {
+      throw new Error(`received invalid voucher (${message.paymentVoucher}) on dealId ${message.dealId}`)
+    }
+
+    await this.submitPaymentVoucher(message)
+
+    const isPaymentSent = message.status === dealStatuses.paymentSent
+    const isLastPaymentSent = message.status === dealStatuses.lastPaymentSent
+
+    const debugMessage = `[isPaymentSent=${isPaymentSent}] [isLastPaymentSent=${isLastPaymentSent}]`
+    appStore.logsStore.logDebug(`Provider.handlePaymentMessage(): ${debugMessage}`)
+
+    if (isPaymentSent) {
+      await this.sendBlocks(message)
+    } else if (isLastPaymentSent) {
+      this.sendDealCompleted(message)
+      await this.closeDeal(message)
+    }
   }
 
   setOrVerifyPaymentChannel(message) {
@@ -291,26 +320,33 @@ export class Provider {
       `Provider.checkPaymentVoucherValid: dealId=${dealId}, paymentChannel=${paymentChannel}, signedVoucher=${signedVoucher}`,
     )
 
+    if (!paymentChannel || !signedVoucher) {
+      return false
+    }
+
     const deal = appStore.dealsStore.getOutboundDeal(dealId)
     this.updateCustomStatus(deal, 'Verifying payment voucher')
     const clientWalletAddr = deal.clientWalletAddr
     appStore.logsStore.logDebug(`Provider.checkPaymentVoucherValid: clientWalletAddr=${clientWalletAddr}`)
-    
+
     // check if the amount of the signed voucher is matching the expected amount
-    const svDecodedVoucher = await this.lotus.decodeSignedVoucher(signedVoucher);
-    const svAmount = new BigNumber(svDecodedVoucher.amount);
-    const expectedAmountAttoFil = new BigNumber(deal.sizeSent).multipliedBy(deal.params.pricePerByte);
+    const svDecodedVoucher = await this.lotus.decodeSignedVoucher(signedVoucher)
+    const svAmount = new BigNumber(svDecodedVoucher.amount)
+    const expectedAmountAttoFil = new BigNumber(deal.sizeSent).multipliedBy(deal.params.pricePerByte)
     if (!svAmount.isEqualTo(expectedAmountAttoFil)) {
-      appStore.logsStore.logError(`Voucher validation failed: the expected amount ${expectedAmountAttoFil} doesn't match the voucher amount ${svAmount}`);
+      appStore.logsStore.logError(
+        `Voucher validation failed: the expected amount ${expectedAmountAttoFil} doesn't match the voucher amount ${svAmount}`,
+      )
       appStore.alertsStore.create({
-        id: 'voucherAmountValidationFailed',
         message: `Voucher amount validation failed. Expected: ${expectedAmountAttoFil}  Voucher amount: ${svAmount}`,
         type: 'error',
       })
-      return false;
+      return false
     }
-    appStore.logsStore.logDebug(`Provider.checkPaymentVoucherValid: expectedAmountAttoFil = ${expectedAmountAttoFil} matches the voucher amount = ${svAmount}`);
-    
+    appStore.logsStore.logDebug(
+      `Provider.checkPaymentVoucherValid: expectedAmountAttoFil = ${expectedAmountAttoFil} matches the voucher amount = ${svAmount}`,
+    )
+
     const svValid = await this.lotus.checkPaymentVoucherValid(signedVoucher, expectedAmountAttoFil, clientWalletAddr)
     appStore.logsStore.logDebug(`Provider.checkPaymentVoucherValid: ${signedVoucher} => ${svValid}`)
     return svValid
@@ -340,9 +376,8 @@ export class Provider {
     }
   }
 
-  async sendDealCompleted({ dealId }) {
-    appStore.logsStore.logDebug('Provider.sendDealCompleted()')
-    appStore.logsStore.logDebug(`sending deal completed ${dealId}`)
+  sendDealCompleted({ dealId }) {
+    appStore.logsStore.logDebug(`Provider.sendDealCompleted(): sending deal completed ${dealId}`)
 
     const deal = appStore.dealsStore.getOutboundDeal(dealId)
     deal.sink.push({ dealId, status: dealStatuses.completed })
@@ -351,16 +386,17 @@ export class Provider {
   async closeDeal({ dealId }) {
     const deal = appStore.dealsStore.getOutboundDeal(dealId)
 
-    // TODO: @brunolm here, this is undefined I guess
     const paymentChannel = deal.paymentChannel
 
     appStore.logsStore.logDebug(`Provider.closeDeal: dealId=${dealId}, paymentChannel=${paymentChannel}`)
 
-    this.updateCustomStatus(deal, 'Settling payment channel')
-    await this.lotus.settlePaymentChannel(paymentChannel)
+    if (paymentChannel) {
+      this.updateCustomStatus(deal, 'Settling payment channel')
+      await this.lotus.settlePaymentChannel(paymentChannel)
 
-    this.updateCustomStatus(deal, 'Enqueueing channel collection')
-    await this.pendCollectOperation(dealId, paymentChannel)
+      this.updateCustomStatus(deal, 'Enqueueing channel collection')
+      await this.pendCollectOperation(dealId, paymentChannel)
+    }
 
     appStore.dealsStore.removeOutboundDeal(dealId)
   }

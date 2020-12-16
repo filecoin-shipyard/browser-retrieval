@@ -168,7 +168,6 @@ export default class SocketClient {
       const diff = new BigNumber(price).minus(current).toString()
 
       appStore.alertsStore.create({
-        id: 'fundsConfirmedErrorInsufficientFunds',
         message: `Insufficient funds. Required: ${price} Current: ${current} Diff: ${diff}`,
         type: 'error',
       })
