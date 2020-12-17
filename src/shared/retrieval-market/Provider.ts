@@ -295,7 +295,7 @@ export class Provider {
     this.updateCustomStatus(deal, 'Verifying payment voucher')
     const clientWalletAddr = deal.clientWalletAddr
     appStore.logsStore.logDebug(`Provider.checkPaymentVoucherValid: clientWalletAddr=${clientWalletAddr}`)
-    
+
     // check if the amount of the signed voucher is matching the expected amount
     const svDecodedVoucher = await this.lotus.decodeSignedVoucher(signedVoucher);
     const svAmount = new BigNumber(svDecodedVoucher.amount);
@@ -310,7 +310,7 @@ export class Provider {
       return false;
     }
     appStore.logsStore.logDebug(`Provider.checkPaymentVoucherValid: expectedAmountAttoFil = ${expectedAmountAttoFil} matches the voucher amount = ${svAmount}`);
-    
+
     const svValid = await this.lotus.checkPaymentVoucherValid(signedVoucher, expectedAmountAttoFil, clientWalletAddr)
     appStore.logsStore.logDebug(`Provider.checkPaymentVoucherValid: ${signedVoucher} => ${svValid}`)
     return svValid
@@ -351,7 +351,6 @@ export class Provider {
   async closeDeal({ dealId }) {
     const deal = appStore.dealsStore.getOutboundDeal(dealId)
 
-    // TODO: @brunolm here, this is undefined I guess
     const paymentChannel = deal.paymentChannel
 
     appStore.logsStore.logDebug(`Provider.closeDeal: dealId=${dealId}, paymentChannel=${paymentChannel}`)
