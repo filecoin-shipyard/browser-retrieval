@@ -264,16 +264,18 @@ export class Client {
 
     const amount = deal.sizeReceived * deal.params.pricePerByte
     const nonce = deal.voucherNonce++
+
+    this.updateCustomStatus(deal, 'Signing voucher')
+
     const sv = await this.lotus.createSignedVoucher(deal.paymentChannel, amount, nonce)
     // const sv = undefined // debug without funds
+
     appStore.logsStore.logDebug(`Client.sendPayment(): sv = '${sv}'`)
+    this.updateCustomStatus(deal, 'Voucher signed')
 
     const newDealStatus = isLastVoucher ? dealStatuses.lastPaymentSent : dealStatuses.paymentSent
 
-    this.updateCustomStatus(deal, 'Sent signed voucher')
 
-    // TODO: @brunolm paymentchannel and sv are undefined
-    // if mpool says it doesn't have funds, error is not handled
     const message = {
       dealId,
       status: newDealStatus,
@@ -283,6 +285,7 @@ export class Client {
     appStore.logsStore.logDebug(`Client.sendPayment() message:\n${JSON.stringify(message, null, 2)}`)
 
     deal.sink.push(message)
+    this.updateCustomStatus(deal, 'Sent signed voucher')
   }
 
   async closeDeal({ dealId }) {
