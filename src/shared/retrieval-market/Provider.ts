@@ -137,7 +137,7 @@ export class Provider {
             }
           }
         } catch (error) {
-          deal.sink.push({
+          sink.push({
             dealId: deal.id,
             status: dealStatuses.abort,
           })

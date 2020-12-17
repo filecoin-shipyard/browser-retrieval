@@ -126,6 +126,11 @@ export class Client {
 
           case dealStatuses.abort:
             appStore.logsStore.log('Client.handleMessage(): case abort')
+            appStore.alertsStore.create({
+              message: `A provider aborted the connection.`,
+              type: 'error',
+            })
+
             await this.closeDeal(message, { saveCid: false })
             break
 
