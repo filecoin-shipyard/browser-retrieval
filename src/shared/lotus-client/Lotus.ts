@@ -248,14 +248,16 @@ export class Lotus {
       appStore.logsStore.logDebug(`Lotus.mpoolPush: response.data = ${inspect(response.data)}`)
 
       if (response.data.error?.code > 0) {
-        throw new Error(`Lotus.mpoolPush: ${response.data.error?.message}`)
+        appStore.logsStore.logError(`Lotus.mpoolPush: ${response.data.error?.message}`)
+
+        return
       }
 
       msgCid = response.data.result
     } catch (error) {
       appStore.logsStore.logError(`Lotus.mpoolPush(): error: ${error.message}`, error)
 
-      throw error
+      return
     }
 
     // TODO: handle error messages from API
