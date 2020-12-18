@@ -10,4 +10,5 @@ export const dealStatuses = {
   lastPaymentSent: 'DealStatusLastPaymentSent',
   finalizing: 'DealStatusFinalizing',
   completed: 'DealStatusCompleted',
+  abort: 'DealStatusAbort',
 };

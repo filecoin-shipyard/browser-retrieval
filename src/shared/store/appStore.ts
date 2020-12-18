@@ -59,7 +59,6 @@ export class AppStore {
 
         if (!mimBalance) {
           this.alertsStore.create({
-            id: Math.floor(Math.random() * 1000),
             message: 'Your wallet does not have minimum FIL required!',
             type: 'warning',
           })
