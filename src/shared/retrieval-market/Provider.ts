@@ -352,7 +352,6 @@ export class Provider {
   async closeDeal({ dealId }) {
     const deal = appStore.dealsStore.getOutboundDeal(dealId)
 
-    // TODO: @brunolm here, this is undefined I guess
     const paymentChannel = deal.paymentChannel
 
     appStore.logsStore.logDebug(`Provider.closeDeal: dealId=${dealId}, paymentChannel=${paymentChannel}`)
