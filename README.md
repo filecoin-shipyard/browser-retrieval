@@ -6,10 +6,12 @@ Users seeking content can use this tool to retrieve files from a marketplace of 
 
 **This tool is currently alpha software.** It can perform the functions described above, albeit with some limitations.  Get in touch if you'd like to [get involved](#contributing) with continuing to develop it.
 
-- [Install](#install)
-- [Add it to your browser](#add-it-to-your-browser)
+- [Build](#build)
+- [Developing](#developing)
+- [Unit tests](#unit-tests)
+- [e2e tests](#e2e-tests)
+- [Deploying](#deploying)
 - [Development status](#development-status)
-- [The Network](#the-network)
 - [Contributing](#contributing)
 - [License](#license)
 
