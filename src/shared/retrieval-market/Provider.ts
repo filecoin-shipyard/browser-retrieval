@@ -264,7 +264,6 @@ export class Provider {
     this.updateCustomStatus(deal, 'Sending data')
     const entry = await this.datastore.get(deal.cid)
 
-    const blocks = []
     let blocksSize = 0
     let hadBytes = false
     for await (const block of entry.content({ offset: deal.sizeSent })) {
@@ -274,22 +273,24 @@ export class Provider {
         break
       }
 
+      const blocks = []
       blocks.push(block)
+
       blocksSize += block.length
+
+      deal.sink.push({
+        dealId,
+        status:
+          deal.sizeSent + blocksSize >= deal.params.size || !hadBytes
+            ? dealStatuses.fundsNeededLastPayment
+            : dealStatuses.fundsNeeded,
+        blocks,
+      })
 
       if (blocksSize >= deal.params.paymentInterval) {
         break
       }
     }
-
-    deal.sink.push({
-      dealId,
-      status:
-        deal.sizeSent + blocksSize >= deal.params.size || !hadBytes
-          ? dealStatuses.fundsNeededLastPayment
-          : dealStatuses.fundsNeeded,
-      blocks,
-    })
 
     deal.params.paymentInterval += deal.params.paymentIntervalIncrease
     deal.sizeSent += blocksSize

@@ -321,11 +321,8 @@ export class Client {
     const deal = appStore.dealsStore.getInboundDeal(dealId)
 
     this.updateCustomStatus(deal, 'Enqueueing channel collect operation')
-    // TODO:
-    // this.lotus.closePaymentChannel(deal.paymentChannel);
+
     deal.sink.end()
-    // TODO:  pend an operation to call Collect on the channel when cron class is available
-    // TODO:  stopgap solution:  window.setTimeout() to try to ensure channel Collect
 
     appStore.dealsStore.removeInboundDeal(dealId)
 

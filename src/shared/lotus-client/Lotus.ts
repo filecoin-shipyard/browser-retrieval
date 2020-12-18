@@ -693,11 +693,6 @@ export class Lotus {
     return this.signer.verifyVoucherSignature(signedVoucher, fromWalletAddr)
   }
 
-  closePaymentChannel(paymentChannel) {
-    // TODO: actually close payment channel
-    delete this.paymentChannelsInfo[paymentChannel]
-  }
-
   decodeSignedVoucher(signedVoucher) : DecodeSignedVoucher {
     const buffer = Buffer.from(signedVoucher, 'base64')
     const decoded = importDagCBOR().util.deserialize(buffer)
