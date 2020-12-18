@@ -235,7 +235,6 @@ export class Provider {
     this.updateCustomStatus(deal, 'Sending data')
     const entry = await this.datastore.get(deal.cid)
 
-    const blocks = []
     let blocksSize = 0
     let hadBytes = false
     for await (const block of entry.content({ offset: deal.sizeSent })) {
@@ -245,22 +244,24 @@ export class Provider {
         break
       }
 
+      const blocks = []
       blocks.push(block)
+
       blocksSize += block.length
+
+      deal.sink.push({
+        dealId,
+        status:
+          deal.sizeSent + blocksSize >= deal.params.size || !hadBytes
+            ? dealStatuses.fundsNeededLastPayment
+            : dealStatuses.fundsNeeded,
+        blocks,
+      })
 
       if (blocksSize >= deal.params.paymentInterval) {
         break
       }
     }
-
-    deal.sink.push({
-      dealId,
-      status:
-        deal.sizeSent + blocksSize >= deal.params.size || !hadBytes
-          ? dealStatuses.fundsNeededLastPayment
-          : dealStatuses.fundsNeeded,
-      blocks,
-    })
 
     deal.params.paymentInterval += deal.params.paymentIntervalIncrease
     deal.sizeSent += blocksSize
@@ -295,7 +296,7 @@ export class Provider {
     this.updateCustomStatus(deal, 'Verifying payment voucher')
     const clientWalletAddr = deal.clientWalletAddr
     appStore.logsStore.logDebug(`Provider.checkPaymentVoucherValid: clientWalletAddr=${clientWalletAddr}`)
-    
+
     // check if the amount of the signed voucher is matching the expected amount
     const svDecodedVoucher = await this.lotus.decodeSignedVoucher(signedVoucher);
     const svAmount = new BigNumber(svDecodedVoucher.amount);
@@ -310,7 +311,7 @@ export class Provider {
       return false;
     }
     appStore.logsStore.logDebug(`Provider.checkPaymentVoucherValid: expectedAmountAttoFil = ${expectedAmountAttoFil} matches the voucher amount = ${svAmount}`);
-    
+
     const svValid = await this.lotus.checkPaymentVoucherValid(signedVoucher, expectedAmountAttoFil, clientWalletAddr)
     appStore.logsStore.logDebug(`Provider.checkPaymentVoucherValid: ${signedVoucher} => ${svValid}`)
     return svValid
