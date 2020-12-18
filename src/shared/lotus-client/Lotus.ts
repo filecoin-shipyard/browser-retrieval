@@ -1,8 +1,8 @@
 import axios from 'axios'
+import BigNumber from 'bignumber.js'
 import inspect from 'browser-util-inspect'
 import { Buffer } from 'buffer'
 import { appStore } from 'shared/store/appStore'
-import BigNumber from 'bignumber.js';
 
 // Required to workaround `Invalid asm.js: Unexpected token` error:
 const importDagCBOR = () => {
@@ -17,22 +17,22 @@ const gasEstimation = {
   gaspremium: '140625002',
 }
 
-const minimumBalance = 0.2;
+const minimumBalance = 0.2
 
-const useDefaultGas = false;
+const useDefaultGas = false
 
 interface DecodeSignedVoucher {
-  channelAddr: string,
-  timeLockMin: bigint,
-  timeLockMax: bigint,
-  secretPreimage: string,
-  extra: bigint,
-  lane: bigint,
-  nonce: bigint,
-  amount: number,
-  minSettleHeight: bigint,
-  merges: bigint,
-  signature: string,
+  channelAddr: string
+  timeLockMin: bigint
+  timeLockMax: bigint
+  secretPreimage: string
+  extra: bigint
+  lane: bigint
+  nonce: bigint
+  amount: number
+  minSettleHeight: bigint
+  merges: bigint
+  signature: string
 }
 
 export class Lotus {
@@ -95,7 +95,6 @@ export class Lotus {
         message.gaslimit = response.data.result.GasLimit * 2
         message.gasfeecap = response.data.result.GasFeeCap
         message.gaspremium = response.data.result.GasPremium
-
       } catch (error) {
         message.gaslimit = parseInt(gasEstimation.gaslimit) * 2
         message.gasfeecap = gasEstimation.gasfeecap
@@ -114,27 +113,33 @@ export class Lotus {
    * @return {number} Returns the balance, or undefined if an error occurred
    */
   async getBalance(addr) {
-    appStore.logsStore.logDebug(`entering Lotus.getBalance`);
+    appStore.logsStore.logDebug(`entering Lotus.getBalance`)
     const { headers, lotusEndpoint } = this.getAndParseOptions()
-    appStore.logsStore.logDebug(`Lotus.getBalance:\n  addr=${addr}\n  this.headers=${inspect(headers)}\n  this.lotusEndpoint=${lotusEndpoint}`);
+    appStore.logsStore.logDebug(
+      `Lotus.getBalance:\n  addr=${addr}\n  this.headers=${inspect(headers)}\n  this.lotusEndpoint=${lotusEndpoint}`,
+    )
 
-    let response;
+    let response
     try {
-      response = await axios.post(lotusEndpoint, {
-        jsonrpc: "2.0",
-        method: "Filecoin.WalletBalance",
-        id: 1,
-        params: [addr]
-      }, {headers});
+      response = await axios.post(
+        lotusEndpoint,
+        {
+          jsonrpc: '2.0',
+          method: 'Filecoin.WalletBalance',
+          id: 1,
+          params: [addr],
+        },
+        { headers },
+      )
     } catch (error) {
-      appStore.logsStore.logError(`Lotus.getBalance(): axios error: ${error.message}`);
+      appStore.logsStore.logError(`Lotus.getBalance(): axios error: ${error.message}`)
       return undefined
     }
 
-    const balance = response.data.result;
-    appStore.logsStore.logDebug(`leaving Lotus.getBalance (balance = ${balance})`);
+    const balance = response.data.result
+    appStore.logsStore.logDebug(`leaving Lotus.getBalance (balance = ${balance})`)
 
-    return balance;
+    return balance
   }
 
   /**
@@ -144,13 +149,17 @@ export class Lotus {
   async hasMinBalance() {
     const { wallet } = appStore.optionsStore
 
-    let balance = await this.getBalance(wallet);
-    let tenBN = new BigNumber(10);
-    let balanceBN = new BigNumber(balance).dividedBy(tenBN.pow(18));
-    let minimum = new BigNumber(minimumBalance);
+    let balance = await this.getBalance(wallet)
+    let tenBN = new BigNumber(10)
+    let balanceBN = new BigNumber(balance).dividedBy(tenBN.pow(18))
+    let minimum = new BigNumber(minimumBalance)
 
-    appStore.logsStore.logDebug(`lotus.hasMinBalance(): balanceBN ${balanceBN} minimum: ${minimum} compare: ${balanceBN.comparedTo(minimum) === 1}`);
-    return balanceBN.comparedTo(minimum) === 1;
+    appStore.logsStore.logDebug(
+      `lotus.hasMinBalance(): balanceBN ${balanceBN} minimum: ${minimum} compare: ${
+        balanceBN.comparedTo(minimum) === 1
+      }`,
+    )
+    return balanceBN.comparedTo(minimum) === 1
   }
 
   // TODO:  remove once filecoin-signing-tools PR #317 is merged new npm package is published
@@ -385,27 +394,34 @@ export class Lotus {
     return signedCreateMessage
   }
 
-  /**
-   * Creates a new payment channel using the local Client wallet as the "From", and
-   * the specified "To" address.
-   * @param  {string} to The "To" address on the payment channel
-   * @return {number} Returns the new PCH's robust address, or undefined if an error occurred
-   */
-  async createPaymentChannel(to, amountAttoFil) {
+  updateCustomStatus(deal: { id: string }, str) {
+    if (!deal) {
+      return
+    }
+
+    appStore.dealsStore.setInboundDealProps(deal.id, {
+      customStatus: str,
+    })
+  }
+
+  async createPaymentChannel({ deal, toAddr, pchAmount }) {
     const { wallet, privateKeyBase64 } = this.getAndParseOptions()
 
     const fromAddr = wallet
     const fromKey = privateKeyBase64
-    const toAddr = to
+    const amountAttoFil = pchAmount
 
     appStore.logsStore.logDebug(
       `Lotus.createPaymentChannel: [from:${fromAddr}, fromKey:*******************, to:${toAddr}, amount:${amountAttoFil}]`,
     )
 
+    this.updateCustomStatus(deal, 'Generating nonce')
+
     let nonce = await this.getNonce(fromAddr)
     appStore.logsStore.logDebug(`Lotus.createPaymentChannel: nonce=${nonce}`)
 
     // Generate the PCH create message
+    this.updateCustomStatus(deal, 'Signing message')
     const signedCreateMessage = await this.createSignedMessagePaymentChannel({
       amountAttoFil,
       fromAddr,
@@ -421,6 +437,7 @@ export class Lotus {
     //
     // MpoolPush the PCH create message
     //
+    this.updateCustomStatus(deal, 'Pushing message')
     const msgCid = await this.mpoolPush(signedCreateMessage)
     //msgCid = msgCid.cid; // TODO:  add this line; msgCid should be a string not an object.
     appStore.logsStore.log(`msgCid = ${inspect(msgCid)}`)
@@ -432,6 +449,7 @@ export class Lotus {
     //
     // Wait for PCH creation message response
     //
+    this.updateCustomStatus(deal, 'Waiting for message')
     const waitCreateResponseData = await this.stateWaitMsg(msgCid)
     if (!waitCreateResponseData) {
       appStore.logsStore.logError(`Lotus.createPaymentChannel: fatal: Filecoin.StateWaitMsg returned nothing`)
@@ -453,12 +471,7 @@ export class Lotus {
     appStore.logsStore.logDebug(`Lotus.createPaymentChannel: PCH Addresses = {id address:${PCH},robust:${PCHRobust}}`)
 
     const paymentChannel = PCHRobust
-    this.paymentChannelsInfo[paymentChannel] = {
-      idAddr: PCH,
-      robustAddr: PCHRobust,
-      nextLane: 0, // TODO:  remove if not used anywhere
-      lanesNextNonce: {}, // TODO:  remove if not used anywhere
-    }
+
     appStore.logsStore.logDebug(`Lotus.createPaymentChannel: leaving => ${paymentChannel}`)
 
     return paymentChannel
@@ -693,12 +706,12 @@ export class Lotus {
     return this.signer.verifyVoucherSignature(signedVoucher, fromWalletAddr)
   }
 
-  decodeSignedVoucher(signedVoucher) : DecodeSignedVoucher {
+  decodeSignedVoucher(signedVoucher): DecodeSignedVoucher {
     const buffer = Buffer.from(signedVoucher, 'base64')
     const decoded = importDagCBOR().util.deserialize(buffer)
 
     if (decoded.length !== 11) {
-      appStore.logsStore.logError('Deserialize Buffer does not have correct length');
+      appStore.logsStore.logError('Deserialize Buffer does not have correct length')
       return
     }
 

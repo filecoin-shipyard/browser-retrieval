@@ -218,21 +218,20 @@ export class Client {
     const pchAmount = deal.params.size * deal.params.pricePerByte
     const toAddr = deal.params.wallet
 
-    this.updateCustomStatus(deal, 'Creating payment channel')
-
     appStore.logsStore.logDebug(
       `Client.setupPaymentChannel(): PCH creation parameters:\n  pchAmount='${pchAmount}'\n  toAddr='${toAddr}'`,
     )
 
     //await this.lotus.keyRecoverLogMsg();  // testing only
 
-    const paymentChannel = await this.lotus.createPaymentChannel(toAddr, pchAmount)
+    this.updateCustomStatus(deal, 'Creating payment channel')
+    const paymentChannel = await this.lotus.createPaymentChannel({ deal, toAddr, pchAmount })
 
     if (!paymentChannel) {
       throw new Error('payment channel could not be created')
     }
 
-    // const paymentChannel = undefined // debug without funds
+    this.updateCustomStatus(deal, 'Payment channel created')
 
     appStore.logsStore.logDebug(`Client.setupPaymentChannel(): paymentChannel:`, paymentChannel)
 
@@ -241,7 +240,8 @@ export class Client {
       Lane: 0, // Not using lanes currently
     })
 
-    // TODO: deal.paymentChannel is undefined, but paymentChannel is, why?
+    this.updateCustomStatus(deal, 'Sending payment channel')
+
     appStore.logsStore.logDebug(
       `Client.setupPaymentChannel(): sending payment channel ready (pchAddr='${deal.paymentChannel}') for dealId='${dealId}'`,
     )
@@ -296,13 +296,17 @@ export class Client {
 
     const amount = deal.sizeReceived * deal.params.pricePerByte
     const nonce = deal.voucherNonce++
+
+    this.updateCustomStatus(deal, 'Signing voucher')
+
     const sv = await this.lotus.createSignedVoucher(deal.paymentChannel, amount, nonce)
     // const sv = undefined // debug without funds
+
     appStore.logsStore.logDebug(`Client.sendPayment(): sv = '${sv}'`)
+    this.updateCustomStatus(deal, 'Voucher signed')
 
     const newDealStatus = isLastVoucher ? dealStatuses.lastPaymentSent : dealStatuses.paymentSent
 
-    this.updateCustomStatus(deal, 'Sent signed voucher')
 
     const message = {
       dealId,
@@ -313,6 +317,7 @@ export class Client {
     appStore.logsStore.logDebug(`Client.sendPayment() message:\n${JSON.stringify(message, null, 2)}`)
 
     deal.sink.push(message)
+    this.updateCustomStatus(deal, 'Sent signed voucher')
   }
 
   async closeDeal({ dealId }, { saveCid } = { saveCid: true }) {
