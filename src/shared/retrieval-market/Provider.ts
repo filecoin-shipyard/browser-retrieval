@@ -86,7 +86,7 @@ export class Provider {
         paymentIntervalIncrease: this.paymentIntervalIncrease,
       }
 
-      appStore.logsStore.logDebug(`Provider.getDealParams(): dealParams:`, dealParams)
+      appStore.logsStore.logDebug(`Provider.getDealParams(): dealParams: ${inspect(dealParams)}`)
 
       return dealParams
     }
@@ -358,7 +358,7 @@ export class Provider {
   }
 
   /**
-   * Checks the validity of a signed payment voucher, including verifying the signature and the amount.
+   * Submit a signed payment voucher and update the payment channel.
    * @param  {number} dealId Deal Id to find this deal in this.ongoingDeals[]
    * @param  {string} paymentChannel PCH robust address
    * @param  {string} paymentVoucher Signed voucher to submit; assumed to already be validated successfully
