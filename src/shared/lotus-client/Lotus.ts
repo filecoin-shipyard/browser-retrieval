@@ -11,9 +11,11 @@ const importDagCBOR = () => {
 
 let lotusIntance: Lotus
 
+const minCurrentBaseFee = '5000000000'
+
 const gasEstimation = {
   gaslimit: '10000000',
-  gasfeecap: '16251176117',
+  gasfeecap: minCurrentBaseFee,
   gaspremium: '140625002',
 }
 
@@ -90,10 +92,10 @@ export class Lotus {
           { headers },
         )
 
-        //appStore.logsStore.logDebug(`Lotus.gesGasEstimation response:\n ${inspect(response.data)}\n`);
+        appStore.logsStore.logDebug(`Lotus.gesGasEstimation response:\n ${inspect(response.data)}\n`);
 
         message.gaslimit = response.data.result.GasLimit * 2
-        message.gasfeecap = response.data.result.GasFeeCap
+        message.gasfeecap = BigNumber.maximum(minCurrentBaseFee, response.data.result.GasFeeCap).valueOf();
         message.gaspremium = response.data.result.GasPremium
       } catch (error) {
         message.gaslimit = parseInt(gasEstimation.gaslimit) * 2
@@ -275,7 +277,7 @@ export class Lotus {
    * @return {object} Returns the wait response.data member, or undefined if an error occurred
    */
   async stateWaitMsg(cid) {
-    appStore.logsStore.logDebug(`entering Lotus.stateWaitMsg(cid='${cid}')`)
+    appStore.logsStore.logDebug(`entering Lotus.stateWaitMsg(cid='${inspect(cid)}')`)
     appStore.logsStore.log(`begining StateWaitMsg. This will take a while...`)
     const { headers, lotusEndpoint } = this.getAndParseOptions()
 
