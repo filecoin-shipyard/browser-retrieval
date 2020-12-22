@@ -14,7 +14,7 @@ let lotusIntance: Lotus
 const minCurrentBaseFee = '5000000000'
 
 const gasEstimation = {
-  gaslimit: '12000000',
+  gaslimit: '10000000',
   gasfeecap: minCurrentBaseFee,
   gaspremium: '140625002',
 }
@@ -92,14 +92,14 @@ export class Lotus {
           { headers },
         )
 
-        //appStore.logsStore.logDebug(`Lotus.gesGasEstimation response:\n ${inspect(response.data)}\n`);
+        appStore.logsStore.logDebug(`Lotus.gesGasEstimation response:\n ${inspect(response.data)}\n`);
 
-        message.gaslimit = response.data.result.GasLimit * 2.4
-        message.gasfeecap = minCurrentBaseFee //response.data.result.GasFeeCap
+        message.gaslimit = response.data.result.GasLimit * 2
+        message.gasfeecap = BigNumber.maximum(minCurrentBaseFee, response.data.result.GasFeeCap).valueOf();
         message.gaspremium = response.data.result.GasPremium
 
       } catch (error) {
-        message.gaslimit = parseInt(gasEstimation.gaslimit) * 2.4
+        message.gaslimit = parseInt(gasEstimation.gaslimit) * 2
         message.gasfeecap = gasEstimation.gasfeecap
         message.gaspremium = gasEstimation.gaspremium
         appStore.logsStore.logError(`Lotus.gesGasEstimation(): axios error: ${error.message}\n`)
@@ -266,7 +266,7 @@ export class Lotus {
    * @return {object} Returns the wait response.data member, or undefined if an error occurred
    */
   async stateWaitMsg(cid) {
-    appStore.logsStore.logDebug(`entering Lotus.stateWaitMsg(cid='${cid}')`)
+    appStore.logsStore.logDebug(`entering Lotus.stateWaitMsg(cid='${inspect(cid)}')`)
     appStore.logsStore.log(`begining StateWaitMsg. This will take a while...`)
     const { headers, lotusEndpoint } = this.getAndParseOptions()
 
