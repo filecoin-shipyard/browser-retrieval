@@ -86,7 +86,7 @@ export class Provider {
         paymentIntervalIncrease: this.paymentIntervalIncrease,
       }
 
-      appStore.logsStore.logDebug(`Provider.getDealParams(): dealParams:`, dealParams)
+      appStore.logsStore.logDebug(`Provider.getDealParams(): dealParams: ${inspect(dealParams)}`)
 
       return dealParams
     }
@@ -167,7 +167,8 @@ export class Provider {
       throw new Error(`received invalid voucher (${message.paymentVoucher}) on dealId ${message.dealId}`)
     }
 
-    await this.submitPaymentVoucher(message)
+    const { dealId, paymentChannel, signedVoucher } = message;
+    appStore.pchStore.save({dealId: dealId, pch: paymentChannel, voucher: signedVoucher});
 
     const isPaymentSent = message.status === dealStatuses.paymentSent
     const isLastPaymentSent = message.status === dealStatuses.lastPaymentSent
@@ -178,6 +179,7 @@ export class Provider {
     if (isPaymentSent) {
       await this.sendBlocks(message)
     } else if (isLastPaymentSent) {
+      await this.submitPaymentVoucher(message)
       this.sendDealCompleted(message)
       await this.closeDeal(message)
     }
@@ -356,7 +358,7 @@ export class Provider {
   }
 
   /**
-   * Checks the validity of a signed payment voucher, including verifying the signature and the amount.
+   * Submit a signed payment voucher and update the payment channel.
    * @param  {number} dealId Deal Id to find this deal in this.ongoingDeals[]
    * @param  {string} paymentChannel PCH robust address
    * @param  {string} paymentVoucher Signed voucher to submit; assumed to already be validated successfully
@@ -370,11 +372,30 @@ export class Provider {
     const deal = appStore.dealsStore.getOutboundDeal(dealId)
     this.updateCustomStatus(deal, 'Updating payment channel with voucher')
 
-    const isUpdateSuccessful = await this.lotus.updatePaymentChannel(paymentChannel, signedVoucher)
+
+    const pchs = appStore.pchStore.get(dealId);
+    let pch = pchs[0];
+    let pchAmount = this.lotus.decodeSignedVoucher(pch.voucher).amount;
+
+    pchs.forEach(item => {
+      const decodedVoucher = this.lotus.decodeSignedVoucher(item.voucher);
+      if (decodedVoucher.amount > pchAmount) {
+        pch = item;
+        pchAmount = decodedVoucher.amount;
+      }
+    })
+
+    appStore.logsStore.logDebug(
+      `Provider.submitPaymentVoucher: pchStore[${dealId}] pch : ${pch.pch} , voucher : ${pch.voucher}`,
+    )
+
+    const isUpdateSuccessful = await this.lotus.updatePaymentChannel(pch.pch, pch.voucher)
     appStore.logsStore.logDebug(`Provider.submitPaymentVoucher: isUpdateSuccessful=${isUpdateSuccessful}`)
     if (!isUpdateSuccessful) {
       throw new Error('ERROR: Provider.submitPaymentVoucher: failed to submit voucher')
     }
+
+    appStore.pchStore.delete(dealId);
   }
 
   sendDealCompleted({ dealId }) {

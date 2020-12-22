@@ -11,6 +11,7 @@ import { QueriesStore } from './queriesStore'
 import { RecentCIDStore } from './recentCIDStore'
 import { SettingsStore } from './settingsStore'
 import { UploadStore } from './uploadStore'
+import { PCHStore } from './pchStore'
 
 export class AppStore {
   alertsStore: AlertsStore
@@ -23,6 +24,7 @@ export class AppStore {
   recentCIDStore: RecentCIDStore
   settingsStore: SettingsStore
   uploadStore: UploadStore
+  pchStore: PCHStore
 
   node: Node
 
@@ -41,6 +43,7 @@ export class AppStore {
     this.recentCIDStore = new RecentCIDStore(this)
     this.settingsStore = new SettingsStore(this)
     this.uploadStore = new UploadStore(this)
+    this.pchStore = new PCHStore(this)
 
     makeAutoObservable(this)
   }
