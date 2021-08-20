@@ -1,5 +1,11 @@
 # Filecoin Browser-based Retrieval Market
 
+## Status
+
+This repository is in a **frozen** state. It is not being maintained or kept in sync with the tools and libraries it builds on. Even though work on this repository has been **shelved**, anyone interested in updating or maintaining this project should express their interest on one Filecoin community conversation mediums: <https://github.com/filecoin-project/community#join-the-community>.
+
+---
+
 The Filecoin Browser Retrieval Market is a browser-based p2p network that functions like a CDN for content that was originally retrieved from the Filecoin storage network.
 
 Users seeking content can use this tool to retrieve files from a marketplace of competing providers of Filecoin content. Retrieval miners who seek to earn income can use this tool to buy content from miners on the Filecoin storage network and then re-sell it here on the Retrieval Market.
